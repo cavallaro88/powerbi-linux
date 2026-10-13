@@ -23,7 +23,7 @@ Tests used Fedora 44 x86_64, GNOME 50.5 on native Wayland, kernel 7.2.9-200.fc44
 | Uninstall / integration migration | Preserving uninstall retained profiles and cleared own default tokens. Repair restored integration without forcing defaults. Final migration removed 22 obsolete managed Wine/MIME entries and preserved defaults/other files. Unit and RPM checks cover masking/restoring the global RPM entry without modifying system files. |
 | Source / packaging checks | 23 unit tests passed from an independently exported project tree; desktop validation, syntax and CLI loading passed. RPM dependency installation and packaged integration checks run in a Fedora 44 container, separately from native UI testing. |
 
-Native GUI tests ran from the checkout with isolated XDG directories, a portable NTLM helper and no host unixODBC installation. The RPM was not installed on the native host. Its DNF dependency checks are a separate container validation; they do not claim a containerized GUI or a native-host RPM installation.
+Initial native GUI tests ran from the checkout with isolated XDG directories, a portable NTLM helper and no host unixODBC installation. At that initial stage, the RPM was not installed on the native host. Its DNF dependency checks are a separate container validation; they do not claim a containerized GUI or a native-host RPM installation.
 
 ## Capture discrepancy retained
 
@@ -42,3 +42,7 @@ This file is separate from the project's derived PE loader backing. That backing
 The companion `powerbi-linux-qa-20261013.tar.gz` contains selected synthetic JSON, query logs, reviewed screenshots, runtime/build inventory, environment information and a per-file SHA-256 manifest. Personal workspace/user paths are replaced in text; images were reviewed separately. It contains no populated prefixes, PBIX/ABF payloads, installers, signing keys or unrelated investigation logs. `release-evidence.json` records the exact archive and scenario scope; the release checker validates those recorded gates, not publisher authenticity or universal compatibility.
 
 Microsoft sign-in, cloud publishing and the general OneLake source chooser remain limited. Local CSV uses the direct menu route. The original enterprise thin-report refresh and optional enterprise connectors remain uncertified; external TMSL processing is a diagnostic flow, not a replacement for the user's Refresh action. See [compatibility](compatibility.md).
+
+## Installed RPM follow-up
+
+The user subsequently installed this exact RPM on the native Fedora host. Setup, all doctor checks, native PBIX visual review and production GIO PBIX/PBIP/PBIR checks passed with system NTLM and unixODBC. See [host validation](validation-host.md) for the exact RPM checksum, evidence and scope.

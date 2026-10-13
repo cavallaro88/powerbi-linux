@@ -4,7 +4,7 @@ Community compatibility tools for Power BI Desktop using patched Wine, DXVK and 
 
 An installation created from official installers opened PBIX/PBIP/PBIR through the Fedora desktop, imported a local CSV, displayed the expected values and preserved them after save/reopen. A synthetic 158-table model with 156 relationships also passed UI refresh and independent data checks. A two-hour session passed with periodic visual interaction and no OOM or GPU-process replacement. One discrepant idle native-frame sample is retained in the validation notes; its cause is not established. Microsoft sign-in, cloud publishing and the general OneLake source chooser remain limited; use the direct **Get Data → Text/CSV** menu for local CSVs. See [compatibility](docs/compatibility.md).
 
-Implementation checks and the distinction between a project's data cache and renderer failures are recorded in [validation](docs/validation.md).
+Implementation checks and the distinction between a project's data cache and renderer failures are recorded in [validation](docs/validation.md). The subsequent [installed-RPM host validation](docs/validation-host.md) passed with system NTLM/ODBC and production desktop dispatch.
 
 ## Target
 
