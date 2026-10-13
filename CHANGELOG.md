@@ -2,6 +2,13 @@
 
 ## 0.1.0 — development
 
+### RPM release 13 — text picker development candidate, 2026-10-18
+
+- Render only Quill font/size selectors in WebView2's in-page top layer using `appearance: base-select`. The detached Chromium popup reproduced as an empty white window despite populated options.
+- Keep the original select controls, options and change handlers. Let the browser dismiss an open picker with Escape before Desktop consumes that key; unrelated shortcuts retain their handlers.
+- Apply only a hash-guarded local report-view HTML change during setup/repair, with original backup and a `text-pickers` doctor check. No Wine rebuild, diagnostic interpreter or report-content patch is introduced.
+- Fresh Desktop diagnostics passed eight keyboard assertions, compositor pointer selection and actual formatted-text verification. Doctor passed 18 checks. Other selectors, display scales and a full compatibility matrix remain separate. See [text picker evidence](docs/text-pickers.md).
+
 ### RPM release 12 — window frame development candidate, 2026-10-18
 
 - Extend the normal resizable/unowned Desktop client to its complete frame. Replace the visible 4-pixel side/bottom gutters with transparent native resize input zones, preserving styles and fixed/owned/native-maximized calculations.
@@ -18,6 +25,8 @@
 - Diagnose the visible white frame as 4-pixel non-client left/right/bottom insets, with content filling the client area. Record the remaining cosmetic compatibility work without changing window styles or deploying an untested frame correction.
 
 ### Unreleased — product repository and upstream review
+
+- Publish version-specific GitHub development prereleases with original RPM/source assets, checksums and provenance. Reconstruct historical tags from sanitized original sources; keep runtime releases source-only until binary distribution gates pass. Index all versions in [the release guide](docs/releases.md).
 
 - Promote the standalone product to the repository root, with normal GitHub discovery, a shorter README, documentation index and explicit roadmap. Preserve private investigation/history outside the public product history.
 - Guard runtime packaging against unreviewed patch files, failed/stale builds, changed sources/payload and accidental artifact overwrite. Record the successful build and exact builder/input identity; retain unchanged runtime 0.1.3 artifacts.

@@ -3,7 +3,7 @@ import os
 from pathlib import Path
 import shutil
 from .common import Error, check_digest, digest, run, wine_env
-from . import legacy_html, signin
+from . import legacy_html, signin, text_pickers
 
 ORIGINALS = {
     'Microsoft.PowerBI.Client.Shared.dll': '1dc130d913b92f315b81aa5162e8fa74e8a0279742f988561680111d5189ff78',
@@ -109,9 +109,15 @@ def install(prefix, runtime, log):
     if not windows_source.exists():
         windows_source = bin_dir / windows_name
     patched_windows = signin.patch_windows(windows_source.read_bytes())
-    for name in ORIGINALS:
+    picker_name = text_pickers.DOCUMENT
+    picker_source = backups / picker_name
+    if not picker_source.exists():
+        picker_source = bin_dir / picker_name
+    patched_picker = text_pickers.patch_document(picker_source.read_bytes())
+    for name in (*ORIGINALS, picker_name):
         backup = backups / name
         if not backup.exists():
+            backup.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(bin_dir / name, backup)
     helpers = prefix / 'drive_c/powerbi-linux-setup'
     helpers.mkdir(exist_ok=True)
@@ -179,8 +185,11 @@ def install(prefix, runtime, log):
             shutil.copy2(helpers / name, bin_dir / name)
         run([wine, helpers/'EnableModernEditor.exe'], env=env, log=log)
         signin.configure_browser(prefix, wine, env, helpers, log)
+        out = bin_dir / (picker_name + '.new')
+        out.write_bytes(patched_picker)
+        os.replace(out, bin_dir / picker_name)
     finally:
         key.unlink(missing_ok=True)
         windows_input.unlink(missing_ok=True)
     return {name: digest(bin_dir/name) for name in (*ORIGINALS, 'WinRTStubs.dll',
-                                                   'PowerBIDiagnostics.dll', 'PowerBICompositionManager.dll', NATIVE_DIALOG, CACHE_COMPAT, WINDOW_FRAME)}
+                                                   'PowerBIDiagnostics.dll', 'PowerBICompositionManager.dll', NATIVE_DIALOG, CACHE_COMPAT, WINDOW_FRAME, picker_name)}

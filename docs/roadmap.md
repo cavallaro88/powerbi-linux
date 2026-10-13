@@ -18,8 +18,9 @@ The development preview is scoped to Fedora 44 x86_64 and native Wayland.
   Port related high-priority rendering/monitor fixes only with native evidence.
 - Revalidate the full compatibility matrix for each new runtime checksum,
   including large-model complexity, multiple documents and prolonged sessions.
-- Establish a public release location, private security reporting channel,
-  signing/distribution policy and notification of validated Fedora updates.
+- Versioned [RPM prereleases and source-only runtime history](releases.md) are indexed
+  on GitHub. Establish public distribution, a private security reporting channel,
+  signing policy, certified runtime binaries and validated Fedora notifications.
 - Expand cache regression coverage to additional synthetic populated models and
   partition/schema changes. Automatic versioned backup/rotation is not implemented.
 

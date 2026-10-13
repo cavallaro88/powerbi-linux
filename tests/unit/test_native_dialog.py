@@ -20,6 +20,9 @@ class NativeDialogProvisionTests(unittest.TestCase):
         self.originals = {name: ('original:' + name).encode() for name in patches.ORIGINALS}
         for name, data in self.originals.items():
             (self.bin / name).write_bytes(data)
+        self.picker = self.bin / patches.text_pickers.DOCUMENT
+        self.picker.parent.mkdir(parents=True)
+        self.picker.write_bytes(b'synthetic picker document')
         self.runtime = self.root / 'runtime'
         (self.runtime / 'helpers').mkdir(parents=True)
         self.helpers = self.prefix / 'drive_c/powerbi-linux-setup'
@@ -43,6 +46,7 @@ class NativeDialogProvisionTests(unittest.TestCase):
         # HTML resource guard is covered by test_legacy_html.
         with patch.object(patches.legacy_html, 'patch_ui', return_value=b'html-patch'), \
                 patch.object(patches.signin, 'patch_windows', return_value=b'email-patch'), \
+                patch.object(patches.text_pickers, 'patch_document', return_value=b'picker-patch'), \
                 patch.object(patches, 'run', side_effect=run):
             with self.assertRaises(common.Error):
                 patches.install(self.prefix, self.runtime, self.root / 'log')

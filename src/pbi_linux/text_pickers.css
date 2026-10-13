@@ -1,0 +1,24 @@
+/* SPDX-License-Identifier: GPL-3.0-or-later */
+/* Power BI Linux: in-page Quill font/size pickers; retain native select events. */
+@supports (appearance: base-select) {
+ div.ql-toolbar select.ql-picker:is(.ql-font, .ql-size),
+ div.ql-toolbar select.ql-picker:is(.ql-font, .ql-size)::picker(select) {
+  appearance: base-select;
+ }
+ div.ql-toolbar select.ql-picker:is(.ql-font, .ql-size) {
+  border-radius: 0;
+ }
+ div.ql-toolbar select.ql-picker:is(.ql-font, .ql-size)::picker(select) {
+  background: var(--colorNeutralBackground1, Canvas);
+  color: var(--colorNeutralForeground1, CanvasText);
+  border: 1px solid var(--colorNeutralStroke1, GrayText);
+  border-radius: 0;
+  max-height: min(22rem, 70vh);
+  overflow-y: auto;
+  font: inherit;
+ }
+ div.ql-toolbar select.ql-picker:is(.ql-font, .ql-size) option {
+  padding: 0.25rem 0.5rem;
+  min-height: 1.5rem;
+ }
+}

@@ -116,6 +116,8 @@ window resize and localized-label coverage remain separate assertions.
 2. Integrate diagnostic Desktop launch, menu navigation, the public Options audit
    and deterministic teardown. Add Sources, Privacy Level/OK/Cancel, nested
    dialogs, save confirmation and resizing. Record initialization/response time.
+   Include text-box font/size selection, actual formatted text, list scrolling
+   and Escape dismissal; see the [text picker regression](text-pickers.md).
 3. Add compositor pointer tests. DOM callbacks and backend success must not
    satisfy mouse/focus assertions. Keep native frames and browser evidence
    separate so one cannot hide a failure in the other.

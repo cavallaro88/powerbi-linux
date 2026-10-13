@@ -7,8 +7,8 @@ from pathlib import Path
 import shutil
 import subprocess
 import sys
-from . import __version__, assets, launch, provision, desktop, resources, legacy_html, signin, connectors, patches
-from .common import Error, Paths, busy, read_json, check_digest, atomic_json
+from . import __version__, assets, launch, provision, desktop, resources, legacy_html, signin, connectors, patches, text_pickers
+from .common import Error, Paths, busy, read_json, check_digest, atomic_json, digest
 
 
 def doctor(paths):
@@ -81,6 +81,15 @@ def doctor(paths):
                     'Window frame correction is missing; close Desktop and run repair')
             except (Error, OSError, ValueError) as exc:
                 add('sign-in-dialog', False, str(exc))
+            try:
+                picker_patched = (installed['patches'].get(text_pickers.DOCUMENT) == text_pickers.PATCHED_SHA256
+                                  and digest(Path(installed['prefix']) / provision.BIN / text_pickers.DOCUMENT)
+                                  == text_pickers.PATCHED_SHA256)
+                add('text-pickers', picker_patched,
+                    'In-page font and size selectors are present' if picker_patched else
+                    'Text picker correction is missing; close Desktop and run repair')
+            except (Error, OSError, ValueError) as exc:
+                add('text-pickers', False, str(exc))
         except (Error, OSError, KeyError) as exc:
             add('integrity', False, str(exc))
     return {'schema':1, 'version':__version__, 'ok':all(c['ok'] for c in checks), 'checks':checks, 'components':components,

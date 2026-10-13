@@ -87,3 +87,10 @@ Before attaching any log to a public issue, remove usernames, document paths, da
   extends only eligible custom-caption client areas and retains native resize
   input. Doctor checks `window-frame`; existing profiles need idle maintenance
   unless the local candidate is already active. See [frame diagnosis and scope](window-frame.md).
+
+- **Font or text-size list opens a detached white window:** RPM 13's recipe keeps
+  the two Quill pickers in WebView's own top layer, preserving their original
+  options and formatting callbacks. Check `text-pickers` in doctor. Existing
+  profiles need idle maintenance unless the local candidate is already applied.
+  Installing fonts, clearing permissions or deleting model caches does not address
+  this reproduced popup failure. See [text picker validation](text-pickers.md).

@@ -2,11 +2,13 @@
 
 | Need | Guide |
 |---|---|
+| Find versioned packages and changelogs | [Development releases](releases.md) |
 | Install, upgrade, repair or uninstall | [Lifecycle](install.md), [Português](install.pt-BR.md) |
 | Understand supported scenarios | [Compatibility](compatibility.md), [validation](validation.md) |
 | Diagnose a failure | [Troubleshooting](troubleshooting.md) |
 | Preserve imported model data | [Cache backup and recovery](model-cache.md) |
 | Resize windows with PaperWM | [Wayland resizing](paperwm.md), [visible frame](window-frame.md) |
+| Fix empty font and size lists | [Text pickers](text-pickers.md) |
 | Plan isolated runtime candidate tests | [Runtime acceptance](runtime-testing.md) |
 | Configure optional resource limits | [Resources](resources.md) |
 | Authenticate or publish | [Sign-in](sign-in.md), [publishing](publishing.md) |

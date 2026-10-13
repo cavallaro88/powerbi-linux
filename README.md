@@ -40,8 +40,10 @@ The current recipe targets Power BI **2.158.1177.0** and fixed WebView2
 **154.0.4258.62**. Setup obtains checksum-verified prerequisites from their official
 sources. Review the [installation guide](docs/install.md),
 [guia em português](docs/install.pt-BR.md) and [licensing notes](docs/legal.md).
-Build instructions and required inputs are documented; no public release hosting
-or downloadable release channel is configured in this repository yet.
+Versioned RPM prereleases and their changelogs are in [GitHub Releases](https://github.com/cavallaro88/powerbi-linux/releases).
+The current preview is [RPM 12](https://github.com/cavallaro88/powerbi-linux/releases/tag/v0.1.0-12).
+Runtime entries currently provide source recipes only; see the [release index](docs/releases.md)
+and [build guide](docs/build.md) before provisioning.
 
 Add `--make-default` during setup to associate files by default; otherwise use
 **Open With → Power BI Desktop (Wine)**. Preferences and credentials persist
