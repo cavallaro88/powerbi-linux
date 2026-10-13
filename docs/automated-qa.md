@@ -140,3 +140,12 @@ creates a small Wine-only test prefix and checks cross-process standard cursor
 resources. Twelve checks passed on 0.1.3; see [cursor scope](cursor.md). The own
 prefix was removed after the test. This does not provision the separate Desktop
 QA installation or complete the pending public compositor/GUI orchestration.
+
+## Post-publish Store rating regression, October 18
+
+`python3 tools/test-store-rating.py` invokes only the local rating entrypoint
+with null services, no window or report. The original reproduced the WinRT
+assembly error; the corrected entrypoint returned a completed Task. This check
+is included in the components suite. The October 18 quick run passed all four
+checks, including 60 Python tests; cloud publishing is separate from this offline
+regression. See [publishing](publishing.md).

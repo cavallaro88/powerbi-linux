@@ -17,6 +17,10 @@ An installation created from official installers opened PBIX/PBIP/PBIR through t
 
 Implementation checks and the distinction between a project's data cache and renderer failures are recorded in [validation](docs/validation.md). The subsequent [installed-RPM host validation](docs/validation-host.md) passed with system NTLM/ODBC and production desktop dispatch.
 
+RPM 10 removes the Windows Store rating prompt that could raise a local WinRT
+error after a successful publication. A real homologation publication was confirmed
+by the user; the correction has separate offline evidence. See [publishing](docs/publishing.md).
+
 Setup and repair suppress Desktop update notices using Microsoft's documented
 policy. A Fedora notification for validated releases remains planned; see
 [update policy](docs/updates.md).
@@ -30,7 +34,7 @@ Fedora 44, x86_64, a systemd user session, native Wayland and a Vulkan-capable G
 Build or obtain the RPM, then install it:
 
 ```bash
-sudo dnf install ./powerbi-linux-0.1.0-9.noarch.rpm
+sudo dnf install ./powerbi-linux-0.1.0-10.noarch.rpm
 pbi-linux doctor
 ```
 

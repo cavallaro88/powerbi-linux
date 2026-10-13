@@ -140,6 +140,7 @@ def main():
             for name, command, timeout in [
                 ('qa-doctor', [sys.executable, '-m', 'pbi_linux', 'doctor', '--json'], 60),
                 ('cursor-resource', [sys.executable, 'tools/test-cursor-resource.py', '--runtime', metadata['runtime']], 180),
+                ('store-rating', [sys.executable, 'tools/test-store-rating.py'], 90),
                 ('legacy-html', [sys.executable, 'tools/test-legacy-html.py'], 90),
                 ('html-int64', [sys.executable, 'tools/test-html-int64.py'], 90),
                 ('signin-settings', [sys.executable, 'tools/test-signin-settings.py'], 180),

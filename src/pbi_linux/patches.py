@@ -18,7 +18,7 @@ NATIVE_DIALOG = 'PowerBISaveDialog.dll'
 def build_native_dialog(helpers, wine, env, log, key):
     # Own sources ship in the RPM; the pinned Wine runtime need not be rebuilt.
     sources = Path(__file__).resolve().parents[1] / 'helpers'
-    for name in ('PowerBISaveDialog.cs', 'PatchSavePrompt.cs'):
+    for name in ('PowerBISaveDialog.cs', 'PatchSavePrompt.cs', 'PatchStoreRating.cs'):
         shutil.copy2(sources / name, helpers / name)
     compiler = r'C:\windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe'
     run([wine, compiler, '/nologo', '/optimize+', '/target:library',
@@ -26,6 +26,8 @@ def build_native_dialog(helpers, wine, env, log, key):
          '/r:System.Drawing.dll', 'PowerBISaveDialog.cs'], env=env, cwd=helpers, log=log)
     run([wine, compiler, '/nologo', '/optimize+', '/r:dnlib.dll', '/r:System.Core.dll',
          '/out:PatchSavePrompt.exe', 'PatchSavePrompt.cs'], env=env, cwd=helpers, log=log)
+    run([wine, compiler, '/nologo', '/optimize+', '/r:dnlib.dll', '/r:System.Core.dll',
+         '/out:PatchStoreRating.exe', 'PatchStoreRating.cs'], env=env, cwd=helpers, log=log)
     run([wine, helpers / 'PatchSavePrompt.exe', '--sign-dialog',
          r'C:\powerbi-linux-setup\unsigned\PowerBISaveDialog.dll',
          r'C:\powerbi-linux-setup\PowerBISaveDialog.dll',
@@ -102,6 +104,11 @@ def install(prefix, runtime, log):
                 args.append('Z:' + str(key).replace('/', '\\'))
             run(args, env=env, log=log)
             if patcher == 'PatchWinRT.exe':
+                store_out = helpers / (name + '.store')
+                run([wine, helpers / 'PatchStoreRating.exe',
+                     *['Z:' + str(file).replace('/', '\\') for file in (out, store_out)]],
+                    env=env, log=log)
+                os.replace(store_out, out)
                 native_out = helpers / (name + '.native')
                 run([wine, helpers / 'PatchSavePrompt.exe',
                      *['Z:' + str(file).replace('/', '\\') for file in (

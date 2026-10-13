@@ -34,7 +34,7 @@ class NativeDialogProvisionTests(unittest.TestCase):
             tool = Path(str(command[1])).name
             if tool == 'MakeKey.exe':
                 (self.helpers / 'stubs.snk').write_bytes(b'synthetic private key')
-            elif tool in ('PatchShared.exe', 'PatchWinRT.exe'):
+            elif tool in ('PatchShared.exe', 'PatchWinRT.exe', 'PatchStoreRating.exe'):
                 output = Path(str(command[3])[2:].replace(chr(92), '/'))
                 output.write_bytes(b'other-patch-output')
             if failure(command):
@@ -59,6 +59,11 @@ class NativeDialogProvisionTests(unittest.TestCase):
     def test_rejected_native_patch_does_not_replace_desktop_dll(self):
         self.run_until(lambda command: Path(str(command[1])).name == 'PatchSavePrompt.exe' and
                        '--sign-dialog' not in command)
+        name = 'Microsoft.PowerBI.Client.Windows.dll'
+        self.assertEqual((self.bin / name).read_bytes(), self.originals[name])
+
+    def test_rejected_store_rating_patch_preserves_desktop_and_removes_key(self):
+        self.run_until(lambda command: Path(str(command[1])).name == 'PatchStoreRating.exe')
         name = 'Microsoft.PowerBI.Client.Windows.dll'
         self.assertEqual((self.bin / name).read_bytes(), self.originals[name])
 

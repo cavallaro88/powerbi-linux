@@ -30,6 +30,11 @@ and [Edit Permissions](permissions-wayland.md).
 
 `WinRTStubs` reports APIs unavailable and contains incomplete methods; it does not implement Windows storage/launch contracts. No broader WinRT support is claimed. The self-token workaround is not equivalent to anonymous Windows identity.
 
+RPM 10's `PatchStoreRating.cs` removes only the Windows Store rating entrypoint
+from the local Desktop assembly. This avoids JIT loading a missing WinRT bridge
+after a successful publish; upload/result handling remains unchanged. See
+[publishing evidence](publishing.md).
+
 Discarded experiments, forced-success patches and legacy profiles stay in the private investigation archive, not in the product's active recipe. The optional Wayland capture hook is compiled from the aggregate patch but inactive without diagnostic flags; production environment removes them.
 
 WinRT stub keys use an RSA signature key. Native `csc /keyfile` fails on Wine with CS1548/8013141e, so setup compiles an unsigned `WinRTStubs` assembly and signs it with dnlib using the locally generated key. The helper tests verify the resulting strong-name signature and reject an unrelated assembly.

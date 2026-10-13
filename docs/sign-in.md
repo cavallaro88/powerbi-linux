@@ -34,7 +34,10 @@ browser authentication in Vivaldi, confirmed by the user. The diagnostic Desktop
 was then closed normally and reopened through the regular production launcher;
 the user confirmed that the account remained connected. No password, MFA code
 or account/token cache was collected. The specific MFA challenge was not
-observed or independently certified. Cloud publishing, individual connectors,
+observed or independently certified. A real homologation publication was later
+confirmed by the user on October 18; its local post-success Store rating error
+and scoped correction are documented in [publishing](publishing.md).
+Broader cloud publishing, individual connectors,
 long-term token renewal and other tenant/device policies need separate tests.
 
 Credentials belong in the Microsoft authentication interface. Reports and
