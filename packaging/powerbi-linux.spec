@@ -1,6 +1,6 @@
 Name:           powerbi-linux
 Version:        0.1.0
-Release:        6%{?dist}
+Release:        7%{?dist}
 Summary:        Community Power BI Desktop compatibility tools for Fedora
 License:        GPL-3.0-or-later AND LGPL-2.1-or-later AND Zlib
 Source0:        %{name}-%{version}.tar.gz
@@ -45,7 +45,7 @@ PYTHONPATH=src python3 -m unittest discover -s tests/unit -v
 
 %install
 mkdir -p %{buildroot}%{_datadir}/powerbi-linux %{buildroot}%{_bindir}
-cp -a src runtime packaging docs LICENSE LICENSES README.md %{buildroot}%{_datadir}/powerbi-linux/
+cp -a src runtime connectors packaging docs LICENSE LICENSES README.md %{buildroot}%{_datadir}/powerbi-linux/
 install -m 0755 packaging/pbi-linux %{buildroot}%{_bindir}/pbi-linux
 mkdir -p %{buildroot}%{_datadir}/applications %{buildroot}%{_datadir}/mime/packages %{buildroot}%{_datadir}/icons/hicolor/scalable/apps
 install -m 0644 packaging/powerbi-linux.desktop %{buildroot}%{_datadir}/applications/
@@ -63,6 +63,9 @@ find %{buildroot} -type d -name __pycache__ -prune -exec rm -rf {} +
 %{_datadir}/icons/hicolor/scalable/apps/powerbi-linux.svg
 
 %changelog
+* Thu Oct 15 2026 Project maintainers - 0.1.0-7
+- Add optional verified MySQL Connector/NET installation scoped to the managed profile.
+- Recalculate data source list geometry after showing a legacy dialog.
 * Thu Oct 15 2026 Project maintainers - 0.1.0-6
 - Use Desktop's system authentication browser during offline setup/repair.
 - Keep native MSAL authentication and document the confirmed Windows broker failure.

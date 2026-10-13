@@ -36,4 +36,16 @@ The native hook samples buffers at most every 500 ms. It does not record every s
 
 For an actual **Blank report → Get Data menu → Text/CSV → Load** flow, run `csv-session.py tests/fixtures/sales.csv --probes /path/to/compiled-probes --output /path/to/new-evidence`. It uses the direct source entry and independently checks sum 300 through DAX. Add `--save-report '/path/to/new/CSV São Paulo.pbix'` to create a table visual, check its rendered values and save through Desktop. Inspect the screenshot and separately reopen the saved report; the harness does not automatically certify those manual reviews.
 
-This direct entry passed in the clean prefix with the current runtime. The general source chooser remains blocked by the OneLake email popup leaving Get Data disabled; use `--entry all-sources` to reproduce that limitation. No credentials are supplied by either route.
+This direct entry passed in the clean prefix with the current runtime. In the earlier clean-prefix test, the general source chooser was blocked by the OneLake email popup leaving Get Data disabled; use `--entry all-sources` to reproduce that limitation. No credentials are supplied by either route.
+
+Optional provider checks are available through `python3 tools/test-mysql-provider.py`.
+It compiles `mysql-provider-probe.cs`, loads the original registered factory and
+all 12 dependency assemblies, and normally makes no network request. Its optional
+loopback mode uses only the fixed synthetic fixture in `docs/connectors.md`.
+Desktop UI refresh/source enumeration and production-mode save/reopen are separate
+checks. The recorded MySQL scenario used a disposable local MariaDB server, not
+customer connection settings or credentials. The source list regression must
+compare native entry count, HTML row count and cached viewport/page size after
+modal show; an initial transient 2x2 frame is insufficient to diagnose a steady
+layout failure. The general OneLake chooser has not been revalidated after the
+later Microsoft browser sign-in correction.

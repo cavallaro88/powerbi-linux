@@ -52,7 +52,7 @@ class ProductTests(unittest.TestCase):
     def test_source_export_excludes_model_cache_credentials_and_binaries(self):
         project=self.root/'standalone'
         actual=Path(__file__).resolve().parents[2]
-        for name in ('src','runtime','tests','packaging','tools','docs','.github','LICENSES'):
+        for name in ('src','runtime','connectors','tests','packaging','tools','docs','.github','LICENSES'):
             (project/name).mkdir(parents=True)
         for name in ('LICENSE','README.md','CONTRIBUTING.md','SECURITY.md','CODE_OF_CONDUCT.md','CHANGELOG.md','.gitignore'):
             (project/name).write_text('public')

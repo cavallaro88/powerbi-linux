@@ -36,6 +36,10 @@ class LegacyHtmlTests(unittest.TestCase):
             legacy_html.patch_ui(source)
         self.assertEqual(source, b'unsupported assembly')
 
+    def test_source_list_patch_rejects_unknown_assembly(self):
+        with self.assertRaisesRegex(common.Error, 'Unsupported HTML assembly'):
+            legacy_html.patch_source_list(b'unknown assembly')
+
     def test_invalid_resource_recipe_does_not_replace_other_application_files(self):
         import hashlib
         app = self.prefix / 'drive_c/Program Files/Microsoft Power BI Desktop/bin'

@@ -15,8 +15,8 @@ The initial patch set targets Wine 11.18 and DXVK 3.1. Wine composition incorpor
 | AS self-token change | Replace a specific anonymous-impersonation call with real self impersonation | Experimental semantics, required by current recipe; original hash and byte checks enforced |
 | WebView2 per-app Windows version | The investigated profile used `win7` for `msedgewebview2.exe`; reproducing it prevents fixed-runtime GPU crashes, while Desktop remains on `win10` | Required by the tested recipe |
 | Modern Power Query switch | Select the tested WebView2 editor | Required, internal app interface that may change |
-| Legacy HTML registration and UI resources | Restore Wine protocol/MIME handlers; work around an unsupported CSS setter and stale credential-sidebar height | Required for the pinned app; exact input/output hashes and resource sizes checked; modified Microsoft assembly stays local |
-| Email dialog serializer | Serialize the three wire fields without traversing native host/button objects when Continue reads the view model | Guarded local resource change; native validation/authentication unchanged; interactive account validation pending |
+| Legacy HTML registration and UI resources | Restore Wine protocol/MIME handlers; work around an unsupported CSS setter, stale credential-sidebar height and zero-page virtualized source list | Required for the pinned app; exact input/output hashes and resource sizes checked; modified Microsoft assembly stays local |
+| Email dialog serializer | Serialize the three wire fields without traversing native host/button objects when Continue reads the view model | Guarded local resource change; native validation/authentication unchanged; browser sign-in and account persistence after normal restart confirmed on Fedora |
 
 `WinRTStubs` reports APIs unavailable and contains incomplete methods; it does not implement Windows storage/launch contracts. No broader WinRT support is claimed. The self-token workaround is not equivalent to anonymous Windows identity.
 
@@ -25,3 +25,10 @@ Discarded experiments, forced-success patches and legacy profiles stay in the pr
 WinRT stub keys use an RSA signature key. Native `csc /keyfile` fails on Wine with CS1548/8013141e, so setup compiles an unsigned `WinRTStubs` assembly and signs it with dnlib using the locally generated key. The helper tests verify the resulting strong-name signature and reject an unrelated assembly.
 
 Setup enables the modern Power Query switch through the application's local feature-storage implementation. It does not invoke `PackageStorageManager`, which depends on Unity services initialized by a running Desktop process. Existing user settings and other switches are preserved by the application's own storage API.
+
+Optional Connector/NET installation is a provider recipe, not a Microsoft assembly
+patch or a replacement connector. Downloads and the complete .NET dependency set
+are pinned in `connectors/mysql.lock.json`, installed only on request and checked
+through a per-profile manifest. The source-list patch resizes the existing widget
+one tick after show only when its cached page size is zero; native enumeration,
+selection and permission callbacks remain unchanged.

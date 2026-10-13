@@ -46,3 +46,20 @@ Microsoft sign-in, cloud publishing and the general OneLake source chooser remai
 ## Installed RPM follow-up
 
 The user subsequently installed this exact RPM on the native Fedora host. Setup, all doctor checks, native PBIX visual review and production GIO PBIX/PBIP/PBIR checks passed with system NTLM and unixODBC. See [host validation](validation-host.md) for the exact RPM checksum, evidence and scope.
+
+## Optional MySQL and source settings — 2026-10-15
+
+The RPM 7 recipe adds a separately installed, checksum-pinned Oracle provider.
+Native factory/dependency loading passed. A disposable MariaDB 10.11.19 server
+bound only to loopback served the synthetic report through Desktop's UI refresh:
+3 sales rows, visible values 120/100/80, total 300, independent DAX agreement,
+committed partitions and empty errors. Save and normal-mode cached reopen passed.
+A fresh patched source list displayed the native CSV and MySQL entries; the
+unpatched list had cached page/viewport size zero. No customer report was changed.
+See [connector scope](connectors.md); the local test was explicitly unencrypted
+and does not certify production TLS. Evidence is separate from the earlier
+158-table/soak release gates and does not replace them.
+
+The user confirmed visible sources in the real report, with initially unresponsive
+clicks and a missing cursor recovering after an estimated 10–60 seconds. The
+cause remains unknown; synthetic source-list results do not certify this latency.

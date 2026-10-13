@@ -1,5 +1,9 @@
 # Architecture
 
+Desktop update notifications use the original Microsoft policy and are disabled
+by setup/repair. Versions remain pinned to the compatibility recipe; a native
+validated-release notifier is future work. See [update policy](updates.md).
+
 One repository contains the CLI, runtime patches, packaging and test tools. Keeping these together permits atomic compatibility changes. No GUI-specific API is required yet; a future GUI can drive the CLI. `doctor --json` is the initial structured interface, schema version 1.
 
 The package launcher calls a Python standard-library CLI. Setup verifies inputs, installs a runtime into a content-addressed directory, provisions a private profile, applies local compatibility changes and generates readonly PE section backing. Only a completed installation becomes active. Snapshots remain at stable absolute paths; activation swaps metadata pointers rather than moving a populated prefix.
@@ -19,3 +23,12 @@ This loader cache is separate from a project's `.pbi/cache.abf`. The latter is a
 Test probes can query the embedded Analysis Services model through AMO/ADOMD/XMLA. Processing a Desktop model externally is an unsupported diagnostic use, even though those protocols are public. The product does not silently substitute external TMSL refresh for the user's Refresh action.
 
 The current recipe uses a pinned Microsoft fixed-version WebView2 CAB. It is extracted into each managed profile; the runtime manifest defines its version and binary hashes. A prefix policy and session environment select that folder, so a separate Evergreen update does not change the application browser. No Microsoft package is included in project artifacts.
+
+Optional database providers are managed separately from the runtime and application
+patches. `connector install` shares the maintenance lock, requires an idle managed
+session, verifies pinned upstream archives in the user cache, and stages only the
+provider directory/registration. A per-prefix manifest records its files. Existing
+external registrations, including .NET machine.config registrations used by vendor
+MSI packages, are reported without being overwritten. Profile snapshots naturally
+retain connector files; no complete snapshot is needed just to add a new provider.
+No replacement database protocol or plugin runtime is introduced.

@@ -8,11 +8,12 @@ The current runtime was built from source and exercised on Fedora 44 x86_64 Wayl
 | CSV Load | Passed | Direct Text/CSV entry, visual creation and PBIX save/reopen passed; general source chooser blocked by OneLake sign-in |
 | Numeric table visual: 120, 100, 80, total 300 | Passed | Passed in clean prefix, including newly imported CSV; independent DAX agrees |
 | PBIX save and reopen | Passed | Passed in clean prefix with spaces and accents |
+| Data source settings list | Native entries existed while HTML rows were absent | Reproduced with CSV: cached viewport/page size 0. Fresh guarded patch displayed CSV and MySQL sources with page size 10; user confirmed real-report sources. Initially unresponsive clicks/missing cursor recovered after an estimated 10–60 seconds; cause and input latency remain unresolved. No source/permission changes |
 | Close with unsaved changes | Legacy modal failed to initialize in a reported session | Native Save/Don't save/Cancel passed in actual Desktop with a disposable PBIP; save/cache/reopen and normal-mode startup checked; see [native dialogs](native-dialogs.md) |
 | Cancel an in-progress data refresh | User reports Cancel does not interrupt loads | Synthetic native clicks passed during evaluation (~0.8 s) and data loading (19.879 s), retaining committed data; original freeze not reproduced; see [scope](refresh-cancellation.md) |
 | Desktop PBIX/PBIP/PBIR opening | — | GIO dispatch, relative project links and responsive native windows passed without diagnostic mode |
 | Additional document while another remains open | — | Two PBIX documents passed; native windows retained and both DAX totals confirmed |
-| MySQL Connector/NET 8.0.33, MariaDB 10.11 | Backend refresh passed; TLS failed | Optional connector recipe pending |
+| MySQL Connector/NET 8.0.33, MariaDB 10.11.19 | Earlier backend refresh passed; TLS failed in investigation | Optional managed recipe, native factory/dependencies, synthetic loopback UI refresh, 3 rows / total 300, two committed partitions and source list passed. Unencrypted local fixture only; real-server TLS unverified. See [connectors](connectors.md) |
 | Refresh 158 tables using external TMSL | Commit/DAX passed, ~4.2 min, ~9.66 GiB peak | Diagnostic result only |
 | Original enterprise thin-report UI refresh | Renderer OOM | Not certified; synthetic evidence does not reproduce every property of that report |
 | Synthetic 158-table UI refresh with 156 relationships | — | All 156 fact tables × 10,000 rows, dimension propagation, total 300 and save/reopen passed in clean prefix; native frames before/after Save and a separate reopen passed; 7,264.90-second soak passed with 24 visual checks and no OOM/GPU replacement |

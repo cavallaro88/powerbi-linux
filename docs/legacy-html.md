@@ -20,7 +20,7 @@ registrations and the activated UI patch version without starting Wine or
 opening a browser. Upgrading only the RPM leaves this check pending until
 `pbi-linux repair` applies the recipe to the existing installation.
 
-The supported local `Microsoft.Mashup.Client.UI.dll` receives two small changes
+The original credential correction in `Microsoft.Mashup.Client.UI.dll` makes two changes
 to embedded JavaScript resources:
 
 - In `ts/jquery.extensions.js`, an `E_NOTIMPL` from the DOM `textOverflow`
@@ -77,3 +77,25 @@ OOM events or kills. Product defaults were unchanged, and the test process and
 its browser policy were removed afterward. These checks cover first-show
 layout, tab interaction and credential cancellation; they do not certify MySQL
 authentication, network refresh completion or every connector.
+
+## Data source list — RPM 7
+
+The source-settings dialog uses a separate virtualized list. A CSV-only fixture
+proved that native discovery returned one source while the HTML had zero rows:
+its cached viewport and page size were both zero even after the visible container
+reached 300 pixels in height. Calling the widget's original resize changed page
+size to 10 and rendered the source. A fresh process with the guarded resource
+patch did the same without manually invoking a resize. MySQL source rows also
+appeared after the successful synthetic database refresh.
+
+The recipe now includes a third resource, `komanagedatasourcesdialog.js`: after
+showing the dialog it requests the widget's own resize if its cached page size
+is zero. PE/resource sizes and IL remain unchanged. Doctor verifies the complete
+updated UI assembly. No source is synthesized, and discovery, queries and
+permissions remain under Desktop's original handlers. See [connectors](connectors.md)
+for the independent MySQL dependency and full validation scope.
+
+The user also confirmed visible sources in the real report. Initially missing
+cursor/unresponsive clicks recovered after an estimated 10–60 seconds. This observation
+does not establish a cause or certify physical input latency; the resize patch
+only corrects list geometry.

@@ -2,16 +2,22 @@
 
 Alvo inicial: **Fedora 44, x86_64 e Wayland nativo**. O projeto ainda está em desenvolvimento; login Microsoft pelo navegador e persistência após reabrir foram confirmados nesta máquina; publicação e conectores autenticados ainda precisam de validação. Refresh pela interface e save/reopen passaram em um modelo sintético de 158 tabelas, e o teste prolongado de duas horas também passou. A validação registra uma captura nativa discrepante em uma reabertura; sua causa ainda não foi estabelecida. Isso não garante compatibilidade com qualquer relatório empresarial.
 
-Instale o RPM com `sudo dnf install ./powerbi-linux-0.1.0-6.noarch.rpm`. Ele instala a CLI e a integração com o desktop. O Power BI e os componentes Microsoft são instalados separadamente no seu usuário.
+Instale o RPM com `sudo dnf install ./powerbi-linux-0.1.0-7.noarch.rpm`. Ele instala a CLI e a integração com o desktop. O Power BI e os componentes Microsoft são instalados separadamente no seu usuário.
 
-Para atualizar a CLI, execute `sudo dnf upgrade ./powerbi-linux-0.1.0-6.noarch.rpm`
+Para atualizar a CLI, execute `sudo dnf upgrade ./powerbi-linux-0.1.0-7.noarch.rpm`
 e `pbi-linux doctor`. Se o doctor indicar que os patches de diálogo estão
 desatualizados, feche o Desktop, execute `pbi-linux repair` e confira novamente.
 O repair aplica as correções de [credenciais](legacy-html.md) e do botão
 [Continue no login](sign-in.md) em um novo perfil, preservando o anterior para
 rollback. Ele não é necessário quando os patches já estão presentes e o doctor
-passa. Atualizar apenas o RPM não modifica o prefixo existente. A autenticação
-Microsoft completa ainda depende de validação interativa com uma conta.
+passa. Atualizar apenas o RPM não modifica o prefixo existente. Cada usuário
+precisa concluir sua autenticação interativa; login e persistência após reabrir
+foram confirmados no host de validação.
+
+Setup/repair do RPM 7 desativa os avisos de atualização do Desktop pela opção
+oficial da Microsoft. A atualização só do RPM não muda essa preferência no
+perfil existente. O notificador Fedora para versões validadas ainda é backlog;
+o comando update atual troca o runtime. Veja a [política de atualização](updates.md).
 
 O perfil validado ocupa aproximadamente 9 GiB, além de runtime, downloads, cache derivado e relatórios. Em filesystems sem reflink, reparo/atualização precisam de espaço para outra cópia completa do perfil e seu cache; a anterior fica disponível para rollback.
 
@@ -34,3 +40,10 @@ autenticação. Em perfis existentes, marque essa opção em **Arquivo → Opç�
 configurações → Opções → Global → Segurança → Navegador de autenticação** e
 reinicie o Desktop; não é necessário copiar o perfil por repair apenas para
 mudar essa preferência. Veja o [diagnóstico do login](sign-in.md).
+
+Conectores de banco são opcionais. Para MySQL, leia o [guia de conectores e
+licenças](connectors.md), feche o Desktop e execute
+`pbi-linux connector install mysql --accept-license`. Confira com
+`pbi-linux connector status mysql` e `pbi-linux doctor`. O RPM 7 inclui essa CLI e
+a correção da lista vazia. Instalar o RPM não instala o driver automaticamente;
+um provedor externo existente não é sobrescrito.

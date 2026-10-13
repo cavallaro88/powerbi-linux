@@ -37,7 +37,7 @@ python3 tools/build-rpm.py --local
 
 RPMs and source RPMs are under `build/rpm/`. The package contains CLI/source resources and desktop integration; it does not contain a prefix, Microsoft installers or the Wine runtime archive. No package script runs Wine, downloads dependencies or accesses user credentials.
 
-Candidate release 6 includes tests/tools in the source RPM and runs the Python
+Candidate release 7 includes tests/tools in the source RPM and runs the Python
 unit suite during `%check`. Native Fedora builds declare the Python build
 dependency; the pinned Ubuntu cross-builder obtains it through apt and verifies
 the interpreter version directly. Native dialog GUI tests run separately with
@@ -46,6 +46,12 @@ the interpreter version directly. Native dialog GUI tests run separately with
 The native browser-settings check is `python3 tools/test-signin-settings.py`; it
 uses synthetic storage and the prepared Desktop assemblies, without modifying
 account data. The regular unit suite does not replace this native check.
+
+Optional connector packages are pinned separately in `connectors/mysql.lock.json`;
+they are downloaded at user request, not compiled into the runtime. The source
+RPM and standalone export include this recipe. `python3 tools/test-mysql-provider.py`
+loads the installed original provider and all dependency types without network
+access. See [connector validation](connectors.md) for its loopback-only query test.
 
 ## Corresponding source
 

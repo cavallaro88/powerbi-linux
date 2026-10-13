@@ -2,6 +2,15 @@
 
 ## 0.1.0 — development
 
+### RPM release 7 — development preview, 2026-10-15
+
+- Disable Desktop update notices with Microsoft's documented installer/registry option during setup/repair. A Fedora notification for validated releases remains future work; runtime update is separate from Desktop update.
+- Add optional `connector status/install mysql`: original Oracle Connector/NET, full pinned .NET dependency set, verified downloads, staging/rollback, manifest and external-provider detection. No report, credential or TLS changes.
+- Fix blank Data source settings by recalculating an existing list whose cached page size is zero after its modal appears. Fresh CSV and MySQL fixtures rendered the discovered source.
+- Real-report sources were confirmed by the user. Initial cursor/click trouble recovered after an estimated 10–60 seconds; its cause and input latency remain unresolved.
+- Native provider/dependency load and a Power BI UI refresh against disposable MariaDB 10.11.19 passed: 3 rows, total 300 and committed/error-free partitions. Explicitly unencrypted loopback test; production TLS is not certified.
+- Add public provider validation tools and regression coverage for corrupt inputs, unsafe paths, external registrations, busy sessions, tampering and failed activation cleanup.
+
 ### RPM release 6 — development preview, 2026-10-15
 
 - Enable Desktop's existing system authentication browser during offline setup/repair using its own settings API. Avoid the failing Windows broker path without changing MSAL or account policies.

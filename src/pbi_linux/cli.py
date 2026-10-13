@@ -7,7 +7,7 @@ from pathlib import Path
 import shutil
 import subprocess
 import sys
-from . import __version__, assets, launch, provision, desktop, resources, legacy_html, signin
+from . import __version__, assets, launch, provision, desktop, resources, legacy_html, signin, connectors
 from .common import Error, Paths, busy, read_json, check_digest, atomic_json
 
 
@@ -41,6 +41,12 @@ def doctor(paths):
             for name in ('wine','dxvk'):
                 components[name] = manifest.get('sources',{}).get(name,{})
             components['memory'] = provision.settings(paths)
+            try:
+                connector = connectors.status(installed['prefix'])
+                components['connectors'] = [connector]
+                add('connectors', connector['state'] != 'installed' or connector['verified'], connector['detail'])
+            except (Error, OSError, KeyError, ValueError) as exc:
+                add('connectors', False, str(exc))
             for name, sha in installed['patches'].items():
                 check_digest(Path(installed['prefix'])/provision.BIN/name, sha)
             add('integrity', True, 'Runtime and installed patches verified')
@@ -56,7 +62,7 @@ def doctor(paths):
                     issues.append('Legacy HTML assembly patch is missing or outdated')
                 add('legacy-html', not issues,
                     '; '.join(issues) + '; close Desktop and run pbi-linux repair' if issues else
-                    'Wine HTML registrations and credential dialog patch are present')
+                    'Wine HTML registrations, credential dialog and source list patches are present')
             except (Error, OSError, ValueError) as exc:
                 add('legacy-html', False, str(exc))
             try:
@@ -70,8 +76,8 @@ def doctor(paths):
         except (Error, OSError, KeyError) as exc:
             add('integrity', False, str(exc))
     return {'schema':1, 'version':__version__, 'ok':all(c['ok'] for c in checks), 'checks':checks, 'components':components,
-            'limitations':['Cloud publishing and authenticated connector operations are not yet validated',
-                           'The general OneLake source chooser is blocked; use Get Data > Text/CSV for local CSV files',
+            'limitations':['Cloud publishing, real-server TLS and untested connector operations are not certified',
+                           'The general OneLake source chooser has not been revalidated after browser sign-in; direct Text/CSV passed',
                            'Synthetic model validation does not certify every enterprise report or connector']}
 
 
@@ -94,6 +100,10 @@ def parser():
     diagnosis = sub.add_parser('doctor', help='Check prerequisites and installation integrity')
     diagnosis.add_argument('--json', action='store_true')
     sub.add_parser('repair', help='Repair a snapshot while preserving the current installation')
+    connector = sub.add_parser('connector', help='Install or inspect optional original database providers')
+    connector.add_argument('operation', choices=('status', 'install'))
+    connector.add_argument('name', choices=('mysql',))
+    connector.add_argument('--accept-license', action='store_true')
     profile=sub.add_parser('profile',help='Show or set optional resource limits for the next session')
     profile.add_argument('name',nargs='?',choices=('unlimited','normal','large'))
     def option_type(parse):
@@ -136,6 +146,12 @@ def main(argv=None):
                 for check in result['checks']:
                     print(('OK   ' if check['ok'] else 'FAIL ') + check['name'] + ': ' + check['detail'])
             return 0 if result['ok'] else 1
+        elif args.command == 'connector':
+            if args.operation == 'install':
+                result = connectors.install(paths, accept_license=args.accept_license)
+            else:
+                result = connectors.status(provision.active(paths)['prefix'])
+            print(json.dumps(result, indent=2))
         elif args.command in ('repair','update'):
             provision.maintain(paths, args)
         elif args.command == 'profile':

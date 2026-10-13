@@ -13,7 +13,8 @@ REGISTRATIONS = {
 }
 
 UI_ORIGINAL_SHA256 = '28829058269cd42b5f731db43f94bcf34baf50d1cdf1ad624c0696468e3fadb7'
-UI_PATCHED_SHA256 = '16dcd45c8a7111ce39e3967cbc36d80116d87c0b4e2945b3af39840c9504841c'
+UI_PATCHED_SHA256 = 'd7090533813cfce872e79b5bfe7d968af5461c6ee8b7a3ba6110e9358abd586e'
+_CREDENTIALS_PATCHED_SHA256 = '16dcd45c8a7111ce39e3967cbc36d80116d87c0b4e2945b3af39840c9504841c'
 _TEXT_OVERFLOW_SHA256 = '7cedcac43961e8f0abaa986b7130050ca3bceb43721c07228952e4047e899d40'
 _RESOURCE_OFFSET, _RESOURCE_SIZE = 9028422, 4401
 _ANCHOR = (
@@ -43,6 +44,40 @@ _DIALOG_COMMENTS = (
     b'// The editor is not busy and has finished all queued blocking and non-blocking tasks\r\n',
     b'// The editor is busy executing a task that requires the editor to be blocked\r\n',
 )
+_SOURCES_OFFSET, _SOURCES_SIZE = 8948239, 22577
+_SOURCES_ORIGINAL = '4cdedd35d3d6331abe432fb04fdc9d5b074a3004ac62b5f79592ba38d60ff1ae'
+_SOURCES_PATCHED = 'e0a70ae8d5e1a46dfd709e1deda27bd1887c85a292dee2e6fab4e7f18fc2722d'
+_SOURCES_SHOW = b'        KoFloatingDialog.show({\r\n            enableWindowAutoSize: true\r\n        });\r\n'
+_SOURCES_HOOK = b'        setTimeout(function(){var l=_viewModel._virtualizedList;if(l&&l._numberOfItemsInPage===0)l._onResize();},0);\r\n'
+_SOURCES_COMMENTS = (
+    b'        // This method allows to exclude _tabbingManager and _selectionEventHandler from the serialization\r\n',
+    b'            // Reset the selected count, since view model changes can modify the count without going through knockout \r\n',
+)
+
+
+def patch_source_list(source):
+    """Bounded upgrade from the previous supported HTML recipe, also used locally."""
+    sha = hashlib.sha256(source).hexdigest()
+    if sha == UI_PATCHED_SHA256:
+        return source
+    if sha != _CREDENTIALS_PATCHED_SHA256:
+        raise Error('Unsupported HTML assembly for data source list patch')
+    resource = source[_SOURCES_OFFSET:_SOURCES_OFFSET + _SOURCES_SIZE]
+    if (hashlib.sha256(resource).hexdigest() != _SOURCES_ORIGINAL or
+            resource.count(_SOURCES_SHOW) != 1 or any(resource.count(c) != 1 for c in _SOURCES_COMMENTS)):
+        raise Error('Unexpected data source list resource')
+    updated = resource.replace(_SOURCES_SHOW, _SOURCES_SHOW + _SOURCES_HOOK)
+    for comment in _SOURCES_COMMENTS:
+        updated = updated.replace(comment, b'')
+    if len(updated) > _SOURCES_SIZE:
+        raise Error('Data source list hook exceeds its resource')
+    updated = updated.ljust(_SOURCES_SIZE, b' ')
+    if hashlib.sha256(updated).hexdigest() != _SOURCES_PATCHED:
+        raise Error('Unexpected data source list resource output')
+    output = source[:_SOURCES_OFFSET] + updated + source[_SOURCES_OFFSET + _SOURCES_SIZE:]
+    if hashlib.sha256(output).hexdigest() != UI_PATCHED_SHA256:
+        raise Error('Unexpected data source list assembly output')
+    return output
 
 
 def patch_ui(source):
@@ -73,9 +108,9 @@ def patch_ui(source):
         raise Error('Legacy dialog sizing hook exceeds its resource')
     output = (output[:_DIALOG_OFFSET] + updated.ljust(_DIALOG_SIZE, b' ') +
               output[_DIALOG_OFFSET + _DIALOG_SIZE:])
-    if len(output) != len(source) or hashlib.sha256(output).hexdigest() != UI_PATCHED_SHA256:
+    if len(output) != len(source) or hashlib.sha256(output).hexdigest() != _CREDENTIALS_PATCHED_SHA256:
         raise Error('Unexpected legacy HTML patch result; no patch produced')
-    return output
+    return patch_source_list(output)
 
 
 def register(prefix, runtime, log):

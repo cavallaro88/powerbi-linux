@@ -13,7 +13,7 @@ p.add_argument('output', type=Path)
 p.add_argument('--with-runtime-sources',action='store_true')
 args=p.parse_args()
 output=args.output.resolve()
-allowed=('src','runtime','tests','packaging','tools','docs','.github','LICENSE','LICENSES',
+allowed=('src','runtime','connectors','tests','packaging','tools','docs','.github','LICENSE','LICENSES',
          'README.md','CONTRIBUTING.md','SECURITY.md','CODE_OF_CONDUCT.md','CHANGELOG.md','.gitignore')
 if output.exists():
     raise SystemExit('Output must be a new directory')

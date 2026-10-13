@@ -106,6 +106,9 @@ def configure(prefix, runtime, paths, log):
     registry(wine, env, r'HKCU\Software\Wine\Drivers', 'Graphics', 'REG_SZ', 'wayland', log)
     registry(wine, env, r'HKCU\Software\Wine\AppDefaults\msedgewebview2.exe', 'Version', 'REG_SZ', 'win7', log)
     registry(wine, env, r'HKCU\Software\Microsoft\Avalon.Graphics', 'DisableHWAcceleration', 'REG_DWORD', '1', log)
+    # Desktop's documented policy: validated releases are managed by this project.
+    registry(wine, env, r'HKLM\Software\Microsoft\Microsoft Power BI Desktop',
+             'DisableUpdateNotification', 'REG_DWORD', '1', log)
     registry(wine, env, r'HKLM\Software\Policies\Microsoft\Edge\WebView2\AdditionalBrowserArguments',
              'PBIDesktop.exe', 'REG_SZ', resources.browser_flags(settings(paths)), log)
     browser=webview_config(runtime)
@@ -207,7 +210,8 @@ def setup(paths, args):
                   ('win10', [wine, 'winecfg.exe', '-v', 'win10'], env),
                   ('gecko-x86', [wine,'msiexec.exe','/i', 'Z:'+str(gecko['x86']).replace('/','\\'),'/qn'], env),
                   ('gecko-x86_64', [wine,'msiexec.exe','/i','Z:'+str(gecko['x86_64']).replace('/','\\'),'/qn'], env),
-                  ('powerbi', [wine, inputs/'powerbi.exe', '-quiet', '-norestart', 'ACCEPT_EULA=1'], env)]
+                  ('powerbi', [wine, inputs/'powerbi.exe', '-quiet', '-norestart', 'ACCEPT_EULA=1',
+                               'DISABLE_UPDATE_NOTIFICATION=1'], env)]
         try:
             for name, command, stage_env in stages:
                 if name in state['stages']:

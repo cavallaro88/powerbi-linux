@@ -6,6 +6,10 @@ An installation created from official installers opened PBIX/PBIP/PBIR through t
 
 Implementation checks and the distinction between a project's data cache and renderer failures are recorded in [validation](docs/validation.md). The subsequent [installed-RPM host validation](docs/validation-host.md) passed with system NTLM/ODBC and production desktop dispatch.
 
+Setup and repair suppress Desktop update notices using Microsoft's documented
+policy. A Fedora notification for validated releases remains planned; see
+[update policy](docs/updates.md).
+
 ## Target
 
 Fedora 44, x86_64, a systemd user session, native Wayland and a Vulkan-capable GPU/driver. Other Fedora releases are experimental. X11, other distributions, Flatpak, AppImage and a setup GUI are outside this version.
@@ -15,7 +19,7 @@ Fedora 44, x86_64, a systemd user session, native Wayland and a Vulkan-capable G
 Build or obtain the RPM, then install it:
 
 ```bash
-sudo dnf install ./powerbi-linux-0.1.0-6.noarch.rpm
+sudo dnf install ./powerbi-linux-0.1.0-7.noarch.rpm
 pbi-linux doctor
 ```
 
@@ -45,6 +49,16 @@ RPM 0.1.0-6 includes the Continue correction and selects Desktop's existing syst
 authentication browser during setup/repair. Microsoft authentication completed in
 Vivaldi with a real account on the Fedora host. See [sign-in status](docs/sign-in.md)
 for the exact scope, existing-profile setting and remaining cloud checks.
+RPM 0.1.0-7 adds optional [original database connectors](docs/connectors.md) and
+fixes the blank legacy data source list. MySQL Connector/NET installation and a
+synthetic MariaDB UI refresh passed; real-server TLS remains unverified. After
+reading the upstream licenses, close Desktop and run:
+
+```bash
+pbi-linux connector install mysql --accept-license
+pbi-linux connector status mysql
+```
+
 The separate [refresh-cancellation checks](docs/refresh-cancellation.md) record
 successful cancellation and an approximately 20-second wait during synthetic
 data loading. A subsequent real refresh blockage was traced to an invisible
