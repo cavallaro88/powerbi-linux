@@ -2,9 +2,10 @@
 
 Community compatibility tools for Power BI Desktop using patched Wine, DXVK and native Wayland. **Validated development preview 0.1.0: compatibility is scoped to the documented synthetic workloads.**
 
-The RPM 8 / runtime 0.1.1 candidate adds synthetic validation for Edit Permissions
-pointer delivery and OK/Cancel persistence. Its scope is separate from the older
-runtime gates; see [coverage and known limitations](docs/permissions-wayland.md).
+The RPM 9 / runtime 0.1.2 candidate fixes incomplete Options initialization and
+clipped scrolling. Its 22-tab synthetic audit and numeric regression have a
+separate [validation scope](docs/options-dialog.md). It retains the earlier
+[Edit Permissions corrections](docs/permissions-wayland.md).
 
 An installation created from official installers opened PBIX/PBIP/PBIR through the Fedora desktop, imported a local CSV, displayed the expected values and preserved them after save/reopen. A synthetic 158-table model with 156 relationships also passed UI refresh and independent data checks. A two-hour session passed with periodic visual interaction and no OOM or GPU-process replacement. One discrepant idle native-frame sample is retained in the validation notes; its cause is not established. Microsoft browser sign-in passed with a real account on the Fedora host; cloud publishing and the general OneLake source chooser still need validation; use the direct **Get Data → Text/CSV** menu for local CSVs. See [compatibility](docs/compatibility.md).
 
@@ -23,7 +24,7 @@ Fedora 44, x86_64, a systemd user session, native Wayland and a Vulkan-capable G
 Build or obtain the RPM, then install it:
 
 ```bash
-sudo dnf install ./powerbi-linux-0.1.0-7.noarch.rpm
+sudo dnf install ./powerbi-linux-0.1.0-9.noarch.rpm
 pbi-linux doctor
 ```
 
@@ -31,7 +32,7 @@ The RPM provides the CLI, menu entry and file associations. It does **not** incl
 
 ```bash
 pbi-linux setup \
-  --runtime powerbi-linux-runtime-0.1.0-x86_64.tar.xz \
+  --runtime powerbi-linux-runtime-0.1.2-x86_64.tar.xz \
   --runtime-sha256 '<runtime checksum>' \
   --installer PBIDesktopSetup_x64.exe \
   --accept-license
