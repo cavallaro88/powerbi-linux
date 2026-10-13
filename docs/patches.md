@@ -2,15 +2,16 @@
 
 The initial patch set targets Wine 11.18 and DXVK 3.1. Wine composition incorporates four Neutron bridge/cross-process/resize/reaper patches and the cursor correction from `neutron-wine` commit `5afd8d479ca83f57b56a2350274927647519da90`, adapted to Power BI owner-process delivery. Reproduction ports are retained under `runtime/ports/`; the normal build applies the reviewed emitted patches rather than regenerating tracked files.
 
-**Updated 2026-10-16:** runtime 0.1.1 and the RPM 8 candidate include the final
-modal/popup parenting and permissions serializer corrections. Rejected experiments
-have been replaced; prepared sources and manifests match. The new checksum has
-scoped synthetic pointer evidence, not full historical release certification.
-See [Edit Permissions](permissions-wayland.md).
+**Updated 2026-10-16:** runtime 0.1.2 / RPM 9 adds the HTML signed-Int64
+conversion and the Options scroll-pane correction. It retains the 0.1.1 modal
+parenting and RPM 8 permissions serializer. Exact-checksum synthetic evidence
+is scoped separately from historical release gates; see [Options](options-dialog.md)
+and [Edit Permissions](permissions-wayland.md).
 
 | Patch or helper | Reason | Status / license |
 |---|---|---|
 | Wine composition aggregate | dcomp bridge, owner transport, cursor/HKL, optional capture and PE backing | Required; Wine/Neutron LGPL-2.1-or-later |
+| Wine HTML signed Int64 | Initialize legacy HTML Options when .NET exposes Int64 cache properties; HTML ES5+ only | Required; LGPL-2.1-or-later; seven numeric cases, x64 component |
 | Wine OLE DB VARIANT conversions | Numeric/boolean values otherwise appeared as zero | Required; LGPL-2.1-or-later |
 | Wine Wayland parent | Owned dialogs otherwise remained behind the main window | Required; LGPL-2.1-or-later |
 | Wine cgroup reporting | Report cgroup limits to CLR/Chromium/AS | Required; LGPL-2.1-or-later; initializes the path buffer in the product port |
@@ -22,6 +23,7 @@ See [Edit Permissions](permissions-wayland.md).
 | WebView2 per-app Windows version | The investigated profile used `win7` for `msedgewebview2.exe`; reproducing it prevents fixed-runtime GPU crashes, while Desktop remains on `win10` | Required by the tested recipe |
 | Modern Power Query switch | Select the tested WebView2 editor | Required, internal app interface that may change |
 | Legacy HTML registration and UI resources | Restore Wine protocol/MIME handlers; work around an unsupported CSS setter, stale credential-sidebar height and zero-page virtualized source list | Required for the pinned app; exact input/output hashes and resource sizes checked; modified Microsoft assembly stays local |
+| Options scroll pane | Bound the existing pane after asynchronous loading and resize | Guarded local resource change; 22-tab synthetic audit; original callbacks retained |
 | Email dialog serializer | Serialize the three wire fields without traversing native host/button objects when Continue reads the view model | Guarded local resource change; native validation/authentication unchanged; browser sign-in and account persistence after normal restart confirmed on Fedora |
 | Edit Permissions serializer | Serialize the 13 original wire fields without native host/button objects when OK pulls the view model | Guarded local resource change; privacy/encryption callbacks retained; synthetic compositor OK/Cancel/reopen passed |
 

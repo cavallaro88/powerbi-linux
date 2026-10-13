@@ -8,6 +8,7 @@ The current runtime was built from source and exercised on Fedora 44 x86_64 Wayl
 | CSV Load | Passed | Direct Text/CSV entry, visual creation and PBIX save/reopen passed; general source chooser blocked by OneLake sign-in |
 | Numeric table visual: 120, 100, 80, total 300 | Passed | Passed in clean prefix, including newly imported CSV; independent DAX agrees |
 | PBIX save and reopen | Passed | Passed in clean prefix with spaces and accents |
+| Options settings dialog | Clipped 600 × 400 modal reproduced in a synthetic PBIP | Runtime 0.1.2 / RPM 9: seven numeric cases, 22-tab navigation/footer/scroll audit, compositor scroll and original Cancel callback passed. No settings submitted; broad input/resize coverage pending. See [Options](options-dialog.md) |
 | Data source settings list | Native entries existed while HTML rows were absent | Reproduced with CSV: cached viewport/page size 0. Fresh guarded patch displayed CSV and MySQL sources with page size 10; user confirmed real-report sources. Initially unresponsive clicks/missing cursor recovered after an estimated 10–60 seconds; cause and input latency remain unresolved. No source/permission changes |
 | Close with unsaved changes | Legacy modal failed to initialize in a reported session | Native Save/Don't save/Cancel passed in actual Desktop with a disposable PBIP; save/cache/reopen and normal-mode startup checked; see [native dialogs](native-dialogs.md) |
 | Cancel an in-progress data refresh | User reports Cancel does not interrupt loads | Synthetic native clicks passed during evaluation (~0.8 s) and data loading (19.879 s), retaining committed data; original freeze not reproduced; see [scope](refresh-cancellation.md) |
@@ -24,6 +25,9 @@ The current runtime was built from source and exercised on Fedora 44 x86_64 Wayl
 | RPM dependency installation | — | DNF dependency installation and packaged CLI/integration checks in a Fedora 44 container; native GUI tested separately from the checkout |
 
 ## Required certification
+
+The newer [Options correction](options-dialog.md) has scoped evidence for runtime
+0.1.2 / RPM 9; it does not inherit full certification from older archive hashes.
 
 The later [Edit Permissions correction](permissions-wayland.md) has separate
 synthetic compositor-input OK/Cancel/reopen evidence for runtime 0.1.1 and the

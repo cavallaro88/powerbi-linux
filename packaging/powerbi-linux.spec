@@ -1,6 +1,6 @@
 Name:           powerbi-linux
 Version:        0.1.0
-Release:        8%{?dist}
+Release:        9%{?dist}
 Summary:        Community Power BI Desktop compatibility tools for Fedora
 License:        GPL-3.0-or-later AND LGPL-2.1-or-later AND Zlib
 Source0:        %{name}-%{version}.tar.gz
@@ -63,6 +63,9 @@ find %{buildroot} -type d -name __pycache__ -prune -exec rm -rf {} +
 %{_datadir}/icons/hicolor/scalable/apps/powerbi-linux.svg
 
 %changelog
+* Fri Oct 16 2026 Project maintainers - 0.1.0-9
+- Bound the Options scroll pane after asynchronous loading and on resize.
+- Add the HTML Int64 interoperability runtime patch and an isolated regression probe.
 * Fri Oct 16 2026 Project maintainers - 0.1.0-8
 - Serialize the Edit Permissions wire fields without traversing native host objects.
 - Update the Wayland recipe for modal ownership, popup anchoring and client surface stacking.

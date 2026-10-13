@@ -51,3 +51,9 @@ Before attaching any log to a public issue, remove usernames, document paths, da
   applying this diagnosis. A later screenshot already showed Database; the trace
   alone does not identify which source or prior state used impersonation. See
   [credential mode and scope](connectors.md#windows-credential-override-invalid-handle).
+
+- **Options opens clipped, without its navigation or footer:** runtime 0.1.2 fixes
+  a signed Int64 conversion that interrupts HTML initialization; the RPM 9 recipe
+  also bounds its scroll pane. Both per-user runtime and UI recipe must be applied.
+  See [Options installation and evidence](options-dialog.md). Changing the report
+  cache or RAM limits does not address this initialization failure.

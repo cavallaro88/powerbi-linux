@@ -1,11 +1,11 @@
 # Build from a clean source tree
 
-The current driver recipe includes the runtime 0.1.1 modal/popup correction.
-`runtime/build.py` defaults to that version; `--runtime-version 0.1.1` makes it
-explicit. Preserve existing 0.1.0 archives/checksums. The incremental 0.1.1
-artifact and its narrower validation scope are documented in
-[Edit Permissions](permissions-wayland.md). A full rebuild is not claimed to be
-byte-identical to an incremental driver replacement.
+The current recipe defaults to runtime **0.1.2** (`--runtime-version 0.1.2`).
+It includes the 0.1.1 modal/popup correction plus the signed-Int64 HTML conversion.
+Preserve older archives/checksums. The incremental 0.1.2 artifact replaces only
+two JScript DLLs; its exact provenance and narrower validation scope are in
+[Options](options-dialog.md). A full rebuild is not claimed byte-identical to an
+incremental DLL replacement.
 
 Install Docker or Podman and ensure your account can invoke the selected engine. No existing Wine/Bottles installation or prefix is needed. Source preparation uses Python 3.12+, Git and `patch`; compilation tools are installed inside the builder container.
 
@@ -44,7 +44,7 @@ python3 tools/build-rpm.py --local
 
 RPMs and source RPMs are under `build/rpm/`. The package contains CLI/source resources and desktop integration; it does not contain a prefix, Microsoft installers or the Wine runtime archive. No package script runs Wine, downloads dependencies or accesses user credentials.
 
-Candidate release 7 includes tests/tools in the source RPM and runs the Python
+Candidate release 9 includes tests/tools in the source RPM and runs the Python
 unit suite during `%check`. Native Fedora builds declare the Python build
 dependency; the pinned Ubuntu cross-builder obtains it through apt and verifies
 the interpreter version directly. Native dialog GUI tests run separately with
@@ -84,3 +84,6 @@ Bundle hashes and patch preparation markers are checked before compilation. This
 ## Release validation
 
 `python3 tools/release-check.py RUNTIME_ARCHIVE EVIDENCE_JSON` refuses certification until every required scenario has passing evidence for the exact archive checksum. Start with `docs/release-evidence.example.json`; pending cases are deliberately not accepted. Imported investigation prefixes/runtimes cannot satisfy this check.
+
+The offline HTML numeric regression is `python3 tools/test-html-int64.py`; see
+[Options evidence](options-dialog.md) for the separate 22-tab audit and limits.
