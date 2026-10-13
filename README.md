@@ -2,7 +2,7 @@
 
 Community compatibility tools for Power BI Desktop using patched Wine, DXVK and native Wayland. **Validated development preview 0.1.0: compatibility is scoped to the documented synthetic workloads.**
 
-An installation created from official installers opened PBIX/PBIP/PBIR through the Fedora desktop, imported a local CSV, displayed the expected values and preserved them after save/reopen. A synthetic 158-table model with 156 relationships also passed UI refresh and independent data checks. A two-hour session passed with periodic visual interaction and no OOM or GPU-process replacement. One discrepant idle native-frame sample is retained in the validation notes; its cause is not established. Microsoft sign-in, cloud publishing and the general OneLake source chooser remain limited; use the direct **Get Data → Text/CSV** menu for local CSVs. See [compatibility](docs/compatibility.md).
+An installation created from official installers opened PBIX/PBIP/PBIR through the Fedora desktop, imported a local CSV, displayed the expected values and preserved them after save/reopen. A synthetic 158-table model with 156 relationships also passed UI refresh and independent data checks. A two-hour session passed with periodic visual interaction and no OOM or GPU-process replacement. One discrepant idle native-frame sample is retained in the validation notes; its cause is not established. Microsoft browser sign-in passed with a real account on the Fedora host; cloud publishing and the general OneLake source chooser still need validation; use the direct **Get Data → Text/CSV** menu for local CSVs. See [compatibility](docs/compatibility.md).
 
 Implementation checks and the distinction between a project's data cache and renderer failures are recorded in [validation](docs/validation.md). The subsequent [installed-RPM host validation](docs/validation-host.md) passed with system NTLM/ODBC and production desktop dispatch.
 
@@ -15,7 +15,7 @@ Fedora 44, x86_64, a systemd user session, native Wayland and a Vulkan-capable G
 Build or obtain the RPM, then install it:
 
 ```bash
-sudo dnf install ./powerbi-linux-0.1.0-5.noarch.rpm
+sudo dnf install ./powerbi-linux-0.1.0-6.noarch.rpm
 pbi-linux doctor
 ```
 
@@ -41,9 +41,10 @@ RPM 0.1.0-3 adds a [native unsaved-changes confirmation](docs/native-dialogs.md)
 RPM 0.1.0-4 fixes [legacy credential dialogs](docs/legacy-html.md) that could
 remain invisible and block refresh. Existing profiles need `pbi-linux repair`
 after upgrading the RPM, with Desktop closed, to receive the correction.
-RPM 0.1.0-5 fixes Continue in the legacy [email sign-in prompt](docs/sign-in.md).
-An interactive account test is still needed to validate authentication and token
-persistence; completing this prompt alone does not certify cloud access.
+RPM 0.1.0-6 includes the Continue correction and selects Desktop's existing system
+authentication browser during setup/repair. Microsoft authentication completed in
+Vivaldi with a real account on the Fedora host. See [sign-in status](docs/sign-in.md)
+for the exact scope, existing-profile setting and remaining cloud checks.
 The separate [refresh-cancellation checks](docs/refresh-cancellation.md) record
 successful cancellation and an approximately 20-second wait during synthetic
 data loading. A subsequent real refresh blockage was traced to an invisible

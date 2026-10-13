@@ -5,7 +5,7 @@ cd /work
 mkdir -p .local/helper-check/unsigned
 trap 'rm -f .local/helper-check/stubs.snk' EXIT
 cp sources/dnlib/lib/net45/dnlib.dll .local/helper-check/
-for tool in PatchShared PatchWinRT PatchSavePrompt MakeKey SignStubs EnableModernEditor; do
+for tool in PatchShared PatchWinRT PatchSavePrompt MakeKey SignStubs EnableModernEditor ConfigureSignIn; do
     mcs -r:.local/helper-check/dnlib.dll -out:.local/helper-check/"$tool".exe src/helpers/"$tool".cs
  done
 mcs -target:library -out:.local/helper-check/PowerBIDiagnostics.dll src/helpers/PowerBIDiagnostics.cs

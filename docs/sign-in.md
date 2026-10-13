@@ -29,10 +29,16 @@ exception. The resource also survived the actual WinRT/save-dialog patch tools.
 The Python suite passed 41 tests, including rejection of unsupported/corrupted
 inputs before any application file is replaced.
 
-An interactive account test is still required to validate Microsoft
-authentication, MFA, token persistence, restart and service access. Credentials
-belong in the Microsoft authentication interface. Reports and account/token
-caches must not be included in bug reports or public evidence.
+On 2026-10-15, a real-account test on Fedora 44 completed Microsoft
+browser authentication in Vivaldi, confirmed by the user. The diagnostic Desktop
+was then closed normally and reopened through the regular production launcher;
+the user confirmed that the account remained connected. No password, MFA code
+or account/token cache was collected. The specific MFA challenge was not
+observed or independently certified. Cloud publishing, individual connectors,
+long-term token renewal and other tenant/device policies need separate tests.
+
+Credentials belong in the Microsoft authentication interface. Reports and
+account/token caches must not be included in bug reports or public evidence.
 
 ## Browser selection
 
@@ -49,3 +55,34 @@ Browser, broker availability, cloud discovery and an organization's account
 policies need separate diagnosis when the email prompt completes but no
 authentication page appears. No browser preference is changed by the email
 serializer patch.
+
+## Windows broker failure and working configuration
+
+The real-account Continue click returned nonempty result data and an OK dialog
+result. The following authentication step failed in the Windows native broker
+with `Microsoft.Identity.Client.NativeInterop.MsalRuntimeException`,
+`Status: Unexpected`, `Context: Caught exception`, tag `0x2039c1cd`.
+Selecting Desktop's existing system-browser preference avoided this failure and
+opened the Microsoft flow in the Fedora default browser. This is separate from
+the email serialization correction.
+
+For an existing profile, open **File → Options and settings → Options → Global →
+Security → Authentication Browser**, enable **Use my default web browser**, and
+restart Desktop before signing in. The tested host already has this preference
+saved and does not need a package upgrade or repair to keep the working login.
+The email serializer check in doctor does not certify browser selection or an
+authenticated session.
+
+Starting with the RPM 6 recipe, setup/repair compiles `ConfigureSignIn.cs` and
+uses Desktop's own `LocalUISettingsStorage` and `UISettings` API to enable
+`UseSystemBrowserForAuthentication`. This happens during offline provisioning,
+not every launch. MSAL, Microsoft's authentication endpoints, native email
+validation and account/device policies remain in control. The default browser
+must be installed and usable in the graphical session.
+
+Run `python3 tools/test-signin-settings.py` from a checkout with a prepared
+installation to exercise this configuration on synthetic storage. The test
+checks a disabled preference without writing, enables it, reads it in a fresh
+process, repeats the change, rejects an invalid operation, and verifies that
+unrelated preferences and synthetic credential/feature parts remain intact.
+It never copies or modifies the real user's settings or credentials.

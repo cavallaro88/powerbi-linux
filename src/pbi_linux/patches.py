@@ -120,6 +120,7 @@ def install(prefix, runtime, log):
         for name in ('WinRTStubs.dll', 'PowerBIDiagnostics.dll', 'PowerBICompositionManager.dll', NATIVE_DIALOG):
             shutil.copy2(helpers / name, bin_dir / name)
         run([wine, helpers/'EnableModernEditor.exe'], env=env, log=log)
+        signin.configure_browser(prefix, wine, env, helpers, log)
     finally:
         key.unlink(missing_ok=True)
         windows_input.unlink(missing_ok=True)

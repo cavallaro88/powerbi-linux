@@ -1,6 +1,6 @@
 Name:           powerbi-linux
 Version:        0.1.0
-Release:        5%{?dist}
+Release:        6%{?dist}
 Summary:        Community Power BI Desktop compatibility tools for Fedora
 License:        GPL-3.0-or-later AND LGPL-2.1-or-later AND Zlib
 Source0:        %{name}-%{version}.tar.gz
@@ -63,6 +63,9 @@ find %{buildroot} -type d -name __pycache__ -prune -exec rm -rf {} +
 %{_datadir}/icons/hicolor/scalable/apps/powerbi-linux.svg
 
 %changelog
+* Thu Oct 15 2026 Project maintainers - 0.1.0-6
+- Use Desktop's system authentication browser during offline setup/repair.
+- Keep native MSAL authentication and document the confirmed Windows broker failure.
 * Thu Oct 15 2026 Project maintainers - 0.1.0-5
 - Serialize only the email dialog wire fields before invoking native validation.
 - Preserve the original sign-in handlers and check the serializer patch in doctor.

@@ -1,7 +1,9 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """Keep native UI objects out of the email dialog's serialized view model."""
 import hashlib
-from .common import Error
+from pathlib import Path
+import shutil
+from .common import Error, run
 
 
 WINDOWS_ORIGINAL_SHA256 = '5284e48755ca5d0911f8af46650d1aa12a36389f008e6005ac5f188071808cd4'
@@ -64,3 +66,17 @@ def patch_windows(source, expected_sha256=WINDOWS_ORIGINAL_SHA256):
     # The three fields are the existing EnterEmailViewModel wire contract.
     # Original native validation and authentication handlers remain in control.
     return source[:start] + updated + source[start + _SIZE:]
+
+
+def configure_browser(prefix, wine, env, helpers, log):
+    """Select Desktop's supported system-browser flow while the prefix is idle."""
+    source = Path(__file__).resolve().parents[1] / 'helpers/ConfigureSignIn.cs'
+    shutil.copy2(source, helpers / source.name)
+    run([wine, r'C:\windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe',
+         '/nologo', '/optimize+', '/out:ConfigureSignIn.exe', source.name],
+        env=env, cwd=helpers, log=log)
+    # The helper resolves LocalApplicationData for the managed prefix's Wine user.
+    windows = lambda path: 'Z:' + str(path).replace('/', '\\')
+    run([wine, helpers / 'ConfigureSignIn.exe', '--enable',
+         windows(prefix / 'drive_c/Program Files/Microsoft Power BI Desktop/bin')],
+        env=env, log=log)

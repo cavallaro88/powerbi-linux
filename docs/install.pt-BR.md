@@ -1,10 +1,10 @@
 # Instalação no Fedora
 
-Alvo inicial: **Fedora 44, x86_64 e Wayland nativo**. O projeto ainda está em desenvolvimento; autenticação Microsoft completa permanece em validação. Refresh pela interface e save/reopen passaram em um modelo sintético de 158 tabelas, e o teste prolongado de duas horas também passou. A validação registra uma captura nativa discrepante em uma reabertura; sua causa ainda não foi estabelecida. Isso não garante compatibilidade com qualquer relatório empresarial.
+Alvo inicial: **Fedora 44, x86_64 e Wayland nativo**. O projeto ainda está em desenvolvimento; login Microsoft pelo navegador e persistência após reabrir foram confirmados nesta máquina; publicação e conectores autenticados ainda precisam de validação. Refresh pela interface e save/reopen passaram em um modelo sintético de 158 tabelas, e o teste prolongado de duas horas também passou. A validação registra uma captura nativa discrepante em uma reabertura; sua causa ainda não foi estabelecida. Isso não garante compatibilidade com qualquer relatório empresarial.
 
-Instale o RPM com `sudo dnf install ./powerbi-linux-0.1.0-5.noarch.rpm`. Ele instala a CLI e a integração com o desktop. O Power BI e os componentes Microsoft são instalados separadamente no seu usuário.
+Instale o RPM com `sudo dnf install ./powerbi-linux-0.1.0-6.noarch.rpm`. Ele instala a CLI e a integração com o desktop. O Power BI e os componentes Microsoft são instalados separadamente no seu usuário.
 
-Para atualizar a CLI, execute `sudo dnf upgrade ./powerbi-linux-0.1.0-5.noarch.rpm`
+Para atualizar a CLI, execute `sudo dnf upgrade ./powerbi-linux-0.1.0-6.noarch.rpm`
 e `pbi-linux doctor`. Se o doctor indicar que os patches de diálogo estão
 desatualizados, feche o Desktop, execute `pbi-linux repair` e confira novamente.
 O repair aplica as correções de [credenciais](legacy-html.md) e do botão
@@ -28,3 +28,9 @@ Os ajustes são opcionais pela CLI: `pbi-linux profile --memory-max 8G --swap-ma
 Se o seletor geral de fontes ficar bloqueado pelo login OneLake, importe um CSV local por **Relatório em branco → menu Obter dados → Texto/CSV**. Esse caminho passou sem login na instalação limpa. A desinstalação oculta a entrada do RPM para o seu usuário; `repair` restaura a integração, e o RPM pode ser removido separadamente pelo DNF.
 
 Não envie relatórios empresariais, credenciais ou o prefixo inteiro em bugs. O projeto é independente da Microsoft e não tem suporte oficial dela.
+
+O setup/repair da receita RPM 6 habilita **Use my default web browser** para a
+autenticação. Em perfis existentes, marque essa opção em **Arquivo → Opções e
+configurações → Opções → Global → Segurança → Navegador de autenticação** e
+reinicie o Desktop; não é necessário copiar o perfil por repair apenas para
+mudar essa preferência. Veja o [diagnóstico do login](sign-in.md).

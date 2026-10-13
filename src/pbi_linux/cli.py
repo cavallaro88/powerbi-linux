@@ -70,7 +70,7 @@ def doctor(paths):
         except (Error, OSError, KeyError) as exc:
             add('integrity', False, str(exc))
     return {'schema':1, 'version':__version__, 'ok':all(c['ok'] for c in checks), 'checks':checks, 'components':components,
-            'limitations':['Microsoft sign-in and cloud publishing are unavailable',
+            'limitations':['Cloud publishing and authenticated connector operations are not yet validated',
                            'The general OneLake source chooser is blocked; use Get Data > Text/CSV for local CSV files',
                            'Synthetic model validation does not certify every enterprise report or connector']}
 

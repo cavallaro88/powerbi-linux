@@ -31,7 +31,7 @@ The validated profile occupies approximately 9 GiB, before the runtime, verified
 
 Close all managed windows before maintenance. Setup can resume an interrupted stage using the same inputs. Repair and runtime update create a separate profile generation before activating it; failure leaves the current pointer untouched.
 
-To upgrade the CLI, run `sudo dnf upgrade ./powerbi-linux-0.1.0-5.noarch.rpm`
+To upgrade the CLI, run `sudo dnf upgrade ./powerbi-linux-0.1.0-6.noarch.rpm`
 and `pbi-linux doctor`. If the HTML/email dialog checks report outdated patches,
 close Desktop and run `pbi-linux repair`, then check again. Repair applies the
 new recipe to a new profile while retaining the previous one for rollback.
@@ -51,3 +51,10 @@ pbi-linux uninstall
 `uninstall` removes per-user integration and preserves state. When the RPM's system desktop entry exists, a per-user `Hidden=true` entry masks it so it does not reappear in the menu or Open With. A later `repair` restores the menu and Open With entries without changing explicit default applications. `uninstall --purge` explicitly deletes managed profiles, runtime, cache and settings. It does not uninstall the RPM; use DNF for that. Project files saved outside managed directories are never deleted. Files saved inside a managed prefix are part of the purge.
 
 RPM 0.1.0-2 defaults to no project RAM/swap limits or CPU quota, automatic WebView2 heap and standard browser settings. `pbi-linux profile` shows the policy; `pbi-linux profile unlimited` resets it. Optional flags include `--memory-max`, `--swap-max`, `--cpu-quota`, `--webview-heap`, `--renderer-process-limit` and `--browser-mode`. The older `normal` (6G/2G) and `large` (10G/4G) profiles remain explicit economy presets. Changes apply to the next session after closing all windows. Read [resource settings](resources.md) for examples and migration.
+
+Setup/repair with RPM 6 enables **Use my default web browser** for authentication.
+For an existing profile, enable it under **File → Options and settings → Options
+→ Global → Security → Authentication Browser**, then restart Desktop. A repair
+snapshot is unnecessary merely to change this preference. The email patch check
+in doctor does not certify browser selection or a signed-in account. See
+[sign-in](sign-in.md) for the tested scope.

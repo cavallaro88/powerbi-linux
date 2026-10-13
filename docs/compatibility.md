@@ -17,7 +17,7 @@ The current runtime was built from source and exercised on Fedora 44 x86_64 Wayl
 | Original enterprise thin-report UI refresh | Renderer OOM | Not certified; synthetic evidence does not reproduce every property of that report |
 | Synthetic 158-table UI refresh with 156 relationships | — | All 156 fact tables × 10,000 rows, dimension propagation, total 300 and save/reopen passed in clean prefix; native frames before/after Save and a separate reopen passed; 7,264.90-second soak passed with 24 visual checks and no OOM/GPU replacement |
 | Thin-report visuals after external refresh | Data committed; visuals not notified | External processing remains an unsupported diagnostic flow |
-| Microsoft sign-in / cloud publishing | Email prompt fixed; account authentication pending | See [sign-in status](sign-in.md); not v1 gate |
+| Microsoft sign-in / cloud publishing | Email prompt fixed; real-account browser authentication passed | Windows broker fails; use Desktop's system browser preference. Production restart/account persistence passed; cloud publishing tracked separately in [sign-in status](sign-in.md); not v1 gate |
 | Fresh prefix from official installers | — | Passed; committed wineboot interruption/resume also passed |
 | Repair, update, rollback and preserving uninstall | — | Passed natively; update candidate differs in version metadata with identical executable files |
 | RPM dependency installation | — | DNF dependency installation and packaged CLI/integration checks in a Fedora 44 container; native GUI tested separately from the checkout |

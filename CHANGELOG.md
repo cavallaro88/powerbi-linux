@@ -2,6 +2,12 @@
 
 ## 0.1.0 — development
 
+### RPM release 6 — development preview, 2026-10-15
+
+- Enable Desktop's existing system authentication browser during offline setup/repair using its own settings API. Avoid the failing Windows broker path without changing MSAL or account policies.
+- A real account completed Microsoft authentication in Vivaldi on the Fedora host. The account remained connected after a normal production restart; cloud operations need separate validation.
+- Add a synthetic native settings test covering fresh-process persistence, repeated configuration, read-only checks and preservation of unrelated settings/package parts.
+
 ### RPM release 5 — development preview, 2026-10-15
 
 - Fix Continue in the legacy email prompt by serializing its existing email/retry/warning fields without traversing native UI objects.
@@ -47,4 +53,4 @@
 - Graceful broker shutdown, Unicode native probes, memory-profile CLI and periodic UI/heap/GPU monitoring added.
 - Wine's automatic desktop exports disabled; legacy launchers pointing into managed snapshots cleaned without removing foreign-prefix handlers.
 
-This is a validated development preview for the documented synthetic workloads. The two-hour session passed with 24 visual checks and no OOM/GPU replacement. Native refresh/Save/reopen, final normal-profile desktop dispatch and legacy-handler migration were checked. One discrepant idle native capture is retained, with cause not established. The general OneLake source chooser and Microsoft sign-in remain limited.
+This is a validated development preview for the documented synthetic workloads. The two-hour session passed with 24 visual checks and no OOM/GPU replacement. Native refresh/Save/reopen, final normal-profile desktop dispatch and legacy-handler migration were checked. One discrepant idle native capture is retained, with cause not established. The general OneLake source chooser and cloud operations still require separate validation; Microsoft browser sign-in passed on the Fedora host.
