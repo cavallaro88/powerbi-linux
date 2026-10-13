@@ -39,7 +39,10 @@ class NativeDialogProvisionTests(unittest.TestCase):
                 output.write_bytes(b'other-patch-output')
             if failure(command):
                 raise common.Error('Injected native dialog failure')
-        with patch.object(patches, 'run', side_effect=run):
+        # This fixture exercises later native-dialog failures; the independent
+        # HTML resource guard is covered by test_legacy_html.
+        with patch.object(patches.legacy_html, 'patch_ui', return_value=b'html-patch'), \
+                patch.object(patches, 'run', side_effect=run):
             with self.assertRaises(common.Error):
                 patches.install(self.prefix, self.runtime, self.root / 'log')
         self.assertFalse((self.helpers / 'stubs.snk').exists())

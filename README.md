@@ -15,7 +15,7 @@ Fedora 44, x86_64, a systemd user session, native Wayland and a Vulkan-capable G
 Build or obtain the RPM, then install it:
 
 ```bash
-sudo dnf install ./powerbi-linux-0.1.0-3.noarch.rpm
+sudo dnf install ./powerbi-linux-0.1.0-4.noarch.rpm
 pbi-linux doctor
 ```
 
@@ -38,9 +38,13 @@ Add `--make-default` to opt into default file associations. Otherwise use **Open
 RPM 0.1.0-2 defaults to no project RAM/swap limits or CPU quota, automatic WebView2 heap and standard browser settings. `pbi-linux profile` shows the effective policy. Limits and economy options are opt-in; `pbi-linux profile unlimited` restores the default. Close all Power BI windows and reopen to apply changes. See [resource settings](docs/resources.md) for individual options and the optional `normal`/`large` economy presets.
 
 RPM 0.1.0-3 adds a [native unsaved-changes confirmation](docs/native-dialogs.md).
+RPM 0.1.0-4 fixes [legacy credential dialogs](docs/legacy-html.md) that could
+remain invisible and block refresh. Existing profiles need `pbi-linux repair`
+after upgrading the RPM, with Desktop closed, to receive the correction.
 The separate [refresh-cancellation checks](docs/refresh-cancellation.md) record
 successful cancellation and an approximately 20-second wait during synthetic
-data loading; the original reported permanent freeze has not been reproduced.
+data loading. A subsequent real refresh blockage was traced to an invisible
+credential request; cancellation of running queries remains connector-dependent.
 
 ## Develop
 

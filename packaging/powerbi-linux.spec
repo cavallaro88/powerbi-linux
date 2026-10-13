@@ -1,6 +1,6 @@
 Name:           powerbi-linux
 Version:        0.1.0
-Release:        3%{?dist}
+Release:        4%{?dist}
 Summary:        Community Power BI Desktop compatibility tools for Fedora
 License:        GPL-3.0-or-later AND LGPL-2.1-or-later AND Zlib
 Source0:        %{name}-%{version}.tar.gz
@@ -63,6 +63,10 @@ find %{buildroot} -type d -name __pycache__ -prune -exec rm -rf {} +
 %{_datadir}/icons/hicolor/scalable/apps/powerbi-linux.svg
 
 %changelog
+* Wed Oct 14 2026 Project maintainers - 0.1.0-4
+- Restore Wine MSHTML protocol and MIME registrations after installation.
+- Fix legacy credential dialog initialization and deferred layout.
+- Check legacy HTML registrations in doctor without starting Wine.
 * Wed Oct 14 2026 Project maintainers - 0.1.0-3
 - Add a locally signed native close confirmation with original localized labels.
 - Preserve Desktop save/close handling and default to Cancel.

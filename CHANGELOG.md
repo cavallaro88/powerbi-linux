@@ -2,6 +2,13 @@
 
 ## 0.1.0 — development
 
+### RPM release 4 — development preview, 2026-10-14
+
+- Register Wine's built-in MSHTML in both architectures after installers and during repair; doctor checks the protocol and MIME handlers without starting Wine.
+- Fix the legacy credential dialog's unsupported text-overflow setter and stale sidebar height using guarded, size-preserving embedded JavaScript patches.
+- Preserve the existing credential controls and callbacks. No credentials, authentication methods or source permissions are selected automatically.
+- Default resource settings remain unrestricted; this change does not alter the engine cancellation implementation.
+
 ### RPM release 3 — development preview, 2026-10-14
 
 - Native close confirmation preserves Desktop's localized Save/Don't save/Cancel labels and existing save/close handler.

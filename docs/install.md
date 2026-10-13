@@ -31,6 +31,12 @@ The validated profile occupies approximately 9 GiB, before the runtime, verified
 
 Close all managed windows before maintenance. Setup can resume an interrupted stage using the same inputs. Repair and runtime update create a separate profile generation before activating it; failure leaves the current pointer untouched.
 
+When upgrading from RPM 3 to RPM 4, first run
+`sudo dnf upgrade ./powerbi-linux-0.1.0-4.noarch.rpm`, then `pbi-linux repair`
+and `pbi-linux doctor`. The RPM supplies the new legacy HTML recipe; repair
+applies it to a new profile while retaining the previous one for rollback.
+The existing Wine/DXVK runtime archive remains compatible.
+
 ```bash
 pbi-linux repair
 pbi-linux update --runtime runtime.tar.xz --runtime-sha256 '<checksum>'

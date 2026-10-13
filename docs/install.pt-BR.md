@@ -2,7 +2,13 @@
 
 Alvo inicial: **Fedora 44, x86_64 e Wayland nativo**. O projeto ainda está em desenvolvimento; login Microsoft não funciona. Refresh pela interface e save/reopen passaram em um modelo sintético de 158 tabelas, e o teste prolongado de duas horas também passou. A validação registra uma captura nativa discrepante em uma reabertura; sua causa ainda não foi estabelecida. Isso não garante compatibilidade com qualquer relatório empresarial.
 
-Instale o RPM com `sudo dnf install ./powerbi-linux-0.1.0-3.noarch.rpm`. Ele instala a CLI e a integração com o desktop. O Power BI e os componentes Microsoft são instalados separadamente no seu usuário.
+Instale o RPM com `sudo dnf install ./powerbi-linux-0.1.0-4.noarch.rpm`. Ele instala a CLI e a integração com o desktop. O Power BI e os componentes Microsoft são instalados separadamente no seu usuário.
+
+Para atualizar uma instalação existente, feche o Desktop e execute
+`sudo dnf upgrade ./powerbi-linux-0.1.0-4.noarch.rpm`, seguido de
+`pbi-linux repair` e `pbi-linux doctor`. O repair aplica a correção dos
+[diálogos de credenciais](legacy-html.md) em um novo perfil e preserva o anterior
+para rollback. Atualizar apenas o RPM não modifica o prefixo existente.
 
 O perfil validado ocupa aproximadamente 9 GiB, além de runtime, downloads, cache derivado e relatórios. Em filesystems sem reflink, reparo/atualização precisam de espaço para outra cópia completa do perfil e seu cache; a anterior fica disponível para rollback.
 

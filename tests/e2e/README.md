@@ -2,6 +2,12 @@
 
 Use a separate Fedora user or isolated XDG directories with a disposable installation. Never use a production dataset or the investigation's private RDS credentials. The probes are source-only and must be compiled against the selected runtime/prefix; they are not part of the normal production manager.
 
+`python3 tools/test-legacy-html.py` runs `legacy-html-probe.cs` in its own offline
+window, checking HTML loading, JavaScript and a native callback. It does not
+submit credentials or change Desktop. Full credential dialog validation must
+also check first-show sizing, visible inputs and native Cancel with a disposable
+source. See `docs/legacy-html.md` for the registration and JavaScript recipe.
+
 `refresh-probe.cs` and `adomd-probe.cs` retain the corrected timeout, XMLA error propagation, DAX and partition-commit checks from the investigation. External TMSL processing remains a diagnostic test, not supported Desktop integration. `mysql-probe.cs` is optional and takes credentials through environment, not a committed `.env`.
 
 `generate-fixture.py OUTPUT --tables 158` creates a synthetic PBIP/TMDL model with the sales table and generated fact tables. `--rows 10000` controls fact rows. Add `--relationships` to reserve one of the 158 tables for a shared dimension and create active relationships to all 156 fact tables. The harness also verifies that a dimension filter reaches a fact-table sum. It requires no database or credentials. The included table visual originated from the investigation's synthetic Cafe/Cha/Suco report, not from enterprise reports. Do not interpret equal table count as equal memory pressure to a real model: stress certification must also match cardinality, relationships and visual complexity.

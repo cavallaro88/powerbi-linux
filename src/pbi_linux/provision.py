@@ -98,8 +98,10 @@ def stop_server(runtime, env, log):
 
 
 def configure(prefix, runtime, paths, log):
+    from . import legacy_html
     env, wine = wine_env(prefix), runtime/'bin/wine'
     env['WINEDLLOVERRIDES'] = 'winemenubuilder.exe=d;msxml3,msxml6,msxml6r=b'
+    legacy_html.register(prefix, runtime, log)
     registry(wine, env, r'HKCU\Software\Wine\DllOverrides', 'winemenubuilder.exe', 'REG_SZ', '', log)
     registry(wine, env, r'HKCU\Software\Wine\Drivers', 'Graphics', 'REG_SZ', 'wayland', log)
     registry(wine, env, r'HKCU\Software\Wine\AppDefaults\msedgewebview2.exe', 'Version', 'REG_SZ', 'win7', log)

@@ -20,6 +20,11 @@ surfaces while their main window was disabled, explaining the white background.
 The exact reason the legacy dialog failed to initialize remains unresolved.
 A native question avoids that HTML initialization path for this simple decision.
 
+The later refresh investigation identified missing Wine HTML registration and
+embedded JavaScript failures in credential dialogs. See
+[legacy HTML dialogs](legacy-html.md). The native close confirmation remains
+the supported save/close question.
+
 ## Installation and validation
 
 The helper and patcher ship as source. Setup/repair compiles them with the

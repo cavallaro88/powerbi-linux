@@ -33,6 +33,12 @@ progress changes, query/engine errors and connector information. Reproduce with
 a disposable source where possible. Do not use forced process termination or
 hiding the window as a substitute for cancellation and rollback.
 
+A subsequent real refresh blockage on October 14 was traced to an invisible
+legacy HTML credential request disabling the refresh and main windows. The
+[legacy HTML correction](legacy-html.md) restores that dialog and its existing
+Cancel callback. This is a separate path from cancelling a query already running
+in the data engine; no engine cancellation patch was introduced.
+
 For the slow-source reproducer, preserve the generator's typed columns and use
 `Function.InvokeAfter` around either the complete fact-table expression or the
 per-row Amount calculation. A delay of 0.2 seconds per row over 200 rows provides

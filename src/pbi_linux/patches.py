@@ -3,11 +3,13 @@ import os
 from pathlib import Path
 import shutil
 from .common import Error, check_digest, digest, run, wine_env
+from . import legacy_html
 
 ORIGINALS = {
     'Microsoft.PowerBI.Client.Shared.dll': '1dc130d913b92f315b81aa5162e8fa74e8a0279742f988561680111d5189ff78',
     'Microsoft.PowerBI.Client.Windows.dll': '5284e48755ca5d0911f8af46650d1aa12a36389f008e6005ac5f188071808cd4',
     'msmdsrv.exe': '7975dcb62edd6e53cc16fe808f66dbf0551cb155069138d68080c4bd32e92a1d',
+    'Microsoft.Mashup.Client.UI.dll': legacy_html.UI_ORIGINAL_SHA256,
 }
 
 NATIVE_DIALOG = 'PowerBISaveDialog.dll'
@@ -54,6 +56,13 @@ def install(prefix, runtime, log):
     for name, expected in ORIGINALS.items():
         backup = backups / name
         check_digest(backup if backup.exists() else bin_dir / name, expected)
+    # Resolve the guarded resource recipe before replacing any application file.
+    # A stale recipe must fail alongside input validation, not after other patches.
+    ui_name = 'Microsoft.Mashup.Client.UI.dll'
+    ui_source = backups / ui_name
+    if not ui_source.exists():
+        ui_source = bin_dir / ui_name
+    patched_ui = legacy_html.patch_ui(ui_source.read_bytes())
     for name in ORIGINALS:
         backup = backups / name
         if not backup.exists():
@@ -96,6 +105,10 @@ def install(prefix, runtime, log):
         out = bin_dir / 'msmdsrv.exe.new'
         out.write_bytes(patched)
         os.replace(out, bin_dir / 'msmdsrv.exe')
+        name = 'Microsoft.Mashup.Client.UI.dll'
+        out = bin_dir / (name + '.new')
+        out.write_bytes(patched_ui)
+        os.replace(out, bin_dir / name)
         for name in ('WinRTStubs.dll', 'PowerBIDiagnostics.dll', 'PowerBICompositionManager.dll', NATIVE_DIALOG):
             shutil.copy2(helpers / name, bin_dir / name)
         run([wine, helpers/'EnableModernEditor.exe'], env=env, log=log)

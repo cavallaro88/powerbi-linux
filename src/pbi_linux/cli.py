@@ -7,7 +7,7 @@ from pathlib import Path
 import shutil
 import subprocess
 import sys
-from . import __version__, assets, launch, provision, desktop, resources
+from . import __version__, assets, launch, provision, desktop, resources, legacy_html
 from .common import Error, Paths, busy, read_json, check_digest, atomic_json
 
 
@@ -47,6 +47,18 @@ def doctor(paths):
             source = provision.verified_webview(Path(installed['prefix']),Path(installed['runtime']))
             components['webview2'] = source.parent.name
             add('pe-cache', provision.pe_cache.valid(source, paths.cache/'pe'/Path(installed['prefix']).name), 'Run repair if the cache is stale')
+            try:
+                missing = legacy_html.missing_registrations(installed['prefix'])
+                issues = []
+                if missing:
+                    issues.append('Missing registry entries: ' + ', '.join(missing))
+                if installed['patches'].get('Microsoft.Mashup.Client.UI.dll') != legacy_html.UI_PATCHED_SHA256:
+                    issues.append('Legacy HTML assembly patch is missing or outdated')
+                add('legacy-html', not issues,
+                    '; '.join(issues) + '; close Desktop and run pbi-linux repair' if issues else
+                    'Wine HTML registrations and credential dialog patch are present')
+            except (Error, OSError, ValueError) as exc:
+                add('legacy-html', False, str(exc))
         except (Error, OSError, KeyError) as exc:
             add('integrity', False, str(exc))
     return {'schema':1, 'version':__version__, 'ok':all(c['ok'] for c in checks), 'checks':checks, 'components':components,
