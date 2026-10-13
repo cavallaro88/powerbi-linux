@@ -8,6 +8,8 @@ The current runtime was built from source and exercised on Fedora 44 x86_64 Wayl
 | CSV Load | Passed | Direct Text/CSV entry, visual creation and PBIX save/reopen passed; general source chooser blocked by OneLake sign-in |
 | Numeric table visual: 120, 100, 80, total 300 | Passed | Passed in clean prefix, including newly imported CSV; independent DAX agrees |
 | PBIX save and reopen | Passed | Passed in clean prefix with spaces and accents |
+| Close with unsaved changes | Legacy modal failed to initialize in a reported session | Native Save/Don't save/Cancel passed in actual Desktop with a disposable PBIP; save/cache/reopen and normal-mode startup checked; see [native dialogs](native-dialogs.md) |
+| Cancel an in-progress data refresh | User reports Cancel does not interrupt loads | Synthetic native clicks passed during evaluation (~0.8 s) and data loading (19.879 s), retaining committed data; original freeze not reproduced; see [scope](refresh-cancellation.md) |
 | Desktop PBIX/PBIP/PBIR opening | — | GIO dispatch, relative project links and responsive native windows passed without diagnostic mode |
 | Additional document while another remains open | — | Two PBIX documents passed; native windows retained and both DAX totals confirmed |
 | MySQL Connector/NET 8.0.33, MariaDB 10.11 | Backend refresh passed; TLS failed | Optional connector recipe pending |

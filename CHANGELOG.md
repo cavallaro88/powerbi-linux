@@ -2,6 +2,15 @@
 
 ## 0.1.0 — development
 
+### RPM release 3 — development preview, 2026-10-14
+
+- Native close confirmation preserves Desktop's localized Save/Don't save/Cancel labels and existing save/close handler.
+- Cancel is the default response; helper errors also return Cancel.
+- Own helper compiles and signs locally during setup/repair, with the existing pinned Wine/DXVK runtime.
+- Native component tests and actual Desktop Save/Don't save/Cancel passed with a disposable PBIP, including save/cache/reopen and a normal-mode startup check.
+- RPM builds now run the Python unit suite; native GUI validation remains separate.
+- Native Cancel completed during query evaluation (~0.8 s) and data loading (19.879 s), preserving committed data. The original reported freeze was not reproduced; cancellation logic is unchanged.
+
 ### RPM release 2 — 2026-10-14
 
 - Default RAM/swap ceilings and fixed V8 heap removed; standard browser settings replace forced economy defaults.

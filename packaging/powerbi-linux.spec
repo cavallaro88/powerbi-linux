@@ -1,10 +1,14 @@
 Name:           powerbi-linux
 Version:        0.1.0
-Release:        2%{?dist}
+Release:        3%{?dist}
 Summary:        Community Power BI Desktop compatibility tools for Fedora
 License:        GPL-3.0-or-later AND LGPL-2.1-or-later AND Zlib
 Source0:        %{name}-%{version}.tar.gz
 BuildArch:      noarch
+# The pinned Ubuntu cross-builder installs Python through apt; %check verifies it.
+%if 0%{?fedora}
+BuildRequires:  python3 >= 3.12
+%endif
 Requires:       python3 >= 3.12
 Requires:       systemd >= 250
 Requires:       samba-winbind-clients
@@ -35,6 +39,10 @@ This package does not contain Microsoft software or a populated Wine prefix.
 
 %build
 
+%check
+python3 -c 'import sys; assert sys.version_info >= (3, 12)'
+PYTHONPATH=src python3 -m unittest discover -s tests/unit -v
+
 %install
 mkdir -p %{buildroot}%{_datadir}/powerbi-linux %{buildroot}%{_bindir}
 cp -a src runtime packaging docs LICENSE LICENSES README.md %{buildroot}%{_datadir}/powerbi-linux/
@@ -55,6 +63,9 @@ find %{buildroot} -type d -name __pycache__ -prune -exec rm -rf {} +
 %{_datadir}/icons/hicolor/scalable/apps/powerbi-linux.svg
 
 %changelog
+* Wed Oct 14 2026 Project maintainers - 0.1.0-3
+- Add a locally signed native close confirmation with original localized labels.
+- Preserve Desktop save/close handling and default to Cancel.
 * Wed Oct 14 2026 Project maintainers - 0.1.0-2
 - Default to unrestricted RAM/swap, automatic browser heap and standard browser settings.
 - Add optional CLI resource settings and migrate legacy bundled limits.

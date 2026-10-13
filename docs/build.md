@@ -29,11 +29,19 @@ The container base is pinned by digest. Package repository versions are recorded
 
 ```bash
 python3 tools/build-rpm.py
+# Also compile/sign helpers against dnlib in prepared sources/:
+python3 tools/build-rpm.py --check-helpers
 # With a native rpmbuild installation:
 python3 tools/build-rpm.py --local
 ```
 
 RPMs and source RPMs are under `build/rpm/`. The package contains CLI/source resources and desktop integration; it does not contain a prefix, Microsoft installers or the Wine runtime archive. No package script runs Wine, downloads dependencies or accesses user credentials.
+
+Candidate release 3 includes tests/tools in the source RPM and runs the Python
+unit suite during `%check`. Native Fedora builds declare the Python build
+dependency; the pinned Ubuntu cross-builder obtains it through apt and verifies
+the interpreter version directly. Native dialog GUI tests run separately with
+`python3 tools/test-save-dialog.py` in an installed user's graphical session.
 
 ## Corresponding source
 
