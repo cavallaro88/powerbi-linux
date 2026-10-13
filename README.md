@@ -15,9 +15,9 @@ Microsoft support. See [compatibility and limits](docs/compatibility.md).
 Install the CLI and desktop integration through DNF:
 
 ```bash
-sudo dnf install ./powerbi-linux-0.1.0-11.noarch.rpm
+sudo dnf install ./powerbi-linux-0.1.0-12.noarch.rpm
 # Upgrade an existing installation:
-sudo dnf upgrade ./powerbi-linux-0.1.0-11.noarch.rpm
+sudo dnf upgrade ./powerbi-linux-0.1.0-12.noarch.rpm
 pbi-linux doctor
 ```
 

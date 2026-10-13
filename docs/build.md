@@ -66,6 +66,11 @@ RPM and standalone export include this recipe. `python3 tools/test-mysql-provide
 loads the installed original provider and all dependency types without network
 access. See [connector validation](connectors.md) for its loopback-only query test.
 
+RPM 12 also compiles/signs the frame helper from project sources during setup or
+repair. `python3 tools/test-window-frame.py` exercises the actual Desktop base
+with disposable forms and owned/fixed controls, without opening a report. See
+[frame evidence and remaining compositor coverage](window-frame.md).
+
 ## Corresponding source
 
 When distributing a runtime, publish the exact corresponding patched source and build recipe, Wine/Neutron notices, DXVK/submodule licenses, dnlib notice, builder image digest and package inventory. The runtime binary alone is not a complete release. Use the source export tooling to create a sanitized project source tree; the full Wine/DXVK source bundle is generated from the prepared sources.

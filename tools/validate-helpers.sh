@@ -5,7 +5,7 @@ cd /work
 mkdir -p .local/helper-check/unsigned
 trap 'rm -f .local/helper-check/stubs.snk' EXIT
 cp sources/dnlib/lib/net45/dnlib.dll .local/helper-check/
-for tool in PatchShared PatchWinRT PatchSavePrompt PatchStoreRating PatchCacheCompatibility MakeKey SignStubs EnableModernEditor ConfigureSignIn; do
+for tool in PatchShared PatchWinRT PatchSavePrompt PatchStoreRating PatchCacheCompatibility PatchWindowFrame MakeKey SignStubs EnableModernEditor ConfigureSignIn; do
     mcs -r:.local/helper-check/dnlib.dll -out:.local/helper-check/"$tool".exe src/helpers/"$tool".cs
  done
 mcs -target:library -out:.local/helper-check/PowerBIDiagnostics.dll src/helpers/PowerBIDiagnostics.cs
@@ -22,6 +22,14 @@ mono .local/helper-check/PatchSavePrompt.exe --sign-dialog \
     .local/helper-check/unsigned/PowerBISaveDialog.dll .local/helper-check/PowerBISaveDialog.dll \
     .local/helper-check/stubs.snk
 sn -vf .local/helper-check/PowerBISaveDialog.dll
+mcs -target:library -r:System.Windows.Forms -r:System.Drawing \
+    -out:.local/helper-check/unsigned/PowerBIWindowFrame.dll src/helpers/PowerBIWindowFrame.cs
+mono .local/helper-check/PatchWindowFrame.exe --sign-helper \
+    .local/helper-check/unsigned/PowerBIWindowFrame.dll .local/helper-check/PowerBIWindowFrame.dll \
+    .local/helper-check/stubs.snk
+sn -vf .local/helper-check/PowerBIWindowFrame.dll
+if mono .local/helper-check/PatchWindowFrame.exe .local/helper-check/PowerBIWindowFrame.dll \
+    .local/helper-check/unexpected.dll .local/helper-check/PowerBIWindowFrame.dll; then exit 1; fi
 mcs -target:library -out:.local/helper-check/Microsoft.Mashup.Client.UI.dll tests/fixtures/save-dialog-ui.cs
 mcs -optimize+ -target:library -r:System.Windows.Forms -r:System.Drawing \
     -r:.local/helper-check/Microsoft.Mashup.Client.UI.dll \

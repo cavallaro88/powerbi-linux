@@ -2,12 +2,20 @@
 
 ## 0.1.0 — development
 
+### RPM release 12 — window frame development candidate, 2026-10-18
+
+- Extend the normal resizable/unowned Desktop client to its complete frame. Replace the visible 4-pixel side/bottom gutters with transparent native resize input zones, preserving styles and fixed/owned/native-maximized calculations.
+- Guard the two patched methods by exact contents and sign the helper locally. Setup/repair records its checksum; doctor checks the frame patch. Modified Microsoft binaries stay local.
+- Native and actual-base-class fixtures passed frame, hit-target and owned/fixed controls. A managed compositor drag passed; normal Desktop measured zero insets, and the user confirmed the visual fix with working mouse/shortcuts. Actual compositor maximize-state divergence also reproduces on baseline and remains separate coverage, as do other display scales and broader modal workloads. See [evidence](docs/window-frame.md).
+- Apply the candidate locally without cloning the profile or changing the runtime/resource policy; retain the old DLL/manifest for rollback.
+
 ### Runtime 0.1.4 — PaperWM development candidate, 2026-10-18
 
 - Accept normal Wayland compositor size hints for resizable windows after initial configure. PaperWM resizes without maximized/resizing/tiled flags were previously discarded.
-- Native baseline/candidate tests confirm actual client resizing and preserve the fixed-size control. Empty Desktop on the normal launcher follows column height, increase-width actions and compositor Super+minus. Physical Super+plus injection remains unconfirmed; see [scope and pending checks](docs/paperwm.md).
+- Native baseline/candidate tests confirm actual client resizing and preserve the fixed-size control. Empty Desktop on the normal launcher follows column height, increase-width actions and compositor Super+minus. The user subsequently confirmed PaperWM resizing works perfectly; automated Super+plus injection remains separate coverage. See [scope and pending checks](docs/paperwm.md).
 - Activate a private incremental single-driver candidate locally, retaining runtime 0.1.3 and the existing profile/settings. Add the reviewed patch to the 0.1.4 source recipe; full rebuild and broader release gates remain pending.
 - Record the separate acceptance plan for the three still-inactive Neutron candidates in [runtime testing](docs/runtime-testing.md).
+- Diagnose the visible white frame as 4-pixel non-client left/right/bottom insets, with content filling the client area. Record the remaining cosmetic compatibility work without changing window styles or deploying an untested frame correction.
 
 ### Unreleased — product repository and upstream review
 

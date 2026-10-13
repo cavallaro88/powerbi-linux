@@ -1,6 +1,6 @@
 Name:           powerbi-linux
 Version:        0.1.0
-Release:        11%{?dist}
+Release:        12%{?dist}
 Summary:        Community Power BI Desktop compatibility tools for Fedora
 License:        GPL-3.0-or-later AND LGPL-2.1-or-later AND Zlib
 Source0:        %{name}-%{version}.tar.gz
@@ -63,6 +63,9 @@ find %{buildroot} -type d -name __pycache__ -prune -exec rm -rf {} +
 %{_datadir}/icons/hicolor/scalable/apps/powerbi-linux.svg
 
 %changelog
+* Sun Oct 18 2026 Project maintainers - 0.1.0-12
+- Extend normal Desktop client frames with transparent native resize zones.
+- Retain fixed, owned and maximized frame paths; guard exact method contents.
 * Sun Oct 18 2026 Project maintainers - 0.1.0-11
 - Normalize linguistic JSON before the original cached-model metadata update.
 - Extract the original Power BI icon locally after application provisioning.

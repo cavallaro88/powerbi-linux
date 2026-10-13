@@ -75,6 +75,10 @@ def doctor(paths):
                 add('cache-restore', cache_patched,
                     'Linguistic JSON normalization is present' if cache_patched else
                     'Cache compatibility patch is missing; close Desktop and run repair')
+                frame_patched = patches.WINDOW_FRAME in installed['patches'] and b'PowerBIWindowFrame' in assembly.read_bytes()
+                add('window-frame', frame_patched,
+                    'Custom client frame and transparent resize zones are present' if frame_patched else
+                    'Window frame correction is missing; close Desktop and run repair')
             except (Error, OSError, ValueError) as exc:
                 add('sign-in-dialog', False, str(exc))
         except (Error, OSError, KeyError) as exc:

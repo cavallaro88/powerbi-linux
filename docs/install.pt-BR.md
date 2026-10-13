@@ -2,9 +2,9 @@
 
 Alvo inicial: **Fedora 44, x86_64 e Wayland nativo**. O projeto ainda está em desenvolvimento; login Microsoft pelo navegador e persistência após reabrir foram confirmados nesta máquina; o usuário confirmou uma publicação em homologação no Service; novos ciclos com a correção local pós-publicação e conectores autenticados continuam sujeitos a validação. Refresh pela interface e save/reopen passaram em um modelo sintético de 158 tabelas, e o teste prolongado de duas horas também passou. A validação registra uma captura nativa discrepante em uma reabertura; sua causa ainda não foi estabelecida. Isso não garante compatibilidade com qualquer relatório empresarial.
 
-Instale o RPM com `sudo dnf install ./powerbi-linux-0.1.0-11.noarch.rpm`. Ele instala a CLI e a integração com o desktop. O Power BI e os componentes Microsoft são instalados separadamente no seu usuário.
+Instale o RPM com `sudo dnf install ./powerbi-linux-0.1.0-12.noarch.rpm`. Ele instala a CLI e a integração com o desktop. O Power BI e os componentes Microsoft são instalados separadamente no seu usuário.
 
-Para atualizar a CLI, execute `sudo dnf upgrade ./powerbi-linux-0.1.0-11.noarch.rpm`
+Para atualizar a CLI, execute `sudo dnf upgrade ./powerbi-linux-0.1.0-12.noarch.rpm`
 e `pbi-linux doctor`. Se o doctor indicar que os patches de diálogo estão
 desatualizados, feche o Desktop, execute `pbi-linux repair` e confira novamente.
 O repair aplica as correções de [credenciais](legacy-html.md) e do botão

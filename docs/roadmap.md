@@ -5,6 +5,9 @@ The development preview is scoped to Fedora 44 x86_64 and native Wayland.
 - Provision a dedicated graphical QA installation and orchestrate unattended
   compositor input, modal/dropdown checks, real Desktop Save and independent
   saved-data verification. Existing individually run probes are building blocks.
+- Broaden the local [window frame correction](window-frame.md) across display scales,
+  multiple monitors and actual modal workloads. Isolate the baseline Wine/PaperWM
+  maximize-state divergence before certifying compositor maximize/restore.
 - Validate the remaining nested permission confirmations, source-list input delay,
   general OneLake chooser after sign-in and another corrected cloud publish cycle.
 - Reproduce and isolate real-server refresh timeouts/TLS separately from local

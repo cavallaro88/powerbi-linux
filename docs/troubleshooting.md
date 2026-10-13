@@ -81,3 +81,9 @@ Before attaching any log to a public issue, remove usernames, document paths, da
   for resizable windows. The RPM alone does not supply this runtime change.
   See [evidence, installation scope and pending checks](paperwm.md); keep genuine
   fixed-size dialogs and single-window column-height policy distinct.
+
+- **White strips at Desktop's left/right/bottom edges:** the measured normal
+  frame reserves four non-client pixels on each side/bottom. RPM 12's recipe
+  extends only eligible custom-caption client areas and retains native resize
+  input. Doctor checks `window-frame`; existing profiles need idle maintenance
+  unless the local candidate is already active. See [frame diagnosis and scope](window-frame.md).

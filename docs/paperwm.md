@@ -43,7 +43,9 @@ the candidate. Its height matched PaperWM's 824 logical pixels. Two increase
 **actions** and two compositor Super+minus inputs alternated widths 1208 and
 1359, preserving height. The Home UI reflowed visibly. Direct synthetic injection
 of Super+plus did not reliably invoke the shortcut in this session; the action
-itself passed, but physical Super+plus remains a separate keyboard check.
+itself passed. The user subsequently confirmed that the PaperWM resizing
+worked perfectly after activation (2026-10-18), resolving the manual acceptance
+check. This user observation is separate from automated key-injection coverage.
 No original report was opened or saved during these tests. Doctor passed all
 16 checks and installed RPM 11 verification passed.
 
@@ -62,6 +64,9 @@ WINEPREFIX=/absolute/path/to/disposable-prefix /path/to/runtime/bin/wine ./tilin
 Apply the same compositor requests to each runtime and record frame/buffer,
 WM_SIZE and client/native rectangles. Missing graphical evidence is not a pass.
 No debug shell extension or diagnostic D-Bus interface is installed by the product.
+
+The visible white side strips were investigated separately after that confirmation;
+see [window frame measurements](window-frame.md).
 
 ## Artifact and installation scope
 

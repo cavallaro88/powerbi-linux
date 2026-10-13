@@ -14,6 +14,7 @@ ORIGINALS = {
 
 NATIVE_DIALOG = 'PowerBISaveDialog.dll'
 CACHE_COMPAT = 'PowerBICacheCompatibility.dll'
+WINDOW_FRAME = 'PowerBIWindowFrame.dll'
 
 
 def build_native_dialog(helpers, wine, env, log, key):
@@ -52,6 +53,23 @@ def build_cache_compatibility(helpers, bin_dir, wine, env, log, key):
         env=env, cwd=helpers, log=log)
     run([wine, helpers / 'PatchCacheCompatibility.exe', '--sign-helper',
          win(helpers / 'unsigned' / CACHE_COMPAT), win(helpers / CACHE_COMPAT), win(key)],
+        env=env, log=log)
+
+
+def build_window_frame(helpers, wine, env, log, key):
+    sources = Path(__file__).resolve().parents[1] / 'helpers'
+    for name in ('PowerBIWindowFrame.cs', 'PatchWindowFrame.cs'):
+        shutil.copy2(sources / name, helpers / name)
+    compiler = r'C:\windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe'
+    win = lambda path: 'Z:' + str(path).replace('/', chr(92))
+    run([wine, compiler, '/nologo', '/optimize+', '/target:library',
+         '/r:System.Windows.Forms.dll', '/r:System.Drawing.dll',
+         r'/out:unsigned\PowerBIWindowFrame.dll', 'PowerBIWindowFrame.cs'],
+        env=env, cwd=helpers, log=log)
+    run([wine, compiler, '/nologo', '/optimize+', '/r:dnlib.dll',
+         '/out:PatchWindowFrame.exe', 'PatchWindowFrame.cs'], env=env, cwd=helpers, log=log)
+    run([wine, helpers / 'PatchWindowFrame.exe', '--sign-helper',
+         win(helpers / 'unsigned' / WINDOW_FRAME), win(helpers / WINDOW_FRAME), win(key)],
         env=env, log=log)
 
 
@@ -115,6 +133,7 @@ def install(prefix, runtime, log):
              r'C:\powerbi-linux-setup\WinRTStubs.dll',r'C:\powerbi-linux-setup\stubs.snk'],env=env,log=log)
         build_native_dialog(helpers, wine, env, log, key)
         build_cache_compatibility(helpers, bin_dir, wine, env, log, key)
+        build_window_frame(helpers, wine, env, log, key)
         windows_input.write_bytes(patched_windows)
         for patcher, name in [('PatchShared.exe', 'Microsoft.PowerBI.Client.Shared.dll'),
                               ('PatchWinRT.exe', 'Microsoft.PowerBI.Client.Windows.dll')]:
@@ -136,6 +155,11 @@ def install(prefix, runtime, log):
                      *['Z:' + str(file).replace('/', '\\') for file in (out, cache_out, helpers / CACHE_COMPAT)]],
                     env=env, log=log)
                 os.replace(cache_out, out)
+                frame_out = helpers / (name + '.frame')
+                run([wine, helpers / 'PatchWindowFrame.exe',
+                     *['Z:' + str(file).replace('/', chr(92)) for file in (out, frame_out, helpers / WINDOW_FRAME)]],
+                    env=env, log=log)
+                os.replace(frame_out, out)
                 native_out = helpers / (name + '.native')
                 run([wine, helpers / 'PatchSavePrompt.exe',
                      *['Z:' + str(file).replace('/', '\\') for file in (
@@ -151,7 +175,7 @@ def install(prefix, runtime, log):
         out = bin_dir / (name + '.new')
         out.write_bytes(patched_ui)
         os.replace(out, bin_dir / name)
-        for name in ('WinRTStubs.dll', 'PowerBIDiagnostics.dll', 'PowerBICompositionManager.dll', NATIVE_DIALOG, CACHE_COMPAT):
+        for name in ('WinRTStubs.dll', 'PowerBIDiagnostics.dll', 'PowerBICompositionManager.dll', NATIVE_DIALOG, CACHE_COMPAT, WINDOW_FRAME):
             shutil.copy2(helpers / name, bin_dir / name)
         run([wine, helpers/'EnableModernEditor.exe'], env=env, log=log)
         signin.configure_browser(prefix, wine, env, helpers, log)
@@ -159,4 +183,4 @@ def install(prefix, runtime, log):
         key.unlink(missing_ok=True)
         windows_input.unlink(missing_ok=True)
     return {name: digest(bin_dir/name) for name in (*ORIGINALS, 'WinRTStubs.dll',
-                                                   'PowerBIDiagnostics.dll', 'PowerBICompositionManager.dll', NATIVE_DIALOG, CACHE_COMPAT)}
+                                                   'PowerBIDiagnostics.dll', 'PowerBICompositionManager.dll', NATIVE_DIALOG, CACHE_COMPAT, WINDOW_FRAME)}
