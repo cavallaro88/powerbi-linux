@@ -1,5 +1,12 @@
 # Build from a clean source tree
 
+The current driver recipe includes the runtime 0.1.1 modal/popup correction.
+`runtime/build.py` defaults to that version; `--runtime-version 0.1.1` makes it
+explicit. Preserve existing 0.1.0 archives/checksums. The incremental 0.1.1
+artifact and its narrower validation scope are documented in
+[Edit Permissions](permissions-wayland.md). A full rebuild is not claimed to be
+byte-identical to an incremental driver replacement.
+
 Install Docker or Podman and ensure your account can invoke the selected engine. No existing Wine/Bottles installation or prefix is needed. Source preparation uses Python 3.12+, Git and `patch`; compilation tools are installed inside the builder container.
 
 ```bash

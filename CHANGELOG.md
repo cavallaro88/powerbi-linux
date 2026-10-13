@@ -2,6 +2,14 @@
 
 ## 0.1.0 — development
 
+### RPM release 8 / runtime 0.1.1 — development candidate, 2026-10-16
+
+- Keep owned borderless modals as transient Wayland toplevels while dropdowns are active. Anchor tool popups whose WinForms owner is invisible to the visible window beneath them.
+- Track the actual client-surface parent and restrict subsurface stacking to valid siblings. The runtime is an incremental rebuild of the Unix Wayland driver; other payload files retain the verified 0.1.0 contents.
+- Serialize the 13 original Edit Permissions view-model fields without traversing native host/button objects. Preserve original privacy/encryption callbacks and PE/resource sizes; no credential values are supplied by the patch.
+- The complete synthetic CSV compositor-input cycle passed: privacy selection, OK closes, reopen preserves the choice, Cancel closes and retains the previously saved choice. A separate serializer check preserves Database and encryption=true while native host/button getters throw if accessed.
+- The earlier v1 and v3 candidates were rejected. The None/no-credential path opens a separate nested Delete Permissions dialog that stayed at 2×2/loading during cleanup; that case remains unresolved. Real-server refresh/TLS and broader workload certification remain separate.
+
 ### RPM release 7 — development preview, 2026-10-15
 
 - Disable Desktop update notices with Microsoft's documented installer/registry option during setup/repair. A Fedora notification for validated releases remains future work; runtime update is separate from Desktop update.

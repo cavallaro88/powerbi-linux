@@ -2,6 +2,12 @@
 
 The initial patch set targets Wine 11.18 and DXVK 3.1. Wine composition incorporates four Neutron bridge/cross-process/resize/reaper patches and the cursor correction from `neutron-wine` commit `5afd8d479ca83f57b56a2350274927647519da90`, adapted to Power BI owner-process delivery. Reproduction ports are retained under `runtime/ports/`; the normal build applies the reviewed emitted patches rather than regenerating tracked files.
 
+**Updated 2026-10-16:** runtime 0.1.1 and the RPM 8 candidate include the final
+modal/popup parenting and permissions serializer corrections. Rejected experiments
+have been replaced; prepared sources and manifests match. The new checksum has
+scoped synthetic pointer evidence, not full historical release certification.
+See [Edit Permissions](permissions-wayland.md).
+
 | Patch or helper | Reason | Status / license |
 |---|---|---|
 | Wine composition aggregate | dcomp bridge, owner transport, cursor/HKL, optional capture and PE backing | Required; Wine/Neutron LGPL-2.1-or-later |
@@ -17,6 +23,7 @@ The initial patch set targets Wine 11.18 and DXVK 3.1. Wine composition incorpor
 | Modern Power Query switch | Select the tested WebView2 editor | Required, internal app interface that may change |
 | Legacy HTML registration and UI resources | Restore Wine protocol/MIME handlers; work around an unsupported CSS setter, stale credential-sidebar height and zero-page virtualized source list | Required for the pinned app; exact input/output hashes and resource sizes checked; modified Microsoft assembly stays local |
 | Email dialog serializer | Serialize the three wire fields without traversing native host/button objects when Continue reads the view model | Guarded local resource change; native validation/authentication unchanged; browser sign-in and account persistence after normal restart confirmed on Fedora |
+| Edit Permissions serializer | Serialize the 13 original wire fields without native host/button objects when OK pulls the view model | Guarded local resource change; privacy/encryption callbacks retained; synthetic compositor OK/Cancel/reopen passed |
 
 `WinRTStubs` reports APIs unavailable and contains incomplete methods; it does not implement Windows storage/launch contracts. No broader WinRT support is claimed. The self-token workaround is not equivalent to anonymous Windows identity.
 

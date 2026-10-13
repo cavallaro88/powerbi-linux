@@ -13,7 +13,7 @@ The current runtime was built from source and exercised on Fedora 44 x86_64 Wayl
 | Cancel an in-progress data refresh | User reports Cancel does not interrupt loads | Synthetic native clicks passed during evaluation (~0.8 s) and data loading (19.879 s), retaining committed data; original freeze not reproduced; see [scope](refresh-cancellation.md) |
 | Desktop PBIX/PBIP/PBIR opening | — | GIO dispatch, relative project links and responsive native windows passed without diagnostic mode |
 | Additional document while another remains open | — | Two PBIX documents passed; native windows retained and both DAX totals confirmed |
-| MySQL Connector/NET 8.0.33, MariaDB 10.11.19 | Earlier backend refresh passed; TLS failed in investigation | Optional managed recipe, native factory/dependencies, synthetic loopback UI refresh, 3 rows / total 300, two committed partitions and source list passed. Unencrypted local fixture only; real-server TLS unverified. See [connectors](connectors.md) |
+| MySQL Connector/NET 8.0.33, MariaDB 10.11.19 | Earlier backend refresh passed; TLS failed in investigation | Optional managed recipe, native factory/dependencies, synthetic loopback UI refresh with Database credentials, 3 rows / total 300, two committed partitions and source list passed. Explicit Windows username/password impersonation fails on Wine's placeholder LogonUser token; reproduced separately. Unencrypted local fixture only; real-server TLS unverified. See [connectors](connectors.md) |
 | Refresh 158 tables using external TMSL | Commit/DAX passed, ~4.2 min, ~9.66 GiB peak | Diagnostic result only |
 | Original enterprise thin-report UI refresh | Renderer OOM | Not certified; synthetic evidence does not reproduce every property of that report |
 | Synthetic 158-table UI refresh with 156 relationships | — | All 156 fact tables × 10,000 rows, dimension propagation, total 300 and save/reopen passed in clean prefix; native frames before/after Save and a separate reopen passed; 7,264.90-second soak passed with 24 visual checks and no OOM/GPU replacement |
@@ -24,6 +24,12 @@ The current runtime was built from source and exercised on Fedora 44 x86_64 Wayl
 | RPM dependency installation | — | DNF dependency installation and packaged CLI/integration checks in a Fedora 44 container; native GUI tested separately from the checkout |
 
 ## Required certification
+
+The later [Edit Permissions correction](permissions-wayland.md) has separate
+synthetic compositor-input OK/Cancel/reopen evidence for runtime 0.1.1 and the
+RPM 8 HTML recipe. Historical passes above are tied to their original checksum.
+The new checksum needs broader release gates; the nested None/Delete Permissions
+confirmation and real-server refresh/TLS remain pending.
 
 Install from an empty user profile on Fedora 44. Verify PBIX/PBIP/PBIR through the file manager, project-relative references, spaces/accents and additional opens while a document is already active. Import the synthetic sales CSV, verify exact visual values and save/reopen the result.
 

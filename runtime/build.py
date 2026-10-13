@@ -5,6 +5,7 @@ import argparse
 import hashlib
 import json
 import os
+import re
 from pathlib import Path
 import shutil
 import subprocess
@@ -146,7 +147,9 @@ def prepare(args):
     print('Pinned sources and patches prepared.')
 
 
-def package(engine='docker'):
+def package(engine='docker', version='0.1.1'):
+    if not re.fullmatch(r'[0-9]+\.[0-9]+\.[0-9]+(?:-[A-Za-z0-9.-]+)?', version):
+        raise SystemExit('Invalid runtime version')
     runtime=ROOT/'dist/runtime'
     lock=json.loads((ROOT/'runtime/sources.lock.json').read_text())
     if not preparation_matches(ROOT/'sources/wine/.prepared',{'source_sha256':lock['wine']['sha256'],
@@ -188,13 +191,13 @@ def package(engine='docker'):
                 shutil.copy2(file,target)
     lock=json.loads((ROOT/'runtime/sources.lock.json').read_text())
     builder=json.loads(subprocess.check_output([engine,'image','inspect','pbi-linux-builder:0.1.0'],text=True))[0]
-    manifest={'schema':1,'arch':'x86_64','version':'0.1.0','sources':lock,
+    manifest={'schema':1,'arch':'x86_64','version':version,'sources':lock,
               'builder_image_id':builder['Id'],
               'dockerfile_sha256':digest(ROOT/'runtime/Dockerfile'),
               'patches':{f.name:digest(f) for f in sorted((ROOT/'runtime/patches').glob('*.patch'))},
               'files':{str(p.relative_to(runtime)):digest(p) for p in sorted(runtime.rglob('*')) if p.is_file() and p.name!='runtime.json'}}
     (runtime/'runtime.json').write_text(json.dumps(manifest,indent=2)+'\n')
-    archive=ROOT/'dist/powerbi-linux-runtime-0.1.0-x86_64.tar.xz'
+    archive=ROOT/('dist/powerbi-linux-runtime-'+version+'-x86_64.tar.xz')
     with tarfile.open(archive,'w:xz',dereference=False) as tar:
         # Emit symlinks without following them; archive paths remain relative.
         for file in sorted(runtime.iterdir()):
@@ -207,6 +210,7 @@ def main():
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('--prepare-only',action='store_true')
     p.add_argument('--package-only',action='store_true',help='Package an already completed runtime build')
+    p.add_argument('--runtime-version', default='0.1.1', help='Version recorded in the manifest and archive filename')
     p.add_argument('--bundled-sources',action='store_true',help='Build from the corresponding patched source archives in an exported project')
     p.add_argument('--wine-source')
     p.add_argument('--dxvk-source')
@@ -214,7 +218,7 @@ def main():
     p.add_argument('--engine',choices=['docker','podman'],default='docker')
     args=p.parse_args()
     if args.package_only:
-        package(args.engine)
+        package(args.engine, args.runtime_version)
         return
     if args.bundled_sources:
         prepare_bundled(args)
@@ -225,7 +229,7 @@ def main():
     run(args.engine,'build','-t','pbi-linux-builder:0.1.0',ROOT/'runtime')
     run(args.engine,'run','--rm','--user',str(os.getuid())+':'+str(os.getgid()),'-e','HOME=/tmp/pbi-build-home',
         '-v',str(ROOT)+':/work:z','-w','/work','pbi-linux-builder:0.1.0','bash','runtime/build-inside.sh')
-    package(args.engine)
+    package(args.engine, args.runtime_version)
 
 if __name__=='__main__':
     main()

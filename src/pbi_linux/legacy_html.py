@@ -13,7 +13,8 @@ REGISTRATIONS = {
 }
 
 UI_ORIGINAL_SHA256 = '28829058269cd42b5f731db43f94bcf34baf50d1cdf1ad624c0696468e3fadb7'
-UI_PATCHED_SHA256 = 'd7090533813cfce872e79b5bfe7d968af5461c6ee8b7a3ba6110e9358abd586e'
+UI_PATCHED_SHA256 = '8aee5abdd62ef384f49e08cb9931093dab7a1b8df1ddb885af9d0b1ea4358c62'
+_LIST_PATCHED_SHA256 = 'd7090533813cfce872e79b5bfe7d968af5461c6ee8b7a3ba6110e9358abd586e'
 _CREDENTIALS_PATCHED_SHA256 = '16dcd45c8a7111ce39e3967cbc36d80116d87c0b4e2945b3af39840c9504841c'
 _TEXT_OVERFLOW_SHA256 = '7cedcac43961e8f0abaa986b7130050ca3bceb43721c07228952e4047e899d40'
 _RESOURCE_OFFSET, _RESOURCE_SIZE = 9028422, 4401
@@ -53,6 +54,47 @@ _SOURCES_COMMENTS = (
     b'        // This method allows to exclude _tabbingManager and _selectionEventHandler from the serialization\r\n',
     b'            // Reset the selected count, since view model changes can modify the count without going through knockout \r\n',
 )
+_PERMISSIONS_OFFSET, _PERMISSIONS_SIZE = 8973278, 4052
+_PERMISSIONS_ORIGINAL = 'f282a621fec318a19a9a5f3637b79ce5f7d85d1125f58c4eb94bcd3f5b441b8f'
+_PERMISSIONS_PATCHED = '31ddd388983611243e143956c1dd3ff08ddf78a0c408062e33f8e7d720b8360e'
+_PERMISSIONS_ANCHOR = b'        ViewModel.prototype.updateViewModel = function (jsonViewModel) {\r\n'
+# The original JsonViewModel contract. Native host and button objects are not
+# wire data: traversing them in ko.toJSON calls COM members with wrong arity.
+_PERMISSIONS_FIELDS = (
+    'credentialType supportsEncryption isEncrypted firewallSetting firewallSettingNames '
+    'nativeQueriesCount resourceName displayName iconClass supportsNativeQuery '
+    'hasCredential supportsCredential canEditPrivacyLevel'
+)
+_PERMISSIONS_HOOK = (
+    '        ViewModel.prototype.getJSON=function(){var o={},v=this;$.each("' +
+    _PERMISSIONS_FIELDS + '".split(" "),function(_,k){o[k]=ko.utils.unwrapObservable(v[k]);});'
+    'return JSON.stringify(o);};\r\n'
+).encode('ascii')
+
+
+def patch_permissions(source):
+    """Upgrade the verified source-list recipe without altering permission handlers."""
+    sha = hashlib.sha256(source).hexdigest()
+    if sha == UI_PATCHED_SHA256:
+        return source
+    if sha != _LIST_PATCHED_SHA256:
+        raise Error('Unsupported HTML assembly for permissions serializer patch')
+    resource = source[_PERMISSIONS_OFFSET:_PERMISSIONS_OFFSET + _PERMISSIONS_SIZE]
+    if (hashlib.sha256(resource).hexdigest() != _PERMISSIONS_ORIGINAL or
+            resource.count(_PERMISSIONS_ANCHOR) != 1):
+        raise Error('Unexpected permissions resource')
+    updated = resource.replace(_PERMISSIONS_ANCHOR, _PERMISSIONS_HOOK + _PERMISSIONS_ANCHOR)
+    # Reclaim indentation only. Retain copyright, comments, newlines and PE/IL layout.
+    updated = re.sub(rb'(?m)^ +', b'', updated)
+    if len(updated) > _PERMISSIONS_SIZE:
+        raise Error('Permissions serializer exceeds its resource')
+    updated = updated.ljust(_PERMISSIONS_SIZE, b' ')
+    if hashlib.sha256(updated).hexdigest() != _PERMISSIONS_PATCHED:
+        raise Error('Unexpected permissions resource output')
+    output = source[:_PERMISSIONS_OFFSET] + updated + source[_PERMISSIONS_OFFSET + _PERMISSIONS_SIZE:]
+    if hashlib.sha256(output).hexdigest() != UI_PATCHED_SHA256:
+        raise Error('Unexpected permissions assembly output')
+    return output
 
 
 def patch_source_list(source):
@@ -60,6 +102,8 @@ def patch_source_list(source):
     sha = hashlib.sha256(source).hexdigest()
     if sha == UI_PATCHED_SHA256:
         return source
+    if sha == _LIST_PATCHED_SHA256:
+        return patch_permissions(source)
     if sha != _CREDENTIALS_PATCHED_SHA256:
         raise Error('Unsupported HTML assembly for data source list patch')
     resource = source[_SOURCES_OFFSET:_SOURCES_OFFSET + _SOURCES_SIZE]
@@ -75,9 +119,9 @@ def patch_source_list(source):
     if hashlib.sha256(updated).hexdigest() != _SOURCES_PATCHED:
         raise Error('Unexpected data source list resource output')
     output = source[:_SOURCES_OFFSET] + updated + source[_SOURCES_OFFSET + _SOURCES_SIZE:]
-    if hashlib.sha256(output).hexdigest() != UI_PATCHED_SHA256:
+    if hashlib.sha256(output).hexdigest() != _LIST_PATCHED_SHA256:
         raise Error('Unexpected data source list assembly output')
-    return output
+    return patch_permissions(output)
 
 
 def patch_ui(source):

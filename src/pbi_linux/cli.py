@@ -62,7 +62,7 @@ def doctor(paths):
                     issues.append('Legacy HTML assembly patch is missing or outdated')
                 add('legacy-html', not issues,
                     '; '.join(issues) + '; close Desktop and run pbi-linux repair' if issues else
-                    'Wine HTML registrations, credential dialog and source list patches are present')
+                    'Wine HTML registrations, credential dialog, source list and permissions serializer patches are present')
             except (Error, OSError, ValueError) as exc:
                 add('legacy-html', False, str(exc))
             try:

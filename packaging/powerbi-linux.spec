@@ -1,6 +1,6 @@
 Name:           powerbi-linux
 Version:        0.1.0
-Release:        7%{?dist}
+Release:        8%{?dist}
 Summary:        Community Power BI Desktop compatibility tools for Fedora
 License:        GPL-3.0-or-later AND LGPL-2.1-or-later AND Zlib
 Source0:        %{name}-%{version}.tar.gz
@@ -63,6 +63,10 @@ find %{buildroot} -type d -name __pycache__ -prune -exec rm -rf {} +
 %{_datadir}/icons/hicolor/scalable/apps/powerbi-linux.svg
 
 %changelog
+* Fri Oct 16 2026 Project maintainers - 0.1.0-8
+- Serialize the Edit Permissions wire fields without traversing native host objects.
+- Update the Wayland recipe for modal ownership, popup anchoring and client surface stacking.
+- Document synthetic pointer validation and remaining nested confirmation limitations.
 * Thu Oct 15 2026 Project maintainers - 0.1.0-7
 - Add optional verified MySQL Connector/NET installation scoped to the managed profile.
 - Recalculate data source list geometry after showing a legacy dialog.

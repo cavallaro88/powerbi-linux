@@ -32,7 +32,22 @@ Before attaching any log to a public issue, remove usernames, document paths, da
   correction. Record time from opening to first successful interaction, whether
   it repeats on a second opening, and whether keyboard focus responds. Avoid
   repeatedly submitting permission changes while response is delayed.
+- **Privacy Level or OK does not react in Edit Permissions:** a separate Wayland
+  correction requires runtime 0.1.1; the independent serializer correction requires
+  the RPM 8 HTML recipe applied to the profile. Synthetic compositor-input
+  OK/Cancel/reopen passed. A focus-only workaround did not fix the user's case.
+  Do not repeatedly submit settings, clear permissions or remove caches. The
+  nested None/Delete Permissions path remains unresolved.
+  See [validation and installation](permissions-wayland.md).
 - **Provider loads but a database connection fails:** distinguish server address,
   port, credentials, authorization, version compatibility and TLS. The loopback
   fixture passed with explicitly unencrypted local transport; this does not
   validate production TLS or justify disabling encryption on a real source.
+- **MySQL refresh reports `Invalid handle`:** a confirmed case failed in
+  `WindowsIdentity.Impersonate` because Wine's explicit Windows logon returned a
+  placeholder token. For MySQL-native credentials, edit only the affected source
+  and choose **Database**, entering the database username/password there. Check
+  the exception stack and the affected source's current credential type before
+  applying this diagnosis. A later screenshot already showed Database; the trace
+  alone does not identify which source or prior state used impersonation. See
+  [credential mode and scope](connectors.md#windows-credential-override-invalid-handle).

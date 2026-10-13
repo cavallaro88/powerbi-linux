@@ -99,3 +99,14 @@ The user also confirmed visible sources in the real report. Initially missing
 cursor/unresponsive clicks recovered after an estimated 10–60 seconds. This observation
 does not establish a cause or certify physical input latency; the resize patch
 only corrects list geometry.
+
+## Edit Permissions — RPM 8
+
+The original getViewModel fallback traversed native host/button objects while
+serializing the form, causing TargetParameterCountException after OK. The new
+size-preserving resource patch supplies getJSON for its 13 original wire fields.
+It preserves privacy, credential type and encryption; original handlers perform
+persistence and cancellation. This is separate from runtime 0.1.1's Wayland
+modal/popup correction. The synthetic compositor-input cycle passed with both.
+The nested None/Delete Permissions confirmation is still limited;
+see [scope](permissions-wayland.md).

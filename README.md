@@ -2,6 +2,10 @@
 
 Community compatibility tools for Power BI Desktop using patched Wine, DXVK and native Wayland. **Validated development preview 0.1.0: compatibility is scoped to the documented synthetic workloads.**
 
+The RPM 8 / runtime 0.1.1 candidate adds synthetic validation for Edit Permissions
+pointer delivery and OK/Cancel persistence. Its scope is separate from the older
+runtime gates; see [coverage and known limitations](docs/permissions-wayland.md).
+
 An installation created from official installers opened PBIX/PBIP/PBIR through the Fedora desktop, imported a local CSV, displayed the expected values and preserved them after save/reopen. A synthetic 158-table model with 156 relationships also passed UI refresh and independent data checks. A two-hour session passed with periodic visual interaction and no OOM or GPU-process replacement. One discrepant idle native-frame sample is retained in the validation notes; its cause is not established. Microsoft browser sign-in passed with a real account on the Fedora host; cloud publishing and the general OneLake source chooser still need validation; use the direct **Get Data → Text/CSV** menu for local CSVs. See [compatibility](docs/compatibility.md).
 
 Implementation checks and the distinction between a project's data cache and renderer failures are recorded in [validation](docs/validation.md). The subsequent [installed-RPM host validation](docs/validation-host.md) passed with system NTLM/ODBC and production desktop dispatch.

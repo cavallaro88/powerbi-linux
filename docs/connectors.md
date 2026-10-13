@@ -115,3 +115,32 @@ Dynamic or hand-authored M queries can also produce Power BI's normal warning
 that some sources may not be listed. A source is not the same as a query/table:
 several blocked queries can share one connection. The layout correction does not
 change native source discovery or synthesize additional entries.
+
+## Windows credential override: `Invalid handle`
+
+A real-report refresh on the installed RPM 7 failed with
+`System.Security.SecurityException: Invalid handle` in
+`WindowsIdentity.CreateFromToken` / `WindowsIdentity.Impersonate`, reached through
+the engine's Windows credential override with an explicit username/password.
+The provider was installed and all 15 doctor checks passed.
+
+The pinned Wine `LogonUserW` implementation returns success with the placeholder
+handle `0xdeadbeef`. A standalone test with fixed dummy credentials reproduced
+the same exception and stack without contacting a database. This identifies the
+Windows impersonation failure; it does not establish the outcome of a subsequent
+database connection or certify production TLS.
+
+A later user screenshot shows **Type: Database** for the source currently being edited. The trace does not establish that this source is still configured as Windows, nor exclude another source or an earlier credential state. Do not change a source already using Database solely on the basis of that trace.
+
+For MySQL-native usernames/passwords, choose **Database** in the credential dialog.
+For an existing source, use **Data source settings → select the affected source
+→ Edit Permissions → Credentials → Edit**, then choose Database and enter the
+database credentials. Keep the intended source scope. Do not change the query or
+clear unrelated permissions. Microsoft lists both Windows and Database modes;
+the limitation here is Wine's explicit Windows credential override, not a claim
+that Power BI itself lacks Windows authentication.
+
+Changing connector versions, deleting model caches or retrying the same Windows
+credentials does not repair that placeholder token. Do not substitute the current
+user's token and report a successful Windows logon: that would misrepresent the
+requested identity. See [Microsoft's Database authentication steps](https://learn.microsoft.com/en-us/power-query/connectors/mysql-database#connect-from-power-query-desktop).
