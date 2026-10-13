@@ -2,6 +2,13 @@
 
 ## 0.1.0 — development
 
+### RPM release 11 — cached models and original app icon, 2026-10-18
+
+- Compact valid linguistic JSON in memory before the existing model-copy/update path. The original ABF restores successfully; reapplying extensive multiline linguistic metadata caused a separate Analysis Services failure. Preserve all JSON values, escapes and number tokens; apply genuine source metadata changes normally. No report file or cache is automatically deleted or rewritten by the correction.
+- A private 158-table copy passed Desktop Save, graceful close and fresh normal reopen without refresh. All table row counts/states matched, including one existing query-error state. A new source-defined measure returned 73 before and after reopening. This is scoped evidence, not certification for every model or data value.
+- Extract the original PNG icon from the installed Power BI executable during user integration and refresh it on launch after upgrades. Retain the packaged fallback before provisioning; no Microsoft artwork is redistributed.
+- Setup/repair compiles and signs the guarded cache helper locally; runtime 0.1.3 and unlimited resource defaults remain unchanged. See [cache validation](docs/model-cache.md).
+
 ### RPM release 10 — post-publish Store rating, 2026-10-18
 
 - Disable only the Windows Store rating entrypoint on Fedora, returning a completed Task. Its WinRT awaiter caused a missing `System.Runtime.WindowsRuntime` error after a successful publication, even before its UWP gate ran.

@@ -47,3 +47,11 @@ are pinned in `connectors/mysql.lock.json`, installed only on request and checke
 through a per-profile manifest. The source-list patch resizes the existing widget
 one tick after show only when its cached page size is zero; native enumeration,
 selection and permission callbacks remain unchanged.
+
+RPM 11's signed `PowerBICacheCompatibility` helper compacts valid linguistic JSON
+in memory before the **complete original** TmslApplier model-copy/update path.
+It preserves metadata changes rather than skipping application of project
+schema. Guarded setup rejects unsupported/already patched assemblies. Existing
+Newtonsoft.Json is used from the local application. See [failure isolation,
+Save/reopen and limits](model-cache.md). The original application icon is
+extracted locally by the CLI; it is not an assembly patch.

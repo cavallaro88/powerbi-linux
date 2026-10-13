@@ -31,7 +31,7 @@ The validated profile occupies approximately 9 GiB, before the runtime, verified
 
 Close all managed windows before maintenance. Setup can resume an interrupted stage using the same inputs. Repair and runtime update create a separate profile generation before activating it; failure leaves the current pointer untouched.
 
-To upgrade the CLI, run `sudo dnf upgrade ./powerbi-linux-0.1.0-9.noarch.rpm`
+To upgrade the CLI, run `sudo dnf upgrade ./powerbi-linux-0.1.0-11.noarch.rpm`
 and `pbi-linux doctor`. If the HTML/email dialog checks report outdated patches,
 close Desktop and run `pbi-linux repair`, then check again. Repair applies the
 new recipe to a new profile while retaining the previous one for rollback.
@@ -70,3 +70,9 @@ RPM 7 setup/repair also disables Desktop's update notifications using Microsoft'
 documented option. An RPM-only upgrade does not change that existing profile
 setting. See [update policy](updates.md); the current runtime update command does
 not update Desktop, and a Fedora notifier for validated releases remains planned.
+
+RPM 11 adds the [cached-model recipe](model-cache.md) and [original local app
+icon](app-icon.md). Its `cache-restore` doctor check distinguishes an older profile
+from an updated one. An RPM upgrade updates CLI/source recipes, not existing
+Windows assemblies. Profiles already updated by validated local maintenance do
+not need another repair; the original icon refreshes on the next managed launch.

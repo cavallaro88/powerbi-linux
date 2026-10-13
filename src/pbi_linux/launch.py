@@ -81,6 +81,8 @@ def open_file(paths, value, diagnostics=False):
         if not paths.active.is_file():
             raise Error('Power BI is not set up for this user. Run pbi-linux setup --help to prepare the installation.')
         installation = active(paths)
+        from .desktop import refresh_icon
+        refresh_icon(paths, installation)
         if paths.socket.exists():
             try:
                 return request(paths, filename, diagnostics)

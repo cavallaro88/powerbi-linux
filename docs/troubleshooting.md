@@ -63,3 +63,14 @@ Before attaching any log to a public issue, remove usernames, document paths, da
   earlier fallback could retain the last valid resize image. A component and
   GNOME compositor-motion reproducer passed; actual Power BI restart validation
   is separate. See [cursor evidence](cursor.md).
+
+- **A PBIP fails with an Analysis Services unexpected exception when ABF exists:**
+  retain the cache and project definitions. Image loading may succeed while the
+  later metadata update fails. RPM 11 handles the reproduced extensive multiline
+  linguistic JSON case without deleting data or bypassing model synchronization.
+  Check `cache-restore` in doctor; see [diagnosis and recovery](model-cache.md).
+  Other causes require their own evidence.
+- **The launcher still shows a generic icon:** the original PNG is extracted
+  after Desktop provisioning, on integration and managed launch with RPM 11.
+  Check the per-user desktop entry and application availability; see
+  [original app icon](app-icon.md). The generic packaged icon is the pre-setup fallback.

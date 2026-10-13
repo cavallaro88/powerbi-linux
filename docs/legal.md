@@ -24,3 +24,9 @@ The installation command requires explicit license acknowledgement and retains
 package provenance plus any embedded notices. Project artifacts contain the
 recipe and independent tools, not these downloaded assemblies. See
 [connector installation](connectors.md) and the linked upstream packages.
+
+The original Power BI PNG icon is extracted unchanged from the user's installed
+application for local desktop integration. Neither that Microsoft artwork nor
+populated model caches are included in project RPM/source/QA releases. Existing
+Power BI Newtonsoft.Json is referenced locally by the cache helper; the project
+does not redistribute it. See [icon behavior](app-icon.md) and [cache scope](model-cache.md).

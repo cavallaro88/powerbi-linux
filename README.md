@@ -2,6 +2,12 @@
 
 Community compatibility tools for Power BI Desktop using patched Wine, DXVK and native Wayland. **Validated development preview 0.1.0: compatibility is scoped to the documented synthetic workloads.**
 
+RPM 11 adds a scoped [cache restore correction](docs/model-cache.md), preserving
+the original model synchronization and data. Desktop Save and a fresh normal
+reopen passed in a private 158-table copy, including a real metadata change.
+Desktop integration uses the original Power BI icon extracted locally from the
+installed application; Microsoft artwork is not bundled in the RPM.
+
 The runtime 0.1.3 candidate adds a scoped [cross-process cursor correction](docs/cursor.md),
 with a native component and compositor-motion reproducer. RPM 9 remains compatible.
 After restart, the real Power BI sidebar/canvas alternated horizontal resize and
@@ -13,7 +19,7 @@ clipped scrolling. Its 22-tab synthetic audit and numeric regression have a
 separate [validation scope](docs/options-dialog.md). It retains the earlier
 [Edit Permissions corrections](docs/permissions-wayland.md).
 
-An installation created from official installers opened PBIX/PBIP/PBIR through the Fedora desktop, imported a local CSV, displayed the expected values and preserved them after save/reopen. A synthetic 158-table model with 156 relationships also passed UI refresh and independent data checks. A two-hour session passed with periodic visual interaction and no OOM or GPU-process replacement. One discrepant idle native-frame sample is retained in the validation notes; its cause is not established. Microsoft browser sign-in passed with a real account on the Fedora host; cloud publishing and the general OneLake source chooser still need validation; use the direct **Get Data → Text/CSV** menu for local CSVs. See [compatibility](docs/compatibility.md).
+An installation created from official installers opened PBIX/PBIP/PBIR through the Fedora desktop, imported a local CSV, displayed the expected values and preserved them after save/reopen. A synthetic 158-table model with 156 relationships also passed UI refresh and independent data checks. A two-hour session passed with periodic visual interaction and no OOM or GPU-process replacement. One discrepant idle native-frame sample is retained in the validation notes; its cause is not established. Microsoft browser sign-in passed with a real account on the Fedora host; a real homologation publication was confirmed by the user, while another cloud cycle after the local correction and the general OneLake source chooser remain separate; use the direct **Get Data → Text/CSV** menu for local CSVs. See [compatibility](docs/compatibility.md).
 
 Implementation checks and the distinction between a project's data cache and renderer failures are recorded in [validation](docs/validation.md). The subsequent [installed-RPM host validation](docs/validation-host.md) passed with system NTLM/ODBC and production desktop dispatch.
 
@@ -34,7 +40,7 @@ Fedora 44, x86_64, a systemd user session, native Wayland and a Vulkan-capable G
 Build or obtain the RPM, then install it:
 
 ```bash
-sudo dnf install ./powerbi-linux-0.1.0-10.noarch.rpm
+sudo dnf install ./powerbi-linux-0.1.0-11.noarch.rpm
 pbi-linux doctor
 ```
 

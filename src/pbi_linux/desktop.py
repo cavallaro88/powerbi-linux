@@ -6,10 +6,39 @@ import shutil
 import shlex
 import subprocess
 from .common import atomic_json, read_json
+from . import icons
 from .provision import resource_root
 
 DESKTOP_ID = 'powerbi-linux.desktop'
 MIMES = ['application/x-powerbi-pbix', 'application/x-powerbi-pbip', 'application/x-powerbi-pbir']
+
+
+def refresh_icon(paths, installation=None):
+    """Keep the original installed Power BI icon across RPM/profile updates."""
+    entry = paths.data.parent/'applications'/DESKTOP_ID
+    if not entry.is_file() or entry.is_symlink():
+        return
+    if installation is None:
+        if not paths.active.exists():
+            return
+        installation = read_json(paths.active)
+    icon = icons.install_original(paths, installation['prefix'])
+    if icon is None:
+        return
+    try:
+        parser = configparser.ConfigParser(interpolation=None, strict=False)
+        parser.optionxform = str
+        parser.read(entry)
+        if not parser.has_section('Desktop Entry') or parser.get('Desktop Entry', 'Hidden', fallback='false') == 'true':
+            return
+        if parser.get('Desktop Entry', 'Icon', fallback='') != str(icon):
+            parser.set('Desktop Entry', 'Icon', str(icon))
+            pending = entry.with_suffix('.desktop.pending')
+            with pending.open('w') as out:
+                parser.write(out, space_around_delimiters=False)
+            os.replace(pending, entry)
+    except (OSError, UnicodeError, configparser.Error):
+        return
 
 
 def remove_legacy_wine_entries(paths):
@@ -75,6 +104,7 @@ def integrate(paths, make_default=False):
     for source, target in files:
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(source, target)
+    refresh_icon(paths)
     saved = read_json(paths.config/'desktop.json') if (paths.config/'desktop.json').exists() else {'defaults':{}}
     if make_default and shutil.which('xdg-mime'):
         for mime in MIMES:
@@ -118,7 +148,9 @@ def remove(paths):
                             parser.write(out)
     data = paths.data.parent
     for file in (data/'applications'/DESKTOP_ID, data/'mime/packages/powerbi-linux.xml',
-                 data/'icons/hicolor/scalable/apps/powerbi-linux.svg'):
+                 data/'icons/hicolor/scalable/apps/powerbi-linux.svg',
+                 data/'icons/hicolor/512x512/apps/powerbi-linux.png',
+                 paths.cache/'desktop-icon.json'):
         file.unlink(missing_ok=True)
     # The RPM's system entry remains installed. Mask it for this user rather
     # than exposing it again after deleting the per-user entry. Repair copies

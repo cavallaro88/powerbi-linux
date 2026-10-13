@@ -13,6 +13,7 @@ ORIGINALS = {
 }
 
 NATIVE_DIALOG = 'PowerBISaveDialog.dll'
+CACHE_COMPAT = 'PowerBICacheCompatibility.dll'
 
 
 def build_native_dialog(helpers, wine, env, log, key):
@@ -32,6 +33,26 @@ def build_native_dialog(helpers, wine, env, log, key):
          r'C:\powerbi-linux-setup\unsigned\PowerBISaveDialog.dll',
          r'C:\powerbi-linux-setup\PowerBISaveDialog.dll',
          'Z:' + str(key).replace('/', '\\')], env=env, log=log)
+
+
+def build_cache_compatibility(helpers, bin_dir, wine, env, log, key):
+    sources = Path(__file__).resolve().parents[1] / 'helpers'
+    for name in ('PowerBICacheCompatibility.cs', 'PatchCacheCompatibility.cs'):
+        shutil.copy2(sources / name, helpers / name)
+    compiler = r'C:\windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe'
+    win = lambda path: 'Z:' + str(path).replace('/', '\\')
+    # Newtonsoft.Json is the pinned Desktop's existing local dependency; it is
+    # not bundled in the RPM or replaced by this helper.
+    run([wine, compiler, '/nologo', '/optimize+', '/target:library',
+         '/r:' + win(bin_dir / 'Newtonsoft.Json.dll'),
+         r'/out:unsigned\PowerBICacheCompatibility.dll', 'PowerBICacheCompatibility.cs'],
+        env=env, cwd=helpers, log=log)
+    run([wine, compiler, '/nologo', '/optimize+', '/r:dnlib.dll', '/r:System.Core.dll',
+         '/out:PatchCacheCompatibility.exe', 'PatchCacheCompatibility.cs'],
+        env=env, cwd=helpers, log=log)
+    run([wine, helpers / 'PatchCacheCompatibility.exe', '--sign-helper',
+         win(helpers / 'unsigned' / CACHE_COMPAT), win(helpers / CACHE_COMPAT), win(key)],
+        env=env, log=log)
 
 
 def self_token(source):
@@ -93,6 +114,7 @@ def install(prefix, runtime, log):
         run([wine,helpers/'SignStubs.exe',r'C:\powerbi-linux-setup\unsigned\WinRTStubs.dll',
              r'C:\powerbi-linux-setup\WinRTStubs.dll',r'C:\powerbi-linux-setup\stubs.snk'],env=env,log=log)
         build_native_dialog(helpers, wine, env, log, key)
+        build_cache_compatibility(helpers, bin_dir, wine, env, log, key)
         windows_input.write_bytes(patched_windows)
         for patcher, name in [('PatchShared.exe', 'Microsoft.PowerBI.Client.Shared.dll'),
                               ('PatchWinRT.exe', 'Microsoft.PowerBI.Client.Windows.dll')]:
@@ -109,6 +131,11 @@ def install(prefix, runtime, log):
                      *['Z:' + str(file).replace('/', '\\') for file in (out, store_out)]],
                     env=env, log=log)
                 os.replace(store_out, out)
+                cache_out = helpers / (name + '.cache')
+                run([wine, helpers / 'PatchCacheCompatibility.exe',
+                     *['Z:' + str(file).replace('/', '\\') for file in (out, cache_out, helpers / CACHE_COMPAT)]],
+                    env=env, log=log)
+                os.replace(cache_out, out)
                 native_out = helpers / (name + '.native')
                 run([wine, helpers / 'PatchSavePrompt.exe',
                      *['Z:' + str(file).replace('/', '\\') for file in (
@@ -124,7 +151,7 @@ def install(prefix, runtime, log):
         out = bin_dir / (name + '.new')
         out.write_bytes(patched_ui)
         os.replace(out, bin_dir / name)
-        for name in ('WinRTStubs.dll', 'PowerBIDiagnostics.dll', 'PowerBICompositionManager.dll', NATIVE_DIALOG):
+        for name in ('WinRTStubs.dll', 'PowerBIDiagnostics.dll', 'PowerBICompositionManager.dll', NATIVE_DIALOG, CACHE_COMPAT):
             shutil.copy2(helpers / name, bin_dir / name)
         run([wine, helpers/'EnableModernEditor.exe'], env=env, log=log)
         signin.configure_browser(prefix, wine, env, helpers, log)
@@ -132,4 +159,4 @@ def install(prefix, runtime, log):
         key.unlink(missing_ok=True)
         windows_input.unlink(missing_ok=True)
     return {name: digest(bin_dir/name) for name in (*ORIGINALS, 'WinRTStubs.dll',
-                                                   'PowerBIDiagnostics.dll', 'PowerBICompositionManager.dll', NATIVE_DIALOG)}
+                                                   'PowerBIDiagnostics.dll', 'PowerBICompositionManager.dll', NATIVE_DIALOG, CACHE_COMPAT)}

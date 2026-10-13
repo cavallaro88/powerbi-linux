@@ -5,7 +5,7 @@ cd /work
 mkdir -p .local/helper-check/unsigned
 trap 'rm -f .local/helper-check/stubs.snk' EXIT
 cp sources/dnlib/lib/net45/dnlib.dll .local/helper-check/
-for tool in PatchShared PatchWinRT PatchSavePrompt MakeKey SignStubs EnableModernEditor ConfigureSignIn; do
+for tool in PatchShared PatchWinRT PatchSavePrompt PatchStoreRating PatchCacheCompatibility MakeKey SignStubs EnableModernEditor ConfigureSignIn; do
     mcs -r:.local/helper-check/dnlib.dll -out:.local/helper-check/"$tool".exe src/helpers/"$tool".cs
  done
 mcs -target:library -out:.local/helper-check/PowerBIDiagnostics.dll src/helpers/PowerBIDiagnostics.cs
@@ -43,4 +43,4 @@ if mono .local/helper-check/SignStubs.exe .local/helper-check/PowerBIDiagnostics
     .local/helper-check/unexpected.dll .local/helper-check/stubs.snk; then exit 1; fi
 if mono .local/helper-check/PatchShared.exe .local/helper-check/WinRTStubs.dll .local/helper-check/unexpected.dll; then exit 1; fi
 if [ -e .local/helper-check/unexpected.dll ]; then exit 1; fi
-printf 'Production helpers compiled; malformed inputs rejected.\n'
+printf 'Mono-compatible helpers/patchers compiled; malformed inputs rejected. Cache helper library is compiled/tested with the installed application dependency by its native regression.\n'

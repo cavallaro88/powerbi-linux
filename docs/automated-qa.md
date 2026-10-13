@@ -149,3 +149,16 @@ assembly error; the corrected entrypoint returned a completed Task. This check
 is included in the components suite. The October 18 quick run passed all four
 checks, including 60 Python tests; cloud publishing is separate from this offline
 regression. See [publishing](publishing.md).
+
+## October 18 cache and icon coverage
+
+The RPM 11 quick suite contains 65 unit tests. Native cache normalization adds
+ten own-input checks, and the components runner includes that tool alongside
+the Store-rating regression. Native checks were run individually on the host;
+the dedicated QA installation remains a separate obligation. A private populated
+158-table copy additionally passed a genuine TMDL measure change, Desktop Save,
+graceful close and fresh normal reopen. Counts/states matched, including one
+preexisting query error. That private evidence is sanitized before export; real
+models and ABF files never enter the public suite. These tests do not constitute
+an unattended end-to-end lab. See [cache evidence](model-cache.md) and
+[local icon extraction](app-icon.md).

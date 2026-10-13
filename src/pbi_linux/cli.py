@@ -7,7 +7,7 @@ from pathlib import Path
 import shutil
 import subprocess
 import sys
-from . import __version__, assets, launch, provision, desktop, resources, legacy_html, signin, connectors
+from . import __version__, assets, launch, provision, desktop, resources, legacy_html, signin, connectors, patches
 from .common import Error, Paths, busy, read_json, check_digest, atomic_json
 
 
@@ -71,6 +71,10 @@ def doctor(paths):
                 add('sign-in-dialog', patched,
                     'Email dialog serializer patch is present' if patched else
                     'Email dialog serializer is outdated; close Desktop and run pbi-linux repair')
+                cache_patched = patches.CACHE_COMPAT in installed['patches'] and b'PowerBICacheCompatibility' in assembly.read_bytes()
+                add('cache-restore', cache_patched,
+                    'Linguistic JSON normalization is present' if cache_patched else
+                    'Cache compatibility patch is missing; close Desktop and run repair')
             except (Error, OSError, ValueError) as exc:
                 add('sign-in-dialog', False, str(exc))
         except (Error, OSError, KeyError) as exc:
