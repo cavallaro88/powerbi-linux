@@ -1,14 +1,17 @@
 # Instalação no Fedora
 
-Alvo inicial: **Fedora 44, x86_64 e Wayland nativo**. O projeto ainda está em desenvolvimento; login Microsoft não funciona. Refresh pela interface e save/reopen passaram em um modelo sintético de 158 tabelas, e o teste prolongado de duas horas também passou. A validação registra uma captura nativa discrepante em uma reabertura; sua causa ainda não foi estabelecida. Isso não garante compatibilidade com qualquer relatório empresarial.
+Alvo inicial: **Fedora 44, x86_64 e Wayland nativo**. O projeto ainda está em desenvolvimento; autenticação Microsoft completa permanece em validação. Refresh pela interface e save/reopen passaram em um modelo sintético de 158 tabelas, e o teste prolongado de duas horas também passou. A validação registra uma captura nativa discrepante em uma reabertura; sua causa ainda não foi estabelecida. Isso não garante compatibilidade com qualquer relatório empresarial.
 
-Instale o RPM com `sudo dnf install ./powerbi-linux-0.1.0-4.noarch.rpm`. Ele instala a CLI e a integração com o desktop. O Power BI e os componentes Microsoft são instalados separadamente no seu usuário.
+Instale o RPM com `sudo dnf install ./powerbi-linux-0.1.0-5.noarch.rpm`. Ele instala a CLI e a integração com o desktop. O Power BI e os componentes Microsoft são instalados separadamente no seu usuário.
 
-Para atualizar uma instalação existente, feche o Desktop e execute
-`sudo dnf upgrade ./powerbi-linux-0.1.0-4.noarch.rpm`, seguido de
-`pbi-linux repair` e `pbi-linux doctor`. O repair aplica a correção dos
-[diálogos de credenciais](legacy-html.md) em um novo perfil e preserva o anterior
-para rollback. Atualizar apenas o RPM não modifica o prefixo existente.
+Para atualizar a CLI, execute `sudo dnf upgrade ./powerbi-linux-0.1.0-5.noarch.rpm`
+e `pbi-linux doctor`. Se o doctor indicar que os patches de diálogo estão
+desatualizados, feche o Desktop, execute `pbi-linux repair` e confira novamente.
+O repair aplica as correções de [credenciais](legacy-html.md) e do botão
+[Continue no login](sign-in.md) em um novo perfil, preservando o anterior para
+rollback. Ele não é necessário quando os patches já estão presentes e o doctor
+passa. Atualizar apenas o RPM não modifica o prefixo existente. A autenticação
+Microsoft completa ainda depende de validação interativa com uma conta.
 
 O perfil validado ocupa aproximadamente 9 GiB, além de runtime, downloads, cache derivado e relatórios. Em filesystems sem reflink, reparo/atualização precisam de espaço para outra cópia completa do perfil e seu cache; a anterior fica disponível para rollback.
 

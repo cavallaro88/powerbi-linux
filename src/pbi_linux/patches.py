@@ -3,7 +3,7 @@ import os
 from pathlib import Path
 import shutil
 from .common import Error, check_digest, digest, run, wine_env
-from . import legacy_html
+from . import legacy_html, signin
 
 ORIGINALS = {
     'Microsoft.PowerBI.Client.Shared.dll': '1dc130d913b92f315b81aa5162e8fa74e8a0279742f988561680111d5189ff78',
@@ -63,6 +63,11 @@ def install(prefix, runtime, log):
     if not ui_source.exists():
         ui_source = bin_dir / ui_name
     patched_ui = legacy_html.patch_ui(ui_source.read_bytes())
+    windows_name = 'Microsoft.PowerBI.Client.Windows.dll'
+    windows_source = backups / windows_name
+    if not windows_source.exists():
+        windows_source = bin_dir / windows_name
+    patched_windows = signin.patch_windows(windows_source.read_bytes())
     for name in ORIGINALS:
         backup = backups / name
         if not backup.exists():
@@ -73,6 +78,7 @@ def install(prefix, runtime, log):
         if source.is_file():
             shutil.copy2(source, helpers / source.name)
     key = helpers / 'stubs.snk'
+    windows_input = helpers / 'Desktop-email-dialog-input.dll'
     if not key.exists():
         run([wine, helpers / 'MakeKey.exe', r'C:\powerbi-linux-setup\stubs.snk'], env=env, log=log)
     try:
@@ -85,10 +91,12 @@ def install(prefix, runtime, log):
         run([wine,helpers/'SignStubs.exe',r'C:\powerbi-linux-setup\unsigned\WinRTStubs.dll',
              r'C:\powerbi-linux-setup\WinRTStubs.dll',r'C:\powerbi-linux-setup\stubs.snk'],env=env,log=log)
         build_native_dialog(helpers, wine, env, log, key)
+        windows_input.write_bytes(patched_windows)
         for patcher, name in [('PatchShared.exe', 'Microsoft.PowerBI.Client.Shared.dll'),
                               ('PatchWinRT.exe', 'Microsoft.PowerBI.Client.Windows.dll')]:
             out = helpers / name
-            args = [wine, helpers / patcher, 'Z:' + str(backups/name).replace('/', '\\'),
+            source = windows_input if patcher == 'PatchWinRT.exe' else backups / name
+            args = [wine, helpers / patcher, 'Z:' + str(source).replace('/', '\\'),
                     'Z:' + str(out).replace('/', '\\')]
             if patcher == 'PatchWinRT.exe':
                 args.append('Z:' + str(key).replace('/', '\\'))
@@ -114,5 +122,6 @@ def install(prefix, runtime, log):
         run([wine, helpers/'EnableModernEditor.exe'], env=env, log=log)
     finally:
         key.unlink(missing_ok=True)
+        windows_input.unlink(missing_ok=True)
     return {name: digest(bin_dir/name) for name in (*ORIGINALS, 'WinRTStubs.dll',
                                                    'PowerBIDiagnostics.dll', 'PowerBICompositionManager.dll', NATIVE_DIALOG)}

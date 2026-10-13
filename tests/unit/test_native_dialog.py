@@ -42,6 +42,7 @@ class NativeDialogProvisionTests(unittest.TestCase):
         # This fixture exercises later native-dialog failures; the independent
         # HTML resource guard is covered by test_legacy_html.
         with patch.object(patches.legacy_html, 'patch_ui', return_value=b'html-patch'), \
+                patch.object(patches.signin, 'patch_windows', return_value=b'email-patch'), \
                 patch.object(patches, 'run', side_effect=run):
             with self.assertRaises(common.Error):
                 patches.install(self.prefix, self.runtime, self.root / 'log')

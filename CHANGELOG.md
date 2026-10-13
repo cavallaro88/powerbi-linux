@@ -2,6 +2,12 @@
 
 ## 0.1.0 — development
 
+### RPM release 5 — development preview, 2026-10-15
+
+- Fix Continue in the legacy email prompt by serializing its existing email/retry/warning fields without traversing native UI objects.
+- Preserve native email validation, cancellation and authentication. The guarded resource patch preserves PE/resource sizes and IL and is applied before WinRT/save-dialog patching.
+- Doctor checks the email serializer resource. Completing the email prompt is tracked separately from successful Microsoft authentication.
+
 ### RPM release 4 — development preview, 2026-10-14
 
 - Register Wine's built-in MSHTML in both architectures after installers and during repair; doctor checks the protocol and MIME handlers without starting Wine.

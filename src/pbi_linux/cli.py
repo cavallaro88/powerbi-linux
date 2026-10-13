@@ -7,7 +7,7 @@ from pathlib import Path
 import shutil
 import subprocess
 import sys
-from . import __version__, assets, launch, provision, desktop, resources, legacy_html
+from . import __version__, assets, launch, provision, desktop, resources, legacy_html, signin
 from .common import Error, Paths, busy, read_json, check_digest, atomic_json
 
 
@@ -59,6 +59,14 @@ def doctor(paths):
                     'Wine HTML registrations and credential dialog patch are present')
             except (Error, OSError, ValueError) as exc:
                 add('legacy-html', False, str(exc))
+            try:
+                assembly = Path(installed['prefix']) / provision.BIN / 'Microsoft.PowerBI.Client.Windows.dll'
+                patched = signin.resource_hash(assembly.read_bytes()) == signin.RESOURCE_PATCHED_SHA256
+                add('sign-in-dialog', patched,
+                    'Email dialog serializer patch is present' if patched else
+                    'Email dialog serializer is outdated; close Desktop and run pbi-linux repair')
+            except (Error, OSError, ValueError) as exc:
+                add('sign-in-dialog', False, str(exc))
         except (Error, OSError, KeyError) as exc:
             add('integrity', False, str(exc))
     return {'schema':1, 'version':__version__, 'ok':all(c['ok'] for c in checks), 'checks':checks, 'components':components,

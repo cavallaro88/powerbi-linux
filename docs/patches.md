@@ -16,6 +16,7 @@ The initial patch set targets Wine 11.18 and DXVK 3.1. Wine composition incorpor
 | WebView2 per-app Windows version | The investigated profile used `win7` for `msedgewebview2.exe`; reproducing it prevents fixed-runtime GPU crashes, while Desktop remains on `win10` | Required by the tested recipe |
 | Modern Power Query switch | Select the tested WebView2 editor | Required, internal app interface that may change |
 | Legacy HTML registration and UI resources | Restore Wine protocol/MIME handlers; work around an unsupported CSS setter and stale credential-sidebar height | Required for the pinned app; exact input/output hashes and resource sizes checked; modified Microsoft assembly stays local |
+| Email dialog serializer | Serialize the three wire fields without traversing native host/button objects when Continue reads the view model | Guarded local resource change; native validation/authentication unchanged; interactive account validation pending |
 
 `WinRTStubs` reports APIs unavailable and contains incomplete methods; it does not implement Windows storage/launch contracts. No broader WinRT support is claimed. The self-token workaround is not equivalent to anonymous Windows identity.
 

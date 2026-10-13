@@ -15,7 +15,7 @@ Fedora 44, x86_64, a systemd user session, native Wayland and a Vulkan-capable G
 Build or obtain the RPM, then install it:
 
 ```bash
-sudo dnf install ./powerbi-linux-0.1.0-4.noarch.rpm
+sudo dnf install ./powerbi-linux-0.1.0-5.noarch.rpm
 pbi-linux doctor
 ```
 
@@ -41,6 +41,9 @@ RPM 0.1.0-3 adds a [native unsaved-changes confirmation](docs/native-dialogs.md)
 RPM 0.1.0-4 fixes [legacy credential dialogs](docs/legacy-html.md) that could
 remain invisible and block refresh. Existing profiles need `pbi-linux repair`
 after upgrading the RPM, with Desktop closed, to receive the correction.
+RPM 0.1.0-5 fixes Continue in the legacy [email sign-in prompt](docs/sign-in.md).
+An interactive account test is still needed to validate authentication and token
+persistence; completing this prompt alone does not certify cloud access.
 The separate [refresh-cancellation checks](docs/refresh-cancellation.md) record
 successful cancellation and an approximately 20-second wait during synthetic
 data loading. A subsequent real refresh blockage was traced to an invisible
