@@ -15,7 +15,7 @@ Fedora 44, x86_64, a systemd user session, native Wayland and a Vulkan-capable G
 Build or obtain the RPM, then install it:
 
 ```bash
-sudo dnf install ./powerbi-linux-0.1.0-1.noarch.rpm
+sudo dnf install ./powerbi-linux-0.1.0-2.noarch.rpm
 pbi-linux doctor
 ```
 
@@ -35,7 +35,7 @@ Read [installation](docs/install.md) and [legal notes](docs/legal.md) first. Pow
 
 Add `--make-default` to opt into default file associations. Otherwise use **Open With → Power BI Desktop (Wine)**. Installation uses XDG directories; preferences and credentials persist across launches. Opening a file does not rebuild Wine or reapply patches.
 
-For larger models on a host with sufficient memory, use `pbi-linux profile large`, then close and reopen Power BI. It selects the 10 GiB RAM / 4 GiB swap limits used for the synthetic refresh test on a 16 GiB host. `pbi-linux profile normal` restores the defaults.
+RPM 0.1.0-2 defaults to no project RAM/swap limits or CPU quota, automatic WebView2 heap and standard browser settings. `pbi-linux profile` shows the effective policy. Limits and economy options are opt-in; `pbi-linux profile unlimited` restores the default. Close all Power BI windows and reopen to apply changes. See [resource settings](docs/resources.md) for individual options and the optional `normal`/`large` economy presets.
 
 ## Develop
 

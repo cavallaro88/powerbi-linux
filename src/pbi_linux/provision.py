@@ -8,14 +8,11 @@ import subprocess
 import time
 import uuid
 import zipfile
-from . import assets, patches, pe_cache, webview
+from . import assets, patches, pe_cache, webview, resources
 from .common import Error, atomic_json, busy, check_digest, digest, read_json, run, wine_env
 
 BIN = 'drive_c/Program Files/Microsoft Power BI Desktop/bin'
-FLAGS = ('--use-gl=angle --use-angle=d3d11 --disable-direct-composition '
-         '--renderer-process-limit=2 --js-flags=--max_old_space_size=512 '
-         '--process-per-site --enable-low-end-device-mode '
-         '--disable-features=SpareRendererForSitePerProcess')
+FLAGS = resources.BASE_BROWSER_FLAGS
 
 
 def resource_root():
@@ -24,12 +21,7 @@ def resource_root():
 
 
 def settings(paths):
-    value = read_json(paths.settings) if paths.settings.exists() else {}
-    value.setdefault('memory_profile', 'normal')
-    value.setdefault('memory_max', '6G')
-    value.setdefault('swap_max', '2G')
-    value.setdefault('webview_heap_mb', 512)
-    return value
+    return resources.load(paths)
 
 
 def webview_config(runtime=None):
@@ -113,7 +105,7 @@ def configure(prefix, runtime, paths, log):
     registry(wine, env, r'HKCU\Software\Wine\AppDefaults\msedgewebview2.exe', 'Version', 'REG_SZ', 'win7', log)
     registry(wine, env, r'HKCU\Software\Microsoft\Avalon.Graphics', 'DisableHWAcceleration', 'REG_DWORD', '1', log)
     registry(wine, env, r'HKLM\Software\Policies\Microsoft\Edge\WebView2\AdditionalBrowserArguments',
-             'PBIDesktop.exe', 'REG_SZ', FLAGS, log)
+             'PBIDesktop.exe', 'REG_SZ', resources.browser_flags(settings(paths)), log)
     browser=webview_config(runtime)
     if browser.get('distribution')=='fixed':
         payload=assets.download(browser['url'],browser['sha256'],paths.cache/'downloads')

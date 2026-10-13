@@ -7,7 +7,7 @@ from pathlib import Path
 import shutil
 import subprocess
 import sys
-from . import __version__, assets, launch, provision, desktop
+from . import __version__, assets, launch, provision, desktop, resources
 from .common import Error, Paths, busy, read_json, check_digest, atomic_json
 
 
@@ -74,8 +74,21 @@ def parser():
     diagnosis = sub.add_parser('doctor', help='Check prerequisites and installation integrity')
     diagnosis.add_argument('--json', action='store_true')
     sub.add_parser('repair', help='Repair a snapshot while preserving the current installation')
-    profile=sub.add_parser('profile',help='Set memory limits for the next session')
-    profile.add_argument('name',choices=('normal','large'))
+    profile=sub.add_parser('profile',help='Show or set optional resource limits for the next session')
+    profile.add_argument('name',nargs='?',choices=('unlimited','normal','large'))
+    def option_type(parse):
+        def check(value):
+            try:
+                return parse(value)
+            except Error as exc:
+                raise argparse.ArgumentTypeError(str(exc)) from exc
+        return check
+    profile.add_argument('--memory-max',type=option_type(resources.memory_limit),help='RAM limit: unlimited (default), 6G, 1024M, etc.')
+    profile.add_argument('--swap-max',type=option_type(lambda v:resources.memory_limit(v,swap=True)),help='Swap limit: unlimited (default), 2G, or 0 to disable swap')
+    profile.add_argument('--cpu-quota',type=option_type(resources.cpu_limit),help='CPU quota: unlimited (default); 100%% equals one logical CPU')
+    profile.add_argument('--webview-heap',dest='webview_heap_mb',type=option_type(resources.heap_limit),help='V8 old-space cap: auto (default) or 128–8192 MiB')
+    profile.add_argument('--renderer-process-limit',type=option_type(resources.renderer_limit),help='auto (default) or 1–128 renderer processes')
+    profile.add_argument('--browser-mode',choices=('standard','economy'),help='standard (default) or opt-in economy browser flags')
     update = sub.add_parser('update', help='Activate an explicitly supplied runtime release')
     update.add_argument('--runtime', required=True)
     update.add_argument('--runtime-sha256', required=True)
@@ -106,13 +119,20 @@ def main(argv=None):
         elif args.command in ('repair','update'):
             provision.maintain(paths, args)
         elif args.command == 'profile':
+            changes={key:getattr(args,key) for key in ('memory_max','swap_max','cpu_quota',
+                     'webview_heap_mb','renderer_process_limit','browser_mode') if getattr(args,key) is not None}
+            if args.name is None and not changes:
+                print(json.dumps(provision.settings(paths),indent=2))
+                return 0
             with paths.lock():
                 config=provision.settings(paths)
-                config.update(memory_profile=args.name,webview_heap_mb=512,
-                              memory_max='10G' if args.name=='large' else '6G',
-                              swap_max='4G' if args.name=='large' else '2G')
-                atomic_json(paths.settings,config)
-            print('Memory profile '+args.name+' selected. Close and reopen Power BI to apply it.')
+                if args.name is not None:
+                    config.update(resources.preset(args.name))
+                config.update(changes)
+                if changes:
+                    config['memory_profile']='custom'
+                atomic_json(paths.settings,resources.validate(config))
+            print('Resource profile '+config['memory_profile']+' selected. Close all Power BI windows and reopen to apply it.')
         elif args.command == 'rollback':
             provision.rollback(paths)
         elif args.command == 'uninstall':

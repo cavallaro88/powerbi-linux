@@ -3,7 +3,6 @@
 import json
 import os
 from pathlib import Path
-import re
 import shutil
 import signal
 import socket
@@ -11,8 +10,8 @@ import subprocess
 import sys
 import time
 from .common import Error, check_digest, read_json, run
-from .provision import active, BIN, FLAGS, settings, verified_webview
-from . import pe_cache
+from .provision import active, BIN, settings, verified_webview
+from . import pe_cache, resources
 
 UNIT = 'pbi-linux-session.service'
 
@@ -44,10 +43,7 @@ def environment(paths, installation):
                LIB_ODBC_DRIVER_MANAGER='libodbc.so.2',
                DXVK_LOG_PATH=str(paths.state), DXVK_LOG_LEVEL='error')
     config = settings(paths)
-    heap = config['webview_heap_mb']
-    if not isinstance(heap, int) or not 512 <= heap <= 8192:
-        raise Error('webview_heap_mb must be an integer between 512 and 8192')
-    env['WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS'] = FLAGS.replace('max_old_space_size=512', 'max_old_space_size='+str(heap))
+    env['WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS'] = resources.browser_flags(config)
     cache = paths.cache/'pe'/prefix.name
     browser=verified_webview(prefix,runtime)
     if browser.parent.parent.name=='powerbi-linux-webview':
@@ -102,14 +98,12 @@ def open_file(paths, value, diagnostics=False):
         if not shutil.which('ntlm_auth'):
             raise Error('Install samba-winbind-clients before opening Power BI')
         config = settings(paths)
-        for key in ('memory_max', 'swap_max'):
-            if not re.fullmatch(r'[1-9][0-9]*[MG]', str(config[key])):
-                raise Error(key + ' must use a positive M or G quantity')
         # Forward only graphical session variables to the service; its process does not
         # inherit arbitrary WINEPREFIX, debugging or diagnostic overrides.
         command = ['systemd-run', '--user', '--unit='+UNIT, '--collect',
-                   '-p', 'Type=exec', '-p', 'KillMode=mixed', '-p', 'TimeoutStopSec=10s', '-p', 'TimeoutAbortSec=1s', '-p', 'LimitCORE=0',
-                   '-p', 'MemoryMax='+config['memory_max'], '-p', 'MemorySwapMax='+config['swap_max']]
+                   '-p', 'Type=exec', '-p', 'KillMode=mixed', '-p', 'TimeoutStopSec=10s', '-p', 'TimeoutAbortSec=1s', '-p', 'LimitCORE=0']
+        for prop in resources.service_properties(config):
+            command += ['-p', prop]
         for name in ('PATH','WAYLAND_DISPLAY','XDG_RUNTIME_DIR','XDG_DATA_HOME','XDG_CONFIG_HOME','XDG_STATE_HOME','XDG_CACHE_HOME','PBI_LINUX_RESOURCE_DIR'):
             if name in os.environ:
                 command.append('--setenv='+name+'='+os.environ[name])

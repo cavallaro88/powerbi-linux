@@ -4,7 +4,7 @@ One repository contains the CLI, runtime patches, packaging and test tools. Keep
 
 The package launcher calls a Python standard-library CLI. Setup verifies inputs, installs a runtime into a content-addressed directory, provisions a private profile, applies local compatibility changes and generates readonly PE section backing. Only a completed installation becomes active. Snapshots remain at stable absolute paths; activation swaps metadata pointers rather than moving a populated prefix.
 
-Opening a document sends its absolute Unix path through a private Unix socket to one systemd user service. The broker starts all Wine processes in the same memory-limited cgroup, converts paths with the runtime's `winepath` and launches additional Desktop windows without killing earlier documents. Launch and maintenance share a lock; maintenance also checks managed Wine processes outside the broker.
+Opening a document sends its absolute Unix path through a private Unix socket to one systemd user service. The broker starts all Wine processes in the same cgroup, with optional resource ceilings selected through the CLI, converts paths with the runtime's `winepath` and launches additional Desktop windows without killing earlier documents. Launch and maintenance share a lock; maintenance also checks managed Wine processes outside the broker.
 
 The service uses `KillMode=mixed`: a stop first reaches the broker, which closes its own prefix's wineserver. Remaining cgroup processes have a bounded final cleanup. This avoids sending SIGTERM to Wine's service processes before the server can coordinate shutdown; it does not affect servers for other prefixes.
 

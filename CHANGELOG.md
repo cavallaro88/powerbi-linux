@@ -2,6 +2,15 @@
 
 ## 0.1.0 — development
 
+### RPM release 2 — 2026-10-14
+
+- Default RAM/swap ceilings and fixed V8 heap removed; standard browser settings replace forced economy defaults.
+- CLI exposes optional RAM/swap/CPU, heap, renderer and browser-mode settings; normal/large remain explicit economy presets.
+- Exact legacy bundled limits migrate to unlimited; custom settings and new explicit choices are preserved.
+- Earlier native refresh/Save/soak results describe bounded profiles. Release 2 policy checks are recorded separately.
+
+### RPM release 1 — 2026-10-13
+
 - Fedora-only CLI, RPM packaging and PBIX/PBIP/PBIR desktop integration.
 - XDG state, private session broker, input verification and transactional repair/update/rollback.
 - Production composition helper separated from UI diagnostics.

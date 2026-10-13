@@ -1,6 +1,6 @@
 Name:           powerbi-linux
 Version:        0.1.0
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        Community Power BI Desktop compatibility tools for Fedora
 License:        GPL-3.0-or-later AND LGPL-2.1-or-later AND Zlib
 Source0:        %{name}-%{version}.tar.gz
@@ -55,5 +55,8 @@ find %{buildroot} -type d -name __pycache__ -prune -exec rm -rf {} +
 %{_datadir}/icons/hicolor/scalable/apps/powerbi-linux.svg
 
 %changelog
+* Wed Oct 14 2026 Project maintainers - 0.1.0-2
+- Default to unrestricted RAM/swap, automatic browser heap and standard browser settings.
+- Add optional CLI resource settings and migrate legacy bundled limits.
 * Sun Oct 11 2026 Project maintainers - 0.1.0-1
 - Initial Fedora packaging; public release remains gated on compatibility tests.
