@@ -1,0 +1,178 @@
+--- a/dlls/ntdll/unix/virtual.c
++++ b/dlls/ntdll/unix/virtual.c
+@@ -3787,6 +3787,62 @@
+ /***********************************************************************
+  *           virtual_get_system_info
+  */
++/* Clamp the memory reported to Windows apps to the cgroup v2 limits of the
++ * current process. Wine reports host totals otherwise, so the .NET CLR,
++ * Chromium (WebView2) and the Analysis Services engine size their heaps and
++ * caches for the whole machine and get OOM-killed when the cgroup limit is
++ * lower. Read once per query; the files are small. */
++struct pbi_cgroup_memory
++{
++    unsigned long long max, current, swap_max, swap_current;
++};
++
++static unsigned long long pbi_cgroup_read_ull( const char *path )
++{
++    char buffer[64];
++    FILE *fp = fopen( path, "r" );
++    if (!fp) return 0;
++    if (!fgets( buffer, sizeof(buffer), fp ))
++    {
++        fclose( fp );
++        return 0;
++    }
++    fclose( fp );
++    if (!strncmp( buffer, "max", 3 )) return 0;  /* no limit */
++    return strtoull( buffer, NULL, 10 );
++}
++
++static void pbi_get_cgroup_memory( struct pbi_cgroup_memory *mem )
++{
++    char line[600], base[512] = {0};
++    const char *flag;
++    size_t len;
++    FILE *fp;
++
++    memset( mem, 0, sizeof(*mem) );
++    flag = getenv( "PBI_CGROUP_MEMORY" );
++    if (flag && flag[0] == '0') return;  /* PBI_CGROUP_MEMORY=0 desliga */
++    if (!(fp = fopen( "/proc/self/cgroup", "r" ))) return;
++    while (fgets( line, sizeof(line), fp ))
++    {
++        if (strncmp( line, "0::", 3 )) continue;  /* cgroup v2 unified hierarchy */
++        len = strlen( line + 3 );
++        while (len && (line[3 + len - 1] == '\n' || line[3 + len - 1] == '\r')) len--;
++        snprintf( base, sizeof(base), "/sys/fs/cgroup/%.*s", (int)len, line + 3 );
++        break;
++    }
++    fclose( fp );
++    if (!base[0]) return;
++    snprintf( line, sizeof(line), "%s/memory.max", base );
++    mem->max = pbi_cgroup_read_ull( line );
++    snprintf( line, sizeof(line), "%s/memory.current", base );
++    mem->current = pbi_cgroup_read_ull( line );
++    snprintf( line, sizeof(line), "%s/memory.swap.max", base );
++    mem->swap_max = pbi_cgroup_read_ull( line );
++    snprintf( line, sizeof(line), "%s/memory.swap.current", base );
++    mem->swap_current = pbi_cgroup_read_ull( line );
++}
++
+ void virtual_get_system_info( SYSTEM_BASIC_INFORMATION *info, BOOL wow64 )
+ {
+ #if defined(HAVE_SYSINFO) \
+@@ -3814,6 +3870,19 @@
+ #else
+     info->MmHighestPhysicalPage = 0x7fffffff / page_size;
+ #endif
++
++    {
++        struct pbi_cgroup_memory cgroup_memory;
++        unsigned long long total;
++
++        pbi_get_cgroup_memory( &cgroup_memory );
++        if (cgroup_memory.max)
++        {
++            total = (unsigned long long)info->MmHighestPhysicalPage * page_size;
++            if (total > cgroup_memory.max)
++                info->MmHighestPhysicalPage = max( 1, cgroup_memory.max / page_size );
++        }
++    }
+ 
+     info->unknown                 = 0;
+     info->KeMaximumIncrement      = 0;  /* FIXME */
+--- a/dlls/ntdll/unix/system.c
++++ b/dlls/ntdll/unix/system.c
+@@ -2550,6 +2550,62 @@
+     }
+ }
+ 
++/* Clamp the memory reported to Windows apps to the cgroup v2 limits of the
++ * current process. Wine reports host totals otherwise, so the .NET CLR,
++ * Chromium (WebView2) and the Analysis Services engine size their heaps and
++ * caches for the whole machine and get OOM-killed when the cgroup limit is
++ * lower. Read once per query; the files are small. */
++struct pbi_cgroup_memory
++{
++    unsigned long long max, current, swap_max, swap_current;
++};
++
++static unsigned long long pbi_cgroup_read_ull( const char *path )
++{
++    char buffer[64];
++    FILE *fp = fopen( path, "r" );
++    if (!fp) return 0;
++    if (!fgets( buffer, sizeof(buffer), fp ))
++    {
++        fclose( fp );
++        return 0;
++    }
++    fclose( fp );
++    if (!strncmp( buffer, "max", 3 )) return 0;  /* no limit */
++    return strtoull( buffer, NULL, 10 );
++}
++
++static void pbi_get_cgroup_memory( struct pbi_cgroup_memory *mem )
++{
++    char line[600], base[512] = {0};
++    const char *flag;
++    size_t len;
++    FILE *fp;
++
++    memset( mem, 0, sizeof(*mem) );
++    flag = getenv( "PBI_CGROUP_MEMORY" );
++    if (flag && flag[0] == '0') return;  /* PBI_CGROUP_MEMORY=0 desliga */
++    if (!(fp = fopen( "/proc/self/cgroup", "r" ))) return;
++    while (fgets( line, sizeof(line), fp ))
++    {
++        if (strncmp( line, "0::", 3 )) continue;  /* cgroup v2 unified hierarchy */
++        len = strlen( line + 3 );
++        while (len && (line[3 + len - 1] == '\n' || line[3 + len - 1] == '\r')) len--;
++        snprintf( base, sizeof(base), "/sys/fs/cgroup/%.*s", (int)len, line + 3 );
++        break;
++    }
++    fclose( fp );
++    if (!base[0]) return;
++    snprintf( line, sizeof(line), "%s/memory.max", base );
++    mem->max = pbi_cgroup_read_ull( line );
++    snprintf( line, sizeof(line), "%s/memory.current", base );
++    mem->current = pbi_cgroup_read_ull( line );
++    snprintf( line, sizeof(line), "%s/memory.swap.max", base );
++    mem->swap_max = pbi_cgroup_read_ull( line );
++    snprintf( line, sizeof(line), "%s/memory.swap.current", base );
++    mem->swap_current = pbi_cgroup_read_ull( line );
++}
++
+ static void get_performance_info( SYSTEM_PERFORMANCE_INFORMATION *info )
+ {
+     unsigned long long totalram = 0, freeram = 0, totalswap = 0, freeswap = 0;
+@@ -2710,6 +2766,27 @@
+ #endif
+     }
+ #endif
++
++    {
++        struct pbi_cgroup_memory cgroup_memory;
++        unsigned long long available;
++
++        pbi_get_cgroup_memory( &cgroup_memory );
++        if (cgroup_memory.max)
++        {
++            if (totalram > cgroup_memory.max) totalram = cgroup_memory.max;
++            available = cgroup_memory.current < cgroup_memory.max ?
++                        cgroup_memory.max - cgroup_memory.current : 0;
++            if (freeram > available) freeram = available;
++        }
++        if (cgroup_memory.swap_max)
++        {
++            if (totalswap > cgroup_memory.swap_max) totalswap = cgroup_memory.swap_max;
++            available = cgroup_memory.swap_current < cgroup_memory.swap_max ?
++                        cgroup_memory.swap_max - cgroup_memory.swap_current : 0;
++            if (freeswap > available) freeswap = available;
++        }
++    }
+ 
+     /* Titan Quest refuses to run if TotalPageFile <= TotalPhys */
+     if (!totalswap) totalswap = page_size;

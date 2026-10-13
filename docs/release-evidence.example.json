@@ -1,0 +1,21 @@
+{
+  "schema": 1,
+  "runtime_sha256": "REPLACE_WITH_RUNTIME_SHA256",
+  "runtime_provenance": "clean-source-build",
+  "fedora_version": "44",
+  "arch": "x86_64",
+  "display": "wayland",
+  "cases": {
+    "clean_install": {"status": "pending", "evidence": ""},
+    "desktop_pbix": {"status": "pending", "evidence": ""},
+    "pbip_relative_paths": {"status": "pending", "evidence": ""},
+    "pbir_relative_paths": {"status": "pending", "evidence": ""},
+    "csv_visual": {"status": "pending", "evidence": ""},
+    "large_ui_refresh_and_visuals": {"status": "pending", "evidence": ""},
+    "save_reopen": {"status": "pending", "evidence": ""},
+    "soak_2h": {"status": "pending", "evidence": "", "seconds": 0},
+    "interrupted_setup": {"status": "pending", "evidence": ""},
+    "update_repair_rollback": {"status": "pending", "evidence": ""},
+    "uninstall_associations": {"status": "pending", "evidence": ""}
+  }
+}

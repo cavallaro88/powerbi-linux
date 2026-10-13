@@ -1,0 +1,55 @@
+{
+  "dotnet48": {
+    "url": "https://download.visualstudio.microsoft.com/download/pr/7afca223-55d2-470a-8edc-6a1739ae3252/abd170b4b0ec15ad0222a809b761a036/ndp48-x86-x64-allos-enu.exe",
+    "sha256": "95889d6de3f2070c07790ad6cf2000d33d9a1bdfc6a381725ab82ab1c314fd53"
+  },
+  "powerbi": {
+    "sha256": "4924187834d34605c3046f01b876fba6a2cf36f864c36d16fd52c3f17a21009c",
+    "version": "2.158.1177.0"
+  },
+  "selawik": {
+    "url": "https://github.com/microsoft/Selawik/releases/download/1.01/Selawik_Release.zip",
+    "sha256": "3f62c51e05e3b5a1e6241cf92a371f0be2ea1183aa87b30718bbd40832a8d423"
+  },
+  "dnlib": {
+    "url": "https://api.nuget.org/v3-flatcontainer/dnlib/4.5.0/dnlib.4.5.0.nupkg",
+    "sha256": "63bc2f9579568204cc8b30fa9f6700a231bcf868a8032e09118887af3eafee58"
+  },
+  "wine": {
+    "url": "https://dl.winehq.org/wine/source/11.x/wine-11.18.tar.xz",
+    "sha256": "c6282f6d4daecf11f3ab9f9a2b6c598f67be7e28c363ba2cae8a3c44b611e7a4",
+    "version": "11.18"
+  },
+  "dxvk": {
+    "url": "https://github.com/doitsujin/dxvk.git",
+    "commit": "70d7508c01201ed3d4bfb33da42ba834eafe3857"
+  },
+  "neutron": {
+    "url": "https://github.com/Nico-LaFoucate/neutron-wine.git",
+    "commit": "5afd8d479ca83f57b56a2350274927647519da90"
+  },
+  "webview2": {
+    "distribution": "fixed",
+    "url": "https://msedge.sf.dl.delivery.mp.microsoft.com/filestreamingservice/files/b92cd7d9-6976-4f34-9708-47e80937c287/Microsoft.WebView2.FixedVersionRuntime.154.0.4258.62.x64.cab",
+    "sha256": "e8f55a4bde27c7f82512402b56a58539b5ec8928be4e500e077b6f66c9ef4668",
+    "cab_root": "Microsoft.WebView2.FixedVersionRuntime.154.0.4258.62.x64",
+    "runtime_version": "154.0.4258.62",
+    "runtime_dll_sha256": "8f039d79bcdba43d1b0b606539cec5acda80c16db64912084df3f222b2719b95",
+    "runtime_exe_sha256": "7e941ccb324fd87c849dca6356079e65a31ff264b8b5b37cc43d055b2764b9b3",
+    "investigation_installer_sha256": "91d82975e73cf4c0b1315679282c9f67e6cdbfeefc0ac6eaf2e68e5be71e982e",
+    "investigation_runtime_version": "154.0.4258.53",
+    "notes": "Official Microsoft fixed-version CAB; installed privately during setup, excluded from project distributions. BrowserExecutableFolder policy selects this version independently of Evergreen updates."
+  },
+  "dotnet40": {
+    "url": "https://download.microsoft.com/download/9/5/A/95A9616B-7A37-4AF6-BC36-D6EA96C8DAAE/dotNetFx40_Full_x86_x64.exe",
+    "sha256": "65e064258f2e418816b304f646ff9e87af101e4c9552ab064bb74d281c38659f"
+  },
+  "gecko-x86": {
+    "url": "https://dl.winehq.org/wine/wine-gecko/2.47.4/wine-gecko-2.47.4-x86.msi",
+    "sha256": "26cecc47706b091908f7f814bddb074c61beb8063318e9efc5a7f789857793d6"
+  },
+  "gecko-x86_64": {
+    "url": "https://dl.winehq.org/wine/wine-gecko/2.47.4/wine-gecko-2.47.4-x86_64.msi",
+    "sha256": "e590b7d988a32d6aa4cf1d8aa3aa3d33766fdd4cf4c89c2dcc2095ecb28d066f"
+  }
+}

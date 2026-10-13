@@ -1,0 +1,36 @@
+--- a/dlls/winewayland.drv/window.c
++++ b/dlls/winewayland.drv/window.c
+@@ -220,6 +220,12 @@
+         break;
+     case WAYLAND_SURFACE_ROLE_TOPLEVEL:
+         wayland_surface_make_toplevel(surface);
++        /* Owned toplevels (dialogs) are marked as transient for their owner
++         * so compositors keep them above the owner window. Without this the
++         * modal dialog could stay behind the main window under Wayland. */
++        if (owner_surface && owner_surface->role == WAYLAND_SURFACE_ROLE_TOPLEVEL &&
++            owner_surface->xdg_toplevel)
++            xdg_toplevel_set_parent(surface->xdg_toplevel, owner_surface->xdg_toplevel);
+         break;
+     case WAYLAND_SURFACE_ROLE_SUBSURFACE:
+         wayland_surface_make_subsurface(surface, owner_surface);
+@@ -435,6 +441,7 @@
+                               const struct window_rects *new_rects, struct window_surface *surface)
+ {
+     HWND owner = NtUserGetAncestor(hwnd, GA_ROOT);
++    HWND gw_owner = NtUserGetWindowRelative(hwnd, GW_OWNER);
+     struct wayland_surface *owner_surface;
+     struct wayland_win_data *data, *owner_data;
+     BOOL managed, fullscreen = swp_flags & WINE_SWP_FULLSCREEN;
+@@ -449,6 +456,12 @@
+     if (!(data = wayland_win_data_get(hwnd))) return;
+     owner_data = owner && owner != hwnd ? wayland_win_data_get(owner) : NULL;
+     owner_surface = owner_data ? owner_data->wayland_surface : NULL;
++    /* Toplevel dialogs are owned via GW_OWNER, not the ancestor chain. */
++    if (!owner_data && gw_owner && gw_owner != hwnd)
++    {
++        owner_data = wayland_win_data_get(gw_owner);
++        owner_surface = owner_data ? owner_data->wayland_surface : NULL;
++    }
+ 
+     data->rects = *new_rects;
+     data->is_fullscreen = fullscreen;

@@ -1,0 +1,224 @@
+diff --git a/src/d3d11/d3d11_swapchain.cpp b/src/d3d11/d3d11_swapchain.cpp
+index 98fc21a..c7faaed 100644
+--- a/src/d3d11/d3d11_swapchain.cpp
++++ b/src/d3d11/d3d11_swapchain.cpp
+@@ -6,6 +6,7 @@
+ #include "../dxvk/dxvk_shader_spirv.h"
+ 
+ #include "../util/util_win32_compat.h"
++#include "../dxgi/dxgi_surface.h"
+ 
+ #include <d3d11_composition_vert.h>
+ #include <d3d11_composition_frag.h>
+@@ -70,6 +71,26 @@ namespace dxvk {
+     m_desc(*pDesc),
+     m_device(pDevice->GetDXVKDevice()),
+     m_frameLatencyCap(pDevice->GetOptions()->maxFrameLatency) {
++    if (env::getEnvVar("PBI_COMPOSITION") == "1") {
++      using Resolve = HWND (*)(HWND);
++      static Resolve resolve = [] {
++        HMODULE module = ::LoadLibraryA("dcomp.dll");
++        return module ? reinterpret_cast<Resolve>(::GetProcAddress(module, "pbi_dcomp_resolve_host")) : nullptr;
++      }();
++      HWND window = static_cast<DxgiSurfaceFactory*>(m_surfaceFactory.ptr())->GetWindow();
++      WCHAR cls[128] = {};
++      ::GetClassNameW(window, cls, 128);
++      // Chromium creates some windows before attaching the owner ancestor.
++      // Select the presentation mode now; resolve the recipient at Present.
++      if (resolve && !std::wcsncmp(cls, L"Chrome_", 7)
++       && (m_desc.SwapEffect == DXGI_SWAP_EFFECT_DISCARD || m_desc.SwapEffect == DXGI_SWAP_EFFECT_SEQUENTIAL)
++       && (m_desc.Format == DXGI_FORMAT_B8G8R8A8_UNORM || m_desc.Format == DXGI_FORMAT_R8G8B8A8_UNORM)) {
++        m_gdiWindow = window;
++        m_gdiHost = resolve(window);
++      }
++      Logger::warn(str::format("pbi-present: hwnd=", (void*)window, " host=", (void*)m_gdiHost,
++        " gdi=", bool(m_gdiWindow), " effect=", m_desc.SwapEffect, " format=", m_desc.Format, " size=", m_desc.Width, "x", m_desc.Height));
++    }
+     CreateFrameLatencyEvent();
+     CreatePresenter();
+     CreateBackBuffers();
+@@ -83,7 +104,7 @@ namespace dxvk {
+     if (this_thread::isInModuleDetachment())
+       return;
+ 
+-    m_presenter->destroyResources();
++    if (m_presenter) m_presenter->destroyResources();
+     
+     DestroyFrameLatencyEvent();
+     DestroyLatencyTracker();
+@@ -179,13 +200,14 @@ namespace dxvk {
+     const DXGI_SWAP_CHAIN_DESC1*    pDesc,
+     const UINT*                     pNodeMasks,
+           IUnknown* const*          ppPresentQueues) {
+-    if (m_desc.Format != pDesc->Format)
++    if (m_presenter && m_desc.Format != pDesc->Format)
+       m_presenter->setSurfaceFormat(GetSurfaceFormat(pDesc->Format));
+ 
+-    if (m_desc.Width != pDesc->Width || m_desc.Height != pDesc->Height)
++    if (m_presenter && (m_desc.Width != pDesc->Width || m_desc.Height != pDesc->Height))
+       m_presenter->setSurfaceExtent({ m_desc.Width, m_desc.Height });
+ 
+     m_desc = *pDesc;
++    m_gdiStaging = nullptr;
+     CreateBackBuffers();
+     return S_OK;
+   }
+@@ -265,6 +287,7 @@ namespace dxvk {
+       if (hr != S_OK)
+         return hr;
+ 
++      if (m_gdiWindow) return S_OK;
+       VkResult status = m_presenter->checkSwapChainStatus();
+       return status == VK_SUCCESS ? S_OK : DXGI_STATUS_OCCLUDED;
+     }
+@@ -308,6 +331,8 @@ namespace dxvk {
+ 
+     VkColorSpaceKHR vkColorSpace = ConvertColorSpace(ColorSpace);
+ 
++    if (m_gdiWindow) return vkColorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR
++      ? DXGI_SWAP_CHAIN_COLOR_SPACE_SUPPORT_FLAG_PRESENT : 0;
+     if (m_presenter->supportsColorSpace(vkColorSpace))
+       supportFlags |= DXGI_SWAP_CHAIN_COLOR_SPACE_SUPPORT_FLAG_PRESENT;
+ 
+@@ -319,6 +344,7 @@ namespace dxvk {
+           DXGI_COLOR_SPACE_TYPE     ColorSpace) {
+     VkColorSpaceKHR colorSpace = ConvertColorSpace(ColorSpace);
+ 
++    if (m_gdiWindow) return colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR ? S_OK : E_INVALIDARG;
+     if (!m_presenter->supportsColorSpace(colorSpace))
+       return E_INVALIDARG;
+ 
+@@ -332,7 +358,7 @@ namespace dxvk {
+   HRESULT STDMETHODCALLTYPE D3D11SwapChain::SetHDRMetaData(
+     const DXGI_VK_HDR_METADATA*     pMetaData) {
+     // For some reason this call always seems to succeed on Windows
+-    if (pMetaData->Type == DXGI_HDR_METADATA_TYPE_HDR10)
++    if (m_presenter && pMetaData->Type == DXGI_HDR_METADATA_TYPE_HDR10)
+       m_presenter->setHdrMetadata(ConvertHDRMetadata(pMetaData->HDR10));
+ 
+     return S_OK;
+@@ -391,6 +417,8 @@ namespace dxvk {
+     immediateContext->EndFrame(m_latency);
+     immediateContext->ExecuteFlush(GpuFlushType::ExplicitFlush, nullptr, true);
+ 
++    if (m_gdiWindow) return PresentImageGdi();
++
+     m_presenter->setSyncInterval(SyncInterval);
+ 
+     // Presentation semaphores and WSI swap chain image
+@@ -514,6 +542,69 @@ namespace dxvk {
+   }
+ 
+ 
++  // SPDX-License-Identifier: LGPL-2.1-or-later
++  // Based on Neutron's PresentImageGdi: complete frame/latency accounting
++  // without a Vulkan WSI surface owned by a different WebView process.
++  HRESULT D3D11SwapChain::PresentImageGdi() {
++    auto ctx = m_parent->GetContext();
++    if (m_backBuffers.empty()) return E_FAIL;
++    using Resolve = HWND (*)(HWND);
++    static Resolve resolve = reinterpret_cast<Resolve>(::GetProcAddress(::GetModuleHandleA("dcomp.dll"), "pbi_dcomp_resolve_host"));
++    m_gdiHost = resolve ? resolve(m_gdiWindow) : nullptr;
++    if (!m_gdiHost) {
++      if (m_backBuffers.size() > 1u) { RotateBackBuffers(ctx); ctx->FlushCsChunk(); }
++      ++m_frameId;
++      m_frameLatencySignal->signal(m_frameId);
++      return S_OK;
++    }
++    D3D11_TEXTURE2D_DESC desc = {};
++    m_backBuffers[0]->GetDesc(&desc);
++    if (!m_gdiStaging) {
++      desc.BindFlags = desc.MiscFlags = 0;
++      desc.Usage = D3D11_USAGE_STAGING;
++      desc.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
++      HRESULT hr = m_parent->CreateTexture2D(&desc, nullptr, &m_gdiStaging);
++      if (FAILED(hr)) return hr;
++    }
++    ctx->CopyResource(m_gdiStaging.ptr(), m_backBuffers[0].ptr());
++    ctx->Flush();
++    D3D11_MAPPED_SUBRESOURCE mapped = {};
++    HRESULT hr;
++    auto deadline = dxvk::high_resolution_clock::now() + std::chrono::milliseconds(200);
++    do {
++      hr = ctx->Map(m_gdiStaging.ptr(), 0, D3D11_MAP_READ, D3D11_MAP_FLAG_DO_NOT_WAIT, &mapped);
++      if (hr != DXGI_ERROR_WAS_STILL_DRAWING) break;
++      ::Sleep(1);
++    } while (dxvk::high_resolution_clock::now() < deadline);
++    if (SUCCEEDED(hr)) {
++      using Publish = BOOL (*)(HWND, HWND, const void*, UINT, UINT, UINT);
++      static Publish publish = [] {
++        HMODULE module = ::GetModuleHandleA("dcomp.dll");
++        return module ? reinterpret_cast<Publish>(::GetProcAddress(module, "pbi_dcomp_publish")) : nullptr;
++      }();
++      m_gdiPixels.resize(size_t(desc.Width) * desc.Height * 4);
++      for (UINT y = 0; y < desc.Height; ++y) {
++        auto src = reinterpret_cast<const uint8_t*>(mapped.pData) + size_t(y) * mapped.RowPitch;
++        auto dst = m_gdiPixels.data() + size_t(y) * desc.Width * 4;
++        std::memcpy(dst, src, size_t(desc.Width) * 4);
++        if (desc.Format == DXGI_FORMAT_R8G8B8A8_UNORM)
++          for (UINT x = 0; x < desc.Width; ++x) std::swap(dst[x*4], dst[x*4+2]);
++      }
++      ctx->Unmap(m_gdiStaging.ptr(), 0);
++      if (publish) publish(m_gdiHost, m_gdiWindow, m_gdiPixels.data(), desc.Width, desc.Height, desc.Width * 4);
++    } else {
++      Logger::warn(str::format("pbi-present: bounded readback failed hr=", hr));
++    }
++    if (m_backBuffers.size() > 1u) {
++      RotateBackBuffers(ctx);
++      ctx->FlushCsChunk();
++    }
++    ++m_frameId;
++    m_frameLatencySignal->signal(m_frameId);
++    return hr == DXGI_ERROR_WAS_STILL_DRAWING ? S_OK : hr;
++  }
++
++
+   void D3D11SwapChain::RotateBackBuffers(D3D11ImmediateContext* ctx) {
+     small_vector<Rc<DxvkImage>, 4> images;
+ 
+@@ -545,6 +636,7 @@ namespace dxvk {
+ 
+ 
+   void D3D11SwapChain::CreatePresenter() {
++    if (m_gdiWindow) return;
+     PresenterDesc presenterDesc = { };
+     presenterDesc.deferSurfaceCreation = m_parent->GetOptions()->deferSurfaceCreation;
+ 
+@@ -659,6 +751,7 @@ namespace dxvk {
+ 
+ 
+   void D3D11SwapChain::DestroyLatencyTracker() {
++    if (!m_latency) return;
+     // Need to make sure the context stops using
+     // the tracker for submissions
+     m_parent->GetContext()->InjectCs(DxvkCsQueue::Ordered, [
+diff --git a/src/d3d11/d3d11_swapchain.h b/src/d3d11/d3d11_swapchain.h
+index cbe98ea..7994348 100644
+--- a/src/d3d11/d3d11_swapchain.h
++++ b/src/d3d11/d3d11_swapchain.h
+@@ -140,6 +140,12 @@ namespace dxvk {
+     dxvk::mutex               m_frameStatisticsLock;
+     DXGI_VK_FRAME_STATISTICS  m_frameStatistics = { };
+ 
++    HWND                      m_gdiWindow = nullptr;
++    HWND                      m_gdiHost = nullptr;
++    Com<ID3D11Texture2D>       m_gdiStaging;
++    std::vector<uint8_t>      m_gdiPixels;
++    HRESULT PresentImageGdi();
++
+     bool                      m_hasHud = false;
+     Rc<hud::HudLatencyItem>   m_latencyHud;
+ 
+diff --git a/src/dxgi/dxgi_surface.h b/src/dxgi/dxgi_surface.h
+index 4a5c36f..63d79c5 100644
+--- a/src/dxgi/dxgi_surface.h
++++ b/src/dxgi/dxgi_surface.h
+@@ -33,6 +33,8 @@ namespace dxvk {
+             VkPhysicalDevice          Adapter,
+             VkSurfaceKHR*             pSurface);
+ 
++    HWND GetWindow() const { return m_window; }
++
+   private:
+ 
+     PFN_vkGetInstanceProcAddr m_vkGetInstanceProcAddr = nullptr;
