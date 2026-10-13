@@ -17,7 +17,9 @@ def digest(path):
 
 def main():
     root = Path(__file__).resolve().parents[1]
-    active = json.loads((Path.home() / '.local/share/powerbi-linux/active.json').read_text())
+    sys.path.insert(0, str(root / 'src'))
+    from pbi_linux.common import Paths
+    active = json.loads(Paths().active.read_text())
     prefix, runtime = Path(active['prefix']), Path(active['runtime'])
     bin_dir = prefix / 'drive_c/Program Files/Microsoft Power BI Desktop/bin'
     desktop = bin_dir / 'Microsoft.PowerBI.Client.Windows.dll'

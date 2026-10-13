@@ -1,0 +1,189 @@
+--- a/dlls/win32u/cursoricon.c
++++ b/dlls/win32u/cursoricon.c
+@@ -28,6 +28,7 @@
+ #pragma makedep unix
+ #endif
+ 
++#define OEMRESOURCE
+ #include <assert.h>
+ #include "ntgdi_private.h"
+ #include "ntuser_private.h"
+@@ -475,6 +476,82 @@
+ /**********************************************************************
+  *           NtUserGetIconInfo (win32u.@)
+  */
++/* Shared system cursors may be selected by a different process from the
++ * Wayland surface owner (e.g. an embedded browser). Resolve the resource in its
++ * owner, then load a local shared cursor; foreign GDI handles are never used. */
++static BOOL is_system_cursor_resource( UINT id )
++{
++    switch (id)
++    {
++    case OCR_NORMAL: case OCR_IBEAM: case OCR_WAIT: case OCR_CROSS:
++    case OCR_SIZENWSE: case OCR_SIZENESW: case OCR_SIZEWE: case OCR_SIZENS:
++    case OCR_SIZEALL: case OCR_NO: case OCR_HAND: case OCR_APPSTARTING: case OCR_HELP:
++        return TRUE;
++    default:
++        return FALSE;
++    }
++}
++
++UINT get_shared_system_cursor_resource( HCURSOR cursor )
++{
++    static const WCHAR user32[] = {'u','s','e','r','3','2','.','d','l','l',0};
++    struct cursoricon_object *obj;
++    UNICODE_STRING name;
++    UINT id = 0, count, start, i;
++
++    if (!(obj = get_icon_ptr( cursor ))) return 0;
++    if (obj->is_shared && !obj->is_icon && !obj->is_ani && obj->module.Length && IS_INTRESOURCE(obj->resname))
++    {
++        name = obj->module;
++        count = name.Length / sizeof(WCHAR);
++        for (start = count; start && name.Buffer[start - 1] != '\\'; start--);
++        name.Buffer += start;
++        name.Length -= start * sizeof(WCHAR);
++        if (name.Length == sizeof(user32) - sizeof(WCHAR))
++        {
++            for (i = 0; i < ARRAY_SIZE(user32) - 1; i++)
++            {
++                WCHAR c = name.Buffer[i];
++                if (c >= 'A' && c <= 'Z') c += 'a' - 'A';
++                if (c != user32[i]) break;
++            }
++            if (i == ARRAY_SIZE(user32) - 1 && is_system_cursor_resource( LOWORD(obj->resname) ))
++                id = LOWORD(obj->resname);
++        }
++    }
++    release_user_handle_ptr( obj );
++    return id;
++}
++
++static HCURSOR resolve_remote_system_cursor( HCURSOR cursor )
++{
++    static struct { HCURSOR cursor; DWORD pid, tid; UINT resource; } cache[64];
++    DWORD pid, tid;
++    DWORD_PTR result = 0;
++    UINT slot, resource = 0;
++
++    if (!get_user_handle_owner( cursor, NTUSER_OBJ_ICON, &pid, &tid ) || pid == GetCurrentProcessId()) return 0;
++    slot = ((ULONG_PTR)cursor >> 1) % ARRAY_SIZE(cache);
++    user_lock();
++    if (cache[slot].cursor == cursor && cache[slot].pid == pid && cache[slot].tid == tid)
++        resource = cache[slot].resource;
++    user_unlock();
++    if (!resource)
++    {
++        if (!send_internal_message_timeout( pid, tid, WM_WINE_GET_SYSTEM_CURSOR, HandleToUlong(cursor), 0,
++                                            SMTO_BLOCK | SMTO_ABORTIFHUNG, 50, &result ) ||
++            !is_system_cursor_resource( result )) return 0;
++        resource = result;
++        user_lock();
++        cache[slot].cursor = cursor;
++        cache[slot].pid = pid;
++        cache[slot].tid = tid;
++        cache[slot].resource = resource;
++        user_unlock();
++    }
++    return LoadImageW( 0, MAKEINTRESOURCEW(resource), IMAGE_CURSOR, 0, 0, LR_SHARED | LR_DEFAULTSIZE );
++}
++
+ BOOL WINAPI NtUserGetIconInfo( HICON icon, ICONINFO *info, UNICODE_STRING *module,
+                                UNICODE_STRING *res_name, DWORD *bpp, LONG unk )
+ {
+@@ -483,8 +560,13 @@
+ 
+     if (!(obj = get_icon_ptr( icon )))
+     {
+-        RtlSetLastWin32Error( ERROR_INVALID_CURSOR_HANDLE );
+-        return FALSE;
++        HCURSOR local = resolve_remote_system_cursor( icon );
++        if (!local || !(obj = get_icon_ptr( local )))
++        {
++            RtlSetLastWin32Error( ERROR_INVALID_CURSOR_HANDLE );
++            return FALSE;
++        }
++        icon = local;
+     }
+     if (!(frame_obj = get_icon_frame_ptr( icon, 0 )))
+     {
+--- a/dlls/win32u/message.c
++++ b/dlls/win32u/message.c
+@@ -2197,6 +2197,8 @@
+         return HandleToUlong( NtUserSetParent( hwnd, UlongToHandle(wparam) ));
+     case WM_WINE_SETWINDOWLONG:
+         return set_window_long( hwnd, (short)LOWORD(wparam), HIWORD(wparam), lparam, FALSE );
++    case WM_WINE_GET_SYSTEM_CURSOR:
++        return get_shared_system_cursor_resource( UlongToHandle(wparam) );
+     case WM_WINE_SETSTYLE:
+         if (is_desktop_window( hwnd )) return 0;
+         return set_window_style_bits( hwnd, wparam, lparam );
+--- a/dlls/win32u/ntuser_private.h
++++ b/dlls/win32u/ntuser_private.h
+@@ -224,6 +224,7 @@
+ HANDLE alloc_user_handle( void *ptr, unsigned short type );
+ void *free_user_handle( HANDLE handle, unsigned short type );
+ void *get_user_handle_ptr( HANDLE handle, unsigned short type );
++BOOL get_user_handle_owner( HANDLE handle, unsigned short type, DWORD *pid, DWORD *tid );
+ void release_user_handle_ptr( void *ptr );
+ void *next_thread_user_object( UINT tid, HANDLE *handle, unsigned short type );
+ UINT win_set_flags( HWND hwnd, UINT set_mask, UINT clear_mask );
+--- a/dlls/win32u/spy.c
++++ b/dlls/win32u/spy.c
+@@ -1127,7 +1127,7 @@
+     "CCM_SETNOTIFYWINDOW"
+ };
+ 
+-#define SPY_MAX_WINEMSGNUM   (WM_WINE_SETPIXELFORMAT - WM_WINE_DESTROYWINDOW)
++#define SPY_MAX_WINEMSGNUM   (WM_WINE_GET_SYSTEM_CURSOR - WM_WINE_DESTROYWINDOW)
+ static const char * const WINEMessageTypeNames[SPY_MAX_WINEMSGNUM + 1] =
+ {
+     "WM_WINE_DESTROYWINDOW",
+@@ -1144,6 +1144,7 @@
+     "WM_WINE_UPDATEWINDOWSTATE",
+     "WM_WINE_TRACKMOUSEEVENT",
+     "WM_WINE_SETPIXELFORMAT",
++    "WM_WINE_GET_SYSTEM_CURSOR",
+ };
+ 
+ #define SPY_MAX_WINE_DRIVER_MSGNUM (WM_WINE_SETCURSOR - WM_WINE_CLIPCURSOR)
+--- a/dlls/win32u/win32u_private.h
++++ b/dlls/win32u/win32u_private.h
+@@ -40,6 +40,7 @@
+ extern BOOL process_wine_setcursor( HWND hwnd, HWND window, HCURSOR handle );
+ extern HICON alloc_cursoricon_handle( BOOL is_icon );
+ extern ULONG_PTR get_icon_param( HICON handle );
++extern UINT get_shared_system_cursor_resource( HCURSOR cursor );
+ extern ULONG_PTR set_icon_param( HICON handle, const struct free_icon_params *params );
+ extern HICON create_small_icon( HICON handle );
+ 
+--- a/dlls/win32u/window.c
++++ b/dlls/win32u/window.c
+@@ -209,6 +209,17 @@
+ /***********************************************************************
+  *           get_user_handle_ptr
+  */
++/* Read the owner of a generation-validated USER handle without dereferencing
++ * another process's client object. No pointer is transferred across processes. */
++BOOL get_user_handle_owner( HANDLE handle, unsigned short type, DWORD *pid, DWORD *tid )
++{
++    struct user_entry entry;
++    if (!get_user_entry( handle, type, &entry, &handle )) return FALSE;
++    *pid = entry.pid;
++    *tid = entry.tid;
++    return TRUE;
++}
++
+ void *get_user_handle_ptr( HANDLE handle, unsigned short type )
+ {
+     WORD index = USER_HANDLE_TO_INDEX( handle );
+--- a/include/ntuser.h
++++ b/include/ntuser.h
+@@ -640,6 +640,7 @@
+     WM_WINE_UPDATEWINDOWSTATE,
+     WM_WINE_TRACKMOUSEEVENT,
+     WM_WINE_SETPIXELFORMAT,
++    WM_WINE_GET_SYSTEM_CURSOR,
+     WM_WINE_FIRST_DRIVER_MSG = 0x80001000,  /* range of messages reserved for the USER driver */
+     WM_WINE_CLIPCURSOR = 0x80001ff0, /* internal driver notification messages */
+     WM_WINE_SETCURSOR,

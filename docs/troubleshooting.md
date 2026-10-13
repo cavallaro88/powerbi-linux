@@ -57,3 +57,9 @@ Before attaching any log to a public issue, remove usernames, document paths, da
   also bounds its scroll pane. Both per-user runtime and UI recipe must be applied.
   See [Options installation and evidence](options-dialog.md). Changing the report
   cache or RAM limits does not address this initialization failure.
+
+- **Resize cursor stays over ordinary controls:** runtime 0.1.3 has a scoped
+  correction for shared system cursor resources owned by another process. The
+  earlier fallback could retain the last valid resize image. A component and
+  GNOME compositor-motion reproducer passed; actual Power BI restart validation
+  is separate. See [cursor evidence](cursor.md).

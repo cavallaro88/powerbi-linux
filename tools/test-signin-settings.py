@@ -11,11 +11,11 @@ import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'src'))
-from pbi_linux.common import wine_env
+from pbi_linux.common import Paths, wine_env
 
 
 def main():
-    active = json.loads((Path.home() / '.local/share/powerbi-linux/active.json').read_text())
+    active = json.loads(Paths().active.read_text())
     prefix, runtime = Path(active['prefix']), Path(active['runtime'])
     app = prefix / 'drive_c/Program Files/Microsoft Power BI Desktop/bin'
     out = ROOT / '.local/signin-settings' / datetime.datetime.now().strftime('%Y%m%d-%H%M%S-%f')

@@ -49,3 +49,7 @@ compare native entry count, HTML row count and cached viewport/page size after
 modal show; an initial transient 2x2 frame is insufficient to diagnose a steady
 layout failure. The general OneLake chooser has not been revalidated after the
 later Microsoft browser sign-in correction.
+
+The repeatable check runner and reusable 22-tab Options audit are described in
+[proactive QA](../../docs/automated-qa.md). Native suites require a distinct QA
+installation; missing environments are blocked rather than passed.

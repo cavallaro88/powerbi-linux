@@ -1,11 +1,15 @@
 # Build from a clean source tree
 
-The current recipe defaults to runtime **0.1.2** (`--runtime-version 0.1.2`).
-It includes the 0.1.1 modal/popup correction plus the signed-Int64 HTML conversion.
+The current recipe defaults to runtime **0.1.3** (`--runtime-version 0.1.3`).
+It includes the modal/popup, signed-Int64 HTML and cursor corrections described below.
 Preserve older archives/checksums. The incremental 0.1.2 artifact replaces only
 two JScript DLLs; its exact provenance and narrower validation scope are in
 [Options](options-dialog.md). A full rebuild is not claimed byte-identical to an
 incremental DLL replacement.
+
+Runtime 0.1.3 additionally resolves foreign shared system cursor resources; its
+incremental artifact replaces only Unix win32u. See [cursor scope](cursor.md).
+The 0.1.2 JScript and 0.1.1 Wayland corrections remain included.
 
 Install Docker or Podman and ensure your account can invoke the selected engine. No existing Wine/Bottles installation or prefix is needed. Source preparation uses Python 3.12+, Git and `patch`; compilation tools are installed inside the builder container.
 

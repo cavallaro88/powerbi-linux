@@ -2,6 +2,12 @@
 
 Community compatibility tools for Power BI Desktop using patched Wine, DXVK and native Wayland. **Validated development preview 0.1.0: compatibility is scoped to the documented synthetic workloads.**
 
+The runtime 0.1.3 candidate adds a scoped [cross-process cursor correction](docs/cursor.md),
+with a native component and compositor-motion reproducer. RPM 9 remains compatible.
+After restart, the real Power BI sidebar/canvas alternated horizontal resize and
+arrow resources correctly; data-grid, custom-cursor and broader workload coverage
+remain separate.
+
 The RPM 9 / runtime 0.1.2 candidate fixes incomplete Options initialization and
 clipped scrolling. Its 22-tab synthetic audit and numeric regression have a
 separate [validation scope](docs/options-dialog.md). It retains the earlier
@@ -32,7 +38,7 @@ The RPM provides the CLI, menu entry and file associations. It does **not** incl
 
 ```bash
 pbi-linux setup \
-  --runtime powerbi-linux-runtime-0.1.2-x86_64.tar.xz \
+  --runtime powerbi-linux-runtime-0.1.3-x86_64.tar.xz \
   --runtime-sha256 '<runtime checksum>' \
   --installer PBIDesktopSetup_x64.exe \
   --accept-license
@@ -70,6 +76,10 @@ data loading. A subsequent real refresh blockage was traced to an invisible
 credential request; cancellation of running queries remains connector-dependent.
 
 ## Develop
+
+Run `python3 tools/check-product.py` for repeatable checks and JSON/JUnit evidence.
+See [proactive QA](docs/automated-qa.md) for the prepared daily CI, isolated native
+components, public Options audit and the remaining unattended-GUI work.
 
 ```bash
 python3 -m unittest discover -s tests/unit -v

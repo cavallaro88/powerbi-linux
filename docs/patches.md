@@ -11,6 +11,7 @@ and [Edit Permissions](permissions-wayland.md).
 | Patch or helper | Reason | Status / license |
 |---|---|---|
 | Wine composition aggregate | dcomp bridge, owner transport, cursor/HKL, optional capture and PE backing | Required; Wine/Neutron LGPL-2.1-or-later |
+| Wine shared system cursor resources | Resolve foreign standard cursor identities with bounded IPC and load local images | LGPL-2.1-or-later; scoped 0.1.3 component/compositor candidate, see [cursor](cursor.md) |
 | Wine HTML signed Int64 | Initialize legacy HTML Options when .NET exposes Int64 cache properties; HTML ES5+ only | Required; LGPL-2.1-or-later; seven numeric cases, x64 component |
 | Wine OLE DB VARIANT conversions | Numeric/boolean values otherwise appeared as zero | Required; LGPL-2.1-or-later |
 | Wine Wayland parent | Owned dialogs otherwise remained behind the main window | Required; LGPL-2.1-or-later |
