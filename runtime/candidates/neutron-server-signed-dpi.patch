@@ -1,0 +1,25 @@
+server: preserve negative coordinates when scaling rational monitor DPI
+
+Port of the signed-arithmetic part of Neutron commit
+1bdc3e5 (restore-ps2026-reverts), reviewed at 8ecb7fd1789dde9db03811cdaa4980eb8c6c2a91.
+Upstream: https://github.com/Nico-LaFoucate/neutron-wine
+Wine 11.18 uses struct ratio instead of scalar DPI; preserve that interface.
+Do not import the unrelated Neutron WM_PAINT circuit-breaker restoration.
+Retains Wine/Neutron LGPL-2.1-or-later terms.
+Candidate only; not part of the production runtime patch series.
+
+--- a/server/user.h
++++ b/server/user.h
+@@ -234,9 +234,9 @@
+ 
+ static inline int scale_dpi( int val, struct ratio dpi_from, struct ratio dpi_to )
+ {
+-    unsigned int num = dpi_to.num * dpi_from.den, den = dpi_from.num * dpi_to.den;
+-    if (val >= 0) return (val * num + (den / 2)) / den;
+-    return (val * num - (den / 2)) / den;
++    INT64 num = (INT64)dpi_to.num * dpi_from.den, den = (INT64)dpi_from.num * dpi_to.den;
++    if (val >= 0) return ((INT64)val * num + (den / 2)) / den;
++    return ((INT64)val * num - (den / 2)) / den;
+ }
+ 
+ static inline void scale_dpi_rect( struct rectangle *rect, struct ratio dpi_from, struct ratio dpi_to )

@@ -1,6 +1,6 @@
 # Validation — 2026-10-13
 
-This is a **validated development preview**, scoped to the synthetic scenarios below. It is not a guarantee for arbitrary enterprise models, other desktops/distributions, untested connectors or Microsoft cloud services. Historical experiments are preserved in [investigation notes](investigation-history.md).
+This is a **validated development preview**, scoped to the synthetic scenarios below. It is not a guarantee for arbitrary enterprise models, other desktops/distributions, untested connectors or Microsoft cloud services. Release changes are recorded in the [changelog](../CHANGELOG.md); private investigation state is excluded from the product repository.
 
 The exact source-built runtime archive is `powerbi-linux-runtime-0.1.0-x86_64.tar.xz`, SHA-256:
 

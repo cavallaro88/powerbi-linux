@@ -1,0 +1,25 @@
+winewayland: accept normal compositor size hints after initial configure
+
+PaperWM programmatic resizes do not carry MAXIMIZED/RESIZING/TILED states.
+The normal window is resizable, but the driver discarded both dimensions.
+Preserve initial-configure and fixed-size behavior; keep application constraints.
+Wine-derived change: LGPL-2.1-or-later.
+
+--- a/dlls/winewayland.drv/window.c
++++ b/dlls/winewayland.drv/window.c
+@@ -568,9 +568,12 @@
+     memset(&surface->requested, 0, sizeof(surface->requested));
+ 
+     state = surface->processing.state;
+-    /* Ignore size hints if we don't have a state that requires strict
+-     * size adherence, in order to avoid spurious resizes. */
+-    if (state)
++    /* A window manager may resize a normal window without marking it tiled
++     * or interactively resizing (e.g. PaperWM move_resize_frame). Once the
++     * initial configure is acknowledged, respect such hints for resizable
++     * windows. Keep initial placement and fixed-size dialogs unchanged, and
++     * retain the application's normal WM_WINDOWPOSCHANGING constraints. */
++    if (state || (surface->current.serial && surface->window.resizeable))
+     {
+         width = surface->processing.rect.right - surface->processing.rect.left;
+         height = surface->processing.rect.bottom - surface->processing.rect.top;

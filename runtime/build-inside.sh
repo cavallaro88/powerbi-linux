@@ -34,6 +34,7 @@ if not Path('Makefile').exists() or not stamp.exists() or json.loads(stamp.read_
 CONFIGURE
 make -j"${PBI_BUILD_JOBS:-2}"
 make -j"${PBI_BUILD_JOBS:-2}" dlls/ntdll/ntdll.so
+rm -rf /work/build/stage
 make install DESTDIR=/work/build/stage
 cd /work
 cp -a build/stage/opt/powerbi-linux/. dist/runtime/

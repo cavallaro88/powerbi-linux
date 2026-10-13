@@ -1,0 +1,11 @@
+{
+  "dxvk-3.1-composition.patch": "33c3da7be9d3d95a3fe7ee08670962f1a56cc9e3ddb08518dfdc7819128b39ee",
+  "wine-11.18-cgroup-memory.patch": "7ad77dd0040446700fe8daaba4103e2dfa04e11685bd0820cd1e5c08a4cc54a2",
+  "wine-11.18-composition.patch": "c37ea6fa335257489eed3cb311aa445d8281e7c3138adfabff95ad8cc626b42c",
+  "wine-11.18-cursor-resource.patch": "db38c2d9ad6ec2e3c313bcc0a35e9d764896473419b80c507bfcd4c5ba0e0546",
+  "wine-11.18-jscript-int64.patch": "baa1e7247957c9c7fa0b740066f11b971edae2329a8b667d357dc49935e524f7",
+  "wine-11.18-oledb32-variant.patch": "903661c96a17113a1a6a10d281bfda896c0ea6eb51636299e4ae9b766facf39c",
+  "wine-11.18-secur32-status.patch": "5df39e54380f146405afa3b7aa08df20f306d82871e6417b29bd6f1462e86053",
+  "wine-11.18-wayland-normal-resize.patch": "59ece0115d772d0671e98fb7cb18930dfb1aa2045b8b38c37ee72f623ae58446",
+  "wine-11.18-wayland-parent.patch": "d8ed5e7c1d8d9f2751fb99a45d59f28594667f18f72a090f71ddb51ddebee346"
+}

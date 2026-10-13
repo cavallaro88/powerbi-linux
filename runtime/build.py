@@ -17,9 +17,10 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT/'src'))
 from pbi_linux.assets import download
 from pbi_linux.common import check_digest, digest
+from pbi_linux import build_provenance
 
 WINE_PATCHES = ('wine-11.18-composition.patch','wine-11.18-oledb32-variant.patch',
-                'wine-11.18-wayland-parent.patch','wine-11.18-cgroup-memory.patch','wine-11.18-secur32-status.patch','wine-11.18-jscript-int64.patch','wine-11.18-cursor-resource.patch')
+                'wine-11.18-wayland-parent.patch','wine-11.18-cgroup-memory.patch','wine-11.18-secur32-status.patch','wine-11.18-jscript-int64.patch','wine-11.18-cursor-resource.patch','wine-11.18-wayland-normal-resize.patch')
 
 
 def preparation_matches(marker, expected):
@@ -150,7 +151,12 @@ def prepare(args):
 def package(engine='docker', version='0.1.2'):
     if not re.fullmatch(r'[0-9]+\.[0-9]+\.[0-9]+(?:-[A-Za-z0-9.-]+)?', version):
         raise SystemExit('Invalid runtime version')
+    archive=ROOT/('dist/powerbi-linux-runtime-'+version+'-x86_64.tar.xz')
+    if archive.exists() or archive.with_suffix(archive.suffix+'.sha256').exists():
+        raise SystemExit('Runtime artifact already exists; select a new version instead of overwriting it')
     runtime=ROOT/'dist/runtime'
+    builder=json.loads(subprocess.check_output([engine,'image','inspect','pbi-linux-builder:0.1.0'],text=True))[0]
+    build_provenance.verify(ROOT, version, builder['Id'])
     lock=json.loads((ROOT/'runtime/sources.lock.json').read_text())
     if not preparation_matches(ROOT/'sources/wine/.prepared',{'source_sha256':lock['wine']['sha256'],
         'patches':{name:digest(ROOT/'runtime/patches'/name) for name in WINE_PATCHES}}):
@@ -190,14 +196,13 @@ def package(engine='docker', version='0.1.2'):
                 target.parent.mkdir(parents=True,exist_ok=True)
                 shutil.copy2(file,target)
     lock=json.loads((ROOT/'runtime/sources.lock.json').read_text())
-    builder=json.loads(subprocess.check_output([engine,'image','inspect','pbi-linux-builder:0.1.0'],text=True))[0]
     manifest={'schema':1,'arch':'x86_64','version':version,'sources':lock,
               'builder_image_id':builder['Id'],
+              'build_input_sha256':json.loads((ROOT/'build/runtime-build-success.json').read_text())['input_sha256'],
               'dockerfile_sha256':digest(ROOT/'runtime/Dockerfile'),
               'patches':{f.name:digest(f) for f in sorted((ROOT/'runtime/patches').glob('*.patch'))},
               'files':{str(p.relative_to(runtime)):digest(p) for p in sorted(runtime.rglob('*')) if p.is_file() and p.name!='runtime.json'}}
     (runtime/'runtime.json').write_text(json.dumps(manifest,indent=2)+'\n')
-    archive=ROOT/('dist/powerbi-linux-runtime-'+version+'-x86_64.tar.xz')
     with tarfile.open(archive,'w:xz',dereference=False) as tar:
         # Emit symlinks without following them; archive paths remain relative.
         for file in sorted(runtime.iterdir()):
@@ -210,7 +215,7 @@ def main():
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('--prepare-only',action='store_true')
     p.add_argument('--package-only',action='store_true',help='Package an already completed runtime build')
-    p.add_argument('--runtime-version', default='0.1.3', help='Version recorded in the manifest and archive filename')
+    p.add_argument('--runtime-version', default='0.1.4', help='Version recorded in the manifest and archive filename')
     p.add_argument('--bundled-sources',action='store_true',help='Build from the corresponding patched source archives in an exported project')
     p.add_argument('--wine-source')
     p.add_argument('--dxvk-source')
@@ -220,6 +225,8 @@ def main():
     if args.package_only:
         package(args.engine, args.runtime_version)
         return
+    (ROOT/'build/runtime-build-success.json').unlink(missing_ok=True)
+    build_provenance.reviewed_patches(ROOT)
     if args.bundled_sources:
         prepare_bundled(args)
     else:
@@ -227,8 +234,14 @@ def main():
     if args.prepare_only:
         return
     run(args.engine,'build','-t','pbi-linux-builder:0.1.0',ROOT/'runtime')
+    builder=json.loads(subprocess.check_output([args.engine,'image','inspect','pbi-linux-builder:0.1.0'],text=True))[0]
+    started=build_provenance.begin(ROOT, args.runtime_version, builder['Id'])
+    # An old install tree must not contribute files removed by the new recipe.
+    if (ROOT/'dist/runtime').exists():
+        shutil.rmtree(ROOT/'dist/runtime')
     run(args.engine,'run','--rm','--user',str(os.getuid())+':'+str(os.getgid()),'-e','HOME=/tmp/pbi-build-home',
-        '-v',str(ROOT)+':/work:z','-w','/work','pbi-linux-builder:0.1.0','bash','runtime/build-inside.sh')
+        '-v',str(ROOT)+':/work:z','-w','/work',builder['Id'],'bash','runtime/build-inside.sh')
+    build_provenance.record_success(ROOT, started)
     package(args.engine, args.runtime_version)
 
 if __name__=='__main__':

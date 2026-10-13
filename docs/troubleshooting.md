@@ -74,3 +74,10 @@ Before attaching any log to a public issue, remove usernames, document paths, da
   after Desktop provisioning, on integration and managed launch with RPM 11.
   Check the per-user desktop entry and application availability; see
   [original app icon](app-icon.md). The generic packaged icon is the pre-setup fallback.
+
+- **PaperWM shortcuts or normal tiling requests leave Desktop at a fixed size:**
+  runtime 0.1.3 discarded normal compositor size hints without strict state flags.
+  The separate local 0.1.4 PaperWM candidate accepts them after initial configure
+  for resizable windows. The RPM alone does not supply this runtime change.
+  See [evidence, installation scope and pending checks](paperwm.md); keep genuine
+  fixed-size dialogs and single-window column-height policy distinct.

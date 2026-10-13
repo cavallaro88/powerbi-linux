@@ -64,7 +64,7 @@ rewrite a running Desktop process. Apply setup/repair with Desktop closed.
 ## Standalone component test
 
 ```bash
-python3 product/tools/test-save-dialog.py
+python3 tools/test-save-dialog.py
 ```
 
 Run this in an installed user's Fedora session. It compiles and signs a temporary

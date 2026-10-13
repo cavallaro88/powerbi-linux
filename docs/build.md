@@ -1,7 +1,9 @@
 # Build from a clean source tree
 
-The current recipe defaults to runtime **0.1.3** (`--runtime-version 0.1.3`).
-It includes the modal/popup, signed-Int64 HTML and cursor corrections described below.
+The current recipe defaults to runtime **0.1.4** (`--runtime-version 0.1.4`).
+It includes the modal/popup, signed-Int64 HTML, cursor and normal Wayland resize corrections.
+The latest full 0.1.4 recipe has not yet been built; the private PaperWM candidate
+is a single-driver incremental test. See [scope and evidence](paperwm.md).
 Preserve older archives/checksums. The incremental 0.1.2 artifact replaces only
 two JScript DLLs; its exact provenance and narrower validation scope are in
 [Options](options-dialog.md). A full rebuild is not claimed byte-identical to an
@@ -91,3 +93,32 @@ Bundle hashes and patch preparation markers are checked before compilation. This
 
 The offline HTML numeric regression is `python3 tools/test-html-int64.py`; see
 [Options evidence](options-dialog.md) for the separate 22-tab audit and limits.
+
+## Reviewed inputs and successful-build receipts
+
+The October 18 Neutron review added an independent packaging guard inspired by
+upstream commit `480d6a4`. `runtime/patches.lock.json` records every production
+patch filename and SHA-256. Unknown/modified patches fail; a Git checkout also
+requires the patches and registry to be committed. An exported tree uses the
+same registry without needing private Git history.
+
+A full runtime build invalidates the previous success receipt before preparation,
+uses a fixed builder image ID and clears generated install staging. Only a
+successful build with unchanged input contents records
+`build/runtime-build-success.json`. It fingerprints runtime recipes, helpers,
+licenses, prepared Wine/DXVK/dnlib source content and compiled payload, including
+modes and in-tree symlink targets. External symlink inputs are refused.
+
+`--package-only` now requires that receipt to match version, builder, input
+contents and compiled files. Forgotten extra DLLs/executables fail. Packaging may
+add only its own license/provenance metadata. Existing runtime archive/checksum
+names cannot be overwritten; choose a new explicit `--runtime-version` when
+needed. Old development staging without a receipt needs a full rebuild. This
+requirement does not invalidate existing released archives or the active runtime.
+
+These are build-integrity checks, not compatibility certification. Eight isolated
+regressions cover failed/stale builds, patch review, source/payload changes,
+symlink escape and repeat metadata preparation. A full Wine build with this new
+guard has not been run; the failure gate is separately exercised at the real
+packaging entry point. Candidate runtime patches remain outside the production
+registry and are not automatically applied.

@@ -2,6 +2,21 @@
 
 ## 0.1.0 — development
 
+### Runtime 0.1.4 — PaperWM development candidate, 2026-10-18
+
+- Accept normal Wayland compositor size hints for resizable windows after initial configure. PaperWM resizes without maximized/resizing/tiled flags were previously discarded.
+- Native baseline/candidate tests confirm actual client resizing and preserve the fixed-size control. Empty Desktop on the normal launcher follows column height, increase-width actions and compositor Super+minus. Physical Super+plus injection remains unconfirmed; see [scope and pending checks](docs/paperwm.md).
+- Activate a private incremental single-driver candidate locally, retaining runtime 0.1.3 and the existing profile/settings. Add the reviewed patch to the 0.1.4 source recipe; full rebuild and broader release gates remain pending.
+- Record the separate acceptance plan for the three still-inactive Neutron candidates in [runtime testing](docs/runtime-testing.md).
+
+### Unreleased — product repository and upstream review
+
+- Promote the standalone product to the repository root, with normal GitHub discovery, a shorter README, documentation index and explicit roadmap. Preserve private investigation/history outside the public product history.
+- Guard runtime packaging against unreviewed patch files, failed/stale builds, changed sources/payload and accidental artifact overwrite. Record the successful build and exact builder/input identity; retain unchanged runtime 0.1.3 artifacts.
+- Review the 87 neutron-wine commits through `8ecb7fd`, with decisions for all 59 changed patch files and separate external-library scope. Add a repeatable consistency audit to quick QA. No new runtime patch is enabled.
+- Stage mouse capture tracking, rendering-mode glyph caching and signed DPI arithmetic separately. The actual Wine DPI helper fails six of fourteen arithmetic controls before the port and passes all after; server/compositor validation remains pending.
+
+
 ### RPM release 11 — cached models and original app icon, 2026-10-18
 
 - Compact valid linguistic JSON in memory before the existing model-copy/update path. The original ABF restores successfully; reapplying extensive multiline linguistic metadata caused a separate Analysis Services failure. Preserve all JSON values, escapes and number tokens; apply genuine source metadata changes normally. No report file or cache is automatically deleted or rewritten by the correction.

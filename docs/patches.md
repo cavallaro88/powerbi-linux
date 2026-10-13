@@ -14,6 +14,7 @@ and [Edit Permissions](permissions-wayland.md).
 | Wine shared system cursor resources | Resolve foreign standard cursor identities with bounded IPC and load local images | LGPL-2.1-or-later; scoped 0.1.3 component/compositor candidate, see [cursor](cursor.md) |
 | Wine HTML signed Int64 | Initialize legacy HTML Options when .NET exposes Int64 cache properties; HTML ES5+ only | Required; LGPL-2.1-or-later; seven numeric cases, x64 component |
 | Wine OLE DB VARIANT conversions | Numeric/boolean values otherwise appeared as zero | Required; LGPL-2.1-or-later |
+| Wine normal Wayland resize | Accept normal compositor size hints after initial configure for resizable windows; private 0.1.4 component/Desktop candidate, see [PaperWM](paperwm.md) | LGPL-2.1-or-later |
 | Wine Wayland parent | Owned dialogs otherwise remained behind the main window | Required; LGPL-2.1-or-later |
 | Wine cgroup reporting | Report cgroup limits to CLR/Chromium/AS | Required; LGPL-2.1-or-later; initializes the path buffer in the product port |
 | Wine secur32 status | Return NTSTATUS rather than BOOL from LsaFreeReturnBuffer | Required; source fix replaces the old machine-code patch; LGPL-2.1-or-later |
@@ -55,3 +56,10 @@ schema. Guarded setup rejects unsupported/already patched assemblies. Existing
 Newtonsoft.Json is used from the local application. See [failure isolation,
 Save/reopen and limits](model-cache.md). The original application icon is
 extracted locally by the CLI; it is not an assembly patch.
+
+The [October 18 upstream review](upstream-neutron.md) covers 87 new commits and
+all 59 changed patch files. The Neutron review itself did not change the production source pin/series.
+The later, independently diagnosed PaperWM correction adds a patch for 0.1.4;
+see [its separate evidence and limits](paperwm.md).
+Three inactive candidates live outside `patches/`; build protection was adopted
+independently. `runtime/patches.lock.json` prevents unreviewed production inputs.

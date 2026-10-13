@@ -162,3 +162,18 @@ preexisting query error. That private evidence is sanitized before export; real
 models and ABF files never enter the public suite. These tests do not constitute
 an unattended end-to-end lab. See [cache evidence](model-cache.md) and
 [local icon extraction](app-icon.md).
+
+## Repository and upstream checks
+
+After promoting the product to the repository root, quick QA runs 73 unit tests
+and five checks: units, syntax, desktop entry, Neutron review consistency and
+source export. The upstream audit validates the 87-commit/59-patch ledger and
+inactive candidate hashes without network access. Supplying an upstream checkout
+also verifies every recorded patch against its frozen commit and refuses a
+checkout HEAD that has not been reviewed.
+
+Eight build-provenance regressions and a real negative packaging entry check
+protect against stale/unreviewed builds. The separately run DPI arithmetic tool
+compiled the actual Wine helper before and after a candidate: six of fourteen
+controls failed before, none after. This source-level check does not replace
+server compilation or compositor regression. See [Neutron decisions](upstream-neutron.md).

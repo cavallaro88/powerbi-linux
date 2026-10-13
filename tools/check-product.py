@@ -115,6 +115,7 @@ def main():
         ('unit', [sys.executable, '-m', 'unittest', 'discover', '-s', 'tests/unit', '-v'], 180),
         ('syntax', [sys.executable, '-m', 'compileall', '-q', 'src', 'tools', 'runtime/build.py', 'tests/automation'], 30),
         ('desktop-entry', ['desktop-file-validate', 'packaging/powerbi-linux.desktop'], 15),
+        ('upstream-review', [sys.executable, 'tools/audit-neutron.py'], 30),
         ('source-export', [sys.executable, 'tools/export-source.py', str(output / 'source-export')], 60),
     ]
     for name, command, timeout in commands:
