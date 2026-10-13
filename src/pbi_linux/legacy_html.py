@@ -13,8 +13,7 @@ REGISTRATIONS = {
 }
 
 UI_ORIGINAL_SHA256 = '28829058269cd42b5f731db43f94bcf34baf50d1cdf1ad624c0696468e3fadb7'
-UI_PATCHED_SHA256 = 'a700f3e4b37e586d5529518176573ad62c88c79fe76525a46d0a437b23d0a855'
-_PERMISSIONS_ASSEMBLY_SHA256 = '8aee5abdd62ef384f49e08cb9931093dab7a1b8df1ddb885af9d0b1ea4358c62'
+UI_PATCHED_SHA256 = '8aee5abdd62ef384f49e08cb9931093dab7a1b8df1ddb885af9d0b1ea4358c62'
 _LIST_PATCHED_SHA256 = 'd7090533813cfce872e79b5bfe7d968af5461c6ee8b7a3ba6110e9358abd586e'
 _CREDENTIALS_PATCHED_SHA256 = '16dcd45c8a7111ce39e3967cbc36d80116d87c0b4e2945b3af39840c9504841c'
 _TEXT_OVERFLOW_SHA256 = '7cedcac43961e8f0abaa986b7130050ca3bceb43721c07228952e4047e899d40'
@@ -71,39 +70,6 @@ _PERMISSIONS_HOOK = (
     _PERMISSIONS_FIELDS + '".split(" "),function(_,k){o[k]=ko.utils.unwrapObservable(v[k]);});'
     'return JSON.stringify(o);};\r\n'
 ).encode('ascii')
-_OPTIONS_OFFSET, _OPTIONS_SIZE = 8977334, 2296
-_OPTIONS_ORIGINAL = '01d48fae31004dc42d752308d2fff0c04ed29d0eff6e8907c61787caecc03f1b'
-_OPTIONS_PATCHED = '98c2ceab28611a983e55846929e28b30f66dfb369ac2ae454a5b1c1ec58df459'
-_OPTIONS_ANCHOR = b'        _groupTabControl.load($(".o-group-options"));\r\n'
-_OPTIONS_HOOK = (
-    b'        _groupTabControl.load($(".o-group-options")).then(function(){'
-    b'var fit=function(){var p=_groupTabControl.panes.element[0],b=document.querySelector(".o-group-body");'
-    b'p.style.maxHeight=Math.max(0,b.getBoundingClientRect().bottom-p.getBoundingClientRect().top)+"px";};'
-    b'$(window).on("resize",function(){setTimeout(fit,0);});setTimeout(fit,0);});\r\n'
-)
-
-
-def patch_options(source):
-    """Keep the existing Options scroll pane inside the visible dialog body."""
-    sha = hashlib.sha256(source).hexdigest()
-    if sha == UI_PATCHED_SHA256:
-        return source
-    if sha != _PERMISSIONS_ASSEMBLY_SHA256:
-        raise Error('Unsupported HTML assembly for Options layout patch')
-    resource = source[_OPTIONS_OFFSET:_OPTIONS_OFFSET + _OPTIONS_SIZE]
-    if (hashlib.sha256(resource).hexdigest() != _OPTIONS_ORIGINAL or
-            resource.count(_OPTIONS_ANCHOR) != 1):
-        raise Error('Unexpected Options layout resource')
-    updated = re.sub(rb'(?m)^ +', b'', resource.replace(_OPTIONS_ANCHOR, _OPTIONS_HOOK))
-    if len(updated) > _OPTIONS_SIZE:
-        raise Error('Options layout hook exceeds its resource')
-    updated = updated.ljust(_OPTIONS_SIZE, b' ')
-    if hashlib.sha256(updated).hexdigest() != _OPTIONS_PATCHED:
-        raise Error('Unexpected Options layout resource output')
-    output = source[:_OPTIONS_OFFSET] + updated + source[_OPTIONS_OFFSET + _OPTIONS_SIZE:]
-    if hashlib.sha256(output).hexdigest() != UI_PATCHED_SHA256:
-        raise Error('Unexpected Options layout assembly output')
-    return output
 
 
 def patch_permissions(source):
@@ -111,8 +77,6 @@ def patch_permissions(source):
     sha = hashlib.sha256(source).hexdigest()
     if sha == UI_PATCHED_SHA256:
         return source
-    if sha == _PERMISSIONS_ASSEMBLY_SHA256:
-        return patch_options(source)
     if sha != _LIST_PATCHED_SHA256:
         raise Error('Unsupported HTML assembly for permissions serializer patch')
     resource = source[_PERMISSIONS_OFFSET:_PERMISSIONS_OFFSET + _PERMISSIONS_SIZE]
@@ -128,9 +92,9 @@ def patch_permissions(source):
     if hashlib.sha256(updated).hexdigest() != _PERMISSIONS_PATCHED:
         raise Error('Unexpected permissions resource output')
     output = source[:_PERMISSIONS_OFFSET] + updated + source[_PERMISSIONS_OFFSET + _PERMISSIONS_SIZE:]
-    if hashlib.sha256(output).hexdigest() != _PERMISSIONS_ASSEMBLY_SHA256:
+    if hashlib.sha256(output).hexdigest() != UI_PATCHED_SHA256:
         raise Error('Unexpected permissions assembly output')
-    return patch_options(output)
+    return output
 
 
 def patch_source_list(source):
@@ -138,8 +102,6 @@ def patch_source_list(source):
     sha = hashlib.sha256(source).hexdigest()
     if sha == UI_PATCHED_SHA256:
         return source
-    if sha == _PERMISSIONS_ASSEMBLY_SHA256:
-        return patch_options(source)
     if sha == _LIST_PATCHED_SHA256:
         return patch_permissions(source)
     if sha != _CREDENTIALS_PATCHED_SHA256:

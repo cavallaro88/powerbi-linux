@@ -110,11 +110,3 @@ persistence and cancellation. This is separate from runtime 0.1.1's Wayland
 modal/popup correction. The synthetic compositor-input cycle passed with both.
 The nested None/Delete Permissions confirmation is still limited;
 see [scope](permissions-wayland.md).
-
-## Options initialization and scrolling — runtime 0.1.2 / RPM 9
-
-The Options dialog exposed a separate .NET Int64-to-JavaScript conversion failure
-in Wine, followed by a pane-height error. The runtime and guarded local UI recipe
-fix these two stages; seven numeric cases and the 22-tab synthetic navigation/
-geometry audit passed. See [Options](options-dialog.md) for evidence, installation
-and remaining limits. This does not certify other untested nested HTML dialogs.

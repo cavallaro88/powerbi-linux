@@ -31,13 +31,12 @@ The validated profile occupies approximately 9 GiB, before the runtime, verified
 
 Close all managed windows before maintenance. Setup can resume an interrupted stage using the same inputs. Repair and runtime update create a separate profile generation before activating it; failure leaves the current pointer untouched.
 
-To upgrade the CLI, run `sudo dnf upgrade ./powerbi-linux-0.1.0-9.noarch.rpm`
+To upgrade the CLI, run `sudo dnf upgrade ./powerbi-linux-0.1.0-7.noarch.rpm`
 and `pbi-linux doctor`. If the HTML/email dialog checks report outdated patches,
 close Desktop and run `pbi-linux repair`, then check again. Repair applies the
 new recipe to a new profile while retaining the previous one for rollback.
-Already-patched profiles passing doctor do not need another repair. Options requires runtime 0.1.2 as well as the RPM 9 UI recipe; see
-[Options update instructions](options-dialog.md). Older runtime archives retain
-their own documented scope. See [sign-in status](sign-in.md)
+Already-patched profiles passing doctor do not need another repair. The existing
+Wine/DXVK runtime archive remains compatible. See [sign-in status](sign-in.md)
 for the distinction between fixing Continue and completing account authentication.
 
 ```bash

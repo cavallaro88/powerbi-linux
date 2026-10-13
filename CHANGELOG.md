@@ -2,13 +2,6 @@
 
 ## 0.1.0 — development
 
-### RPM release 9 / runtime 0.1.2 — development candidate, 2026-10-16
-
-- Convert signed Automation Int64 values to JavaScript numbers in Wine's HTML ES5+ engine. This prevents the Options cache-description binding from interrupting initialization; legacy standalone variant handling stays behind its original path.
-- Bound the existing Options scroll pane after asynchronous loading and on resize, preserving original controls and callbacks.
-- Seven isolated numeric cases and all 22 synthetic Options tabs passed; a compositor click scrolled the pane, and the original Cancel callback closed it. No settings were submitted. Broader resize/input and historical large-model gates remain separate.
-- Add a public offline numeric regression tool. Incremental runtime payload changes are limited to x64/x86 JScript DLLs; RPM upgrades still require separate per-user runtime/recipe maintenance. See [Options evidence](docs/options-dialog.md).
-
 ### RPM release 8 / runtime 0.1.1 — development candidate, 2026-10-16
 
 - Keep owned borderless modals as transient Wayland toplevels while dropdowns are active. Anchor tool popups whose WinForms owner is invisible to the visible window beneath them.

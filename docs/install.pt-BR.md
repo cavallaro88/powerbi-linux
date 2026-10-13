@@ -2,9 +2,9 @@
 
 Alvo inicial: **Fedora 44, x86_64 e Wayland nativo**. O projeto ainda está em desenvolvimento; login Microsoft pelo navegador e persistência após reabrir foram confirmados nesta máquina; publicação e conectores autenticados ainda precisam de validação. Refresh pela interface e save/reopen passaram em um modelo sintético de 158 tabelas, e o teste prolongado de duas horas também passou. A validação registra uma captura nativa discrepante em uma reabertura; sua causa ainda não foi estabelecida. Isso não garante compatibilidade com qualquer relatório empresarial.
 
-Instale o RPM com `sudo dnf install ./powerbi-linux-0.1.0-9.noarch.rpm`. Ele instala a CLI e a integração com o desktop. O Power BI e os componentes Microsoft são instalados separadamente no seu usuário.
+Instale o RPM com `sudo dnf install ./powerbi-linux-0.1.0-7.noarch.rpm`. Ele instala a CLI e a integração com o desktop. O Power BI e os componentes Microsoft são instalados separadamente no seu usuário.
 
-Para atualizar a CLI, execute `sudo dnf upgrade ./powerbi-linux-0.1.0-9.noarch.rpm`
+Para atualizar a CLI, execute `sudo dnf upgrade ./powerbi-linux-0.1.0-7.noarch.rpm`
 e `pbi-linux doctor`. Se o doctor indicar que os patches de diálogo estão
 desatualizados, feche o Desktop, execute `pbi-linux repair` e confira novamente.
 O repair aplica as correções de [credenciais](legacy-html.md) e do botão
@@ -47,7 +47,3 @@ licenças](connectors.md), feche o Desktop e execute
 `pbi-linux connector status mysql` e `pbi-linux doctor`. O RPM 7 inclui essa CLI e
 a correção da lista vazia. Instalar o RPM não instala o driver automaticamente;
 um provedor externo existente não é sobrescrito.
-
-A correção do menu Opções exige **runtime 0.1.2 e receita RPM 9**, aplicados ao
-perfil além do upgrade da CLI. Veja [causa, instalação e validação](options-dialog.md).
-Se a manutenção local já foi aplicada e o doctor passa, não repita update/repair.
