@@ -1,0 +1,11 @@
+--- a/dlls/secur32/lsa.c
++++ b/dlls/secur32/lsa.c
+@@ -316,7 +316,7 @@
+ NTSTATUS WINAPI LsaFreeReturnBuffer(PVOID buffer)
+ {
+     TRACE("%p\n", buffer);
+-    return VirtualFree(buffer, 0, MEM_RELEASE);
++    return VirtualFree(buffer, 0, MEM_RELEASE) ? STATUS_SUCCESS : STATUS_UNSUCCESSFUL;
+ }
+ 
+ NTSTATUS WINAPI LsaGetLogonSessionData(PLUID LogonId,

@@ -1,0 +1,166 @@
+--- a/dlls/winewayland.drv/window.c
++++ b/dlls/winewayland.drv/window.c
+@@ -172,7 +172,8 @@
+     NtUserSetThreadDpiAwarenessContext(context);
+ }
+ 
+-static BOOL wayland_win_data_create_wayland_surface(struct wayland_win_data *data, struct wayland_surface *owner_surface)
++static BOOL wayland_win_data_create_wayland_surface(struct wayland_win_data *data, struct wayland_surface *owner_surface,
++                                                   struct wayland_surface *transient_surface)
+ {
+     struct wayland_surface *surface;
+     enum wayland_surface_role role;
+@@ -220,6 +221,12 @@
+         break;
+     case WAYLAND_SURFACE_ROLE_TOPLEVEL:
+         wayland_surface_make_toplevel(surface);
++        /* Owned toplevels (dialogs) are marked as transient for their owner
++         * so compositors keep them above the owner window. Without this the
++         * modal dialog could stay behind the main window under Wayland. */
++        if (transient_surface && transient_surface->role == WAYLAND_SURFACE_ROLE_TOPLEVEL &&
++            transient_surface->xdg_toplevel)
++            xdg_toplevel_set_parent(surface->xdg_toplevel, transient_surface->xdg_toplevel);
+         break;
+     case WAYLAND_SURFACE_ROLE_SUBSURFACE:
+         wayland_surface_make_subsurface(surface, owner_surface);
+@@ -372,10 +379,19 @@
+ static BOOL is_window_managed(HWND hwnd, UINT swp_flags, BOOL fullscreen)
+ {
+     DWORD style, ex_style;
++    HWND owner;
+ 
+     /* child windows are not managed */
+     style = NtUserGetWindowLongW(hwnd, GWL_STYLE);
+     if ((style & (WS_CHILD|WS_POPUP)) == WS_CHILD) return FALSE;
++    ex_style = NtUserGetWindowLongW(hwnd, GWL_EXSTYLE);
++    owner = NtUserGetWindowRelative(hwnd, GW_OWNER);
++    /* Borderless tool popups must remain attached to their anchor even when
++     * activated. Otherwise opening a dropdown changes it into a toplevel. */
++    if (owner && (ex_style & WS_EX_TOOLWINDOW) &&
++        !(style & (WS_CAPTION | WS_THICKFRAME))) return FALSE;
++    /* A borderless modal remains managed while a child popup has focus. */
++    if (owner && (NtUserGetWindowLongW(owner, GWL_STYLE) & WS_DISABLED)) return TRUE;
+     /* activated windows are managed */
+     if (!(swp_flags & (SWP_NOACTIVATE|SWP_HIDEWINDOW))) return TRUE;
+     if (hwnd == get_active_window()) return TRUE;
+@@ -435,8 +451,9 @@
+                               const struct window_rects *new_rects, struct window_surface *surface)
+ {
+     HWND owner = NtUserGetAncestor(hwnd, GA_ROOT);
++    HWND gw_owner = NtUserGetWindowRelative(hwnd, GW_OWNER);
+     struct wayland_surface *owner_surface;
+-    struct wayland_win_data *data, *owner_data;
++    struct wayland_win_data *data, *owner_data, *transient_data = NULL;
+     BOOL managed, fullscreen = swp_flags & WINE_SWP_FULLSCREEN;
+ 
+     TRACE("hwnd %p new_rects %s after %p flags %08x\n", hwnd, debugstr_window_rects(new_rects), insert_after, swp_flags);
+@@ -449,7 +466,46 @@
+     if (!(data = wayland_win_data_get(hwnd))) return;
+     owner_data = owner && owner != hwnd ? wayland_win_data_get(owner) : NULL;
+     owner_surface = owner_data ? owner_data->wayland_surface : NULL;
+-
++    /* Toplevel dialogs are owned via GW_OWNER, not the ancestor chain. */
++    if (!owner_data && gw_owner && gw_owner != hwnd)
++    {
++        transient_data = wayland_win_data_get(gw_owner);
++    }
++
++    /* WinForms may use an invisible parking window as a popup owner. Such
++     * an owner has no Wayland surface; anchor to the visible window beneath
++     * the popup instead, as win32u does when no owner is supplied. */
++    if ((!owner_surface || owner_surface->role == WAYLAND_SURFACE_ROLE_NONE) &&
++        (!transient_data || !transient_data->wayland_surface ||
++         transient_data->wayland_surface->role == WAYLAND_SURFACE_ROLE_NONE) && gw_owner)
++    {
++        HWND anchor = NtUserWindowFromPoint(new_rects->window.left - 1, new_rects->window.top - 1);
++        anchor = NtUserGetAncestor(anchor, GA_ROOT);
++        if (anchor && anchor != hwnd &&
++            (NtUserGetWindowLongW(anchor, GWL_STYLE) & (WS_VISIBLE | WS_DISABLED)) == WS_VISIBLE)
++        {
++            struct wayland_win_data *anchor_data = wayland_win_data_get(anchor);
++            if (anchor_data && anchor_data->wayland_surface)
++            {
++                if (managed)
++                {
++                    if (transient_data) wayland_win_data_release(transient_data);
++                    transient_data = anchor_data;
++                }
++                else
++                {
++                    if (owner_data) wayland_win_data_release(owner_data);
++                    owner_data = anchor_data;
++                    owner_surface = owner_data->wayland_surface;
++                }
++            }
++            else if (anchor_data) wayland_win_data_release(anchor_data);
++        }
++    }
++
++    TRACE("hwnd=%p managed=%u owner=%p owner_surface=%p transient=%p\n", hwnd, managed,
++          owner_data ? owner_data->hwnd : NULL, owner_surface,
++          transient_data ? transient_data->hwnd : NULL);
+     data->rects = *new_rects;
+     data->is_fullscreen = fullscreen;
+     data->resizeable = swp_flags & WINE_SWP_RESIZABLE;
+@@ -463,11 +519,13 @@
+             data->wayland_surface = NULL;
+         }
+     }
+-    else if (wayland_win_data_create_wayland_surface(data, owner_surface))
++    else if (wayland_win_data_create_wayland_surface(data, owner_surface,
++                  transient_data ? transient_data->wayland_surface : NULL))
+     {
+         wayland_win_data_update_wayland_state(data);
+     }
+ 
++    if (transient_data) wayland_win_data_release(transient_data);
+     if (owner_data) wayland_win_data_release(owner_data);
+     wayland_win_data_release(data);
+ }
+--- a/dlls/winewayland.drv/wayland_surface.c
++++ b/dlls/winewayland.drv/wayland_surface.c
+@@ -776,7 +776,8 @@
+         TRACE("hwnd=%p rect=%s\n", surface->hwnd, wine_dbgstr_rect(&rect));
+ 
+         wl_subsurface_set_position(surface->wl_subsurface, rect.left, rect.top);
+-        if (owner_data->client_surface && owner_data->client_surface->wl_subsurface)
++        if (owner_data->client_surface && owner_data->client_surface->wl_subsurface &&
++            owner_data->client_surface->parent_surface == owner_surface->wl_surface)
+             wl_subsurface_place_above(surface->wl_subsurface, owner_data->client_surface->wl_surface);
+         else
+             wl_subsurface_place_above(surface->wl_subsurface, owner_surface->wl_surface);
+@@ -1295,6 +1296,7 @@
+         }
+ 
+         client->toplevel = 0;
++        client->parent_surface = NULL;
+         return;
+     }
+ 
+@@ -1304,7 +1306,7 @@
+         return wayland_client_surface_attach(client, NULL, NULL);
+     }
+ 
+-    if (client->toplevel != toplevel)
++    if (client->toplevel != toplevel || client->parent_surface != surface->wl_surface)
+     {
+         wayland_client_surface_attach(client, NULL, NULL);
+ 
+@@ -1318,6 +1320,7 @@
+         wl_subsurface_set_desync(client->wl_subsurface);
+ 
+         client->toplevel = toplevel;
++        client->parent_surface = surface->wl_surface;
+     }
+ 
+     wayland_surface_reconfigure_client(surface, client, rect);
+--- a/dlls/winewayland.drv/waylanddrv.h
++++ b/dlls/winewayland.drv/waylanddrv.h
+@@ -254,6 +254,7 @@
+     HWND toplevel;
+     RECT rect;
+     struct wl_surface *wl_surface;
++    struct wl_surface *parent_surface;
+     struct wl_subsurface *wl_subsurface;
+     struct wp_viewport *wp_viewport;
+ };

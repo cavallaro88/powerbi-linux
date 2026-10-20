@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Power BI Desktop (Wine)
+Comment=Open Power BI reports using the community Linux compatibility runtime
+Exec=pbi-linux open --desktop %f
+Icon=powerbi-linux
+Terminal=false
+Categories=Office;Database;
+MimeType=application/x-powerbi-pbix;application/x-powerbi-pbip;application/x-powerbi-pbir;
+StartupNotify=false
+StartupWMClass=pbidesktop.exe

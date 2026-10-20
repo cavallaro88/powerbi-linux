@@ -1,0 +1,2071 @@
+--- a/dlls/dcomp/device.c
++++ b/dlls/dcomp/device.c
+@@ -1,5 +1,8 @@
+ /*
++ * DirectComposition device implementation with GDI presentation.
++ *
+  * Copyright 2020 Nikolay Sivov for CodeWeavers
++ * Copyright 2026 (dcomp commit-to-window implementation)
+  *
+  * This library is free software; you can redistribute it and/or
+  * modify it under the terms of the GNU Lesser General Public
+@@ -15,33 +18,1281 @@
+  * License along with this library; if not, write to the Free Software
+  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA
+  */
++
+ #include <stdarg.h>
+-
++#include <stdlib.h>
++#include <string.h>
++
++#define COBJMACROS
+ #include "windef.h"
+ #include "winbase.h"
+-#include "objidl.h"
++#include "wingdi.h"
++#include "winuser.h"
++#include "initguid.h"
++#include "objbase.h"
+ #include "dxgi.h"
++#include "d3d11.h"
++#include "dcomp.h"
++#include "wine/list.h"
+ #include "wine/debug.h"
++#include "wine/exception.h"
++#include "pbi_transport.h"
+ 
+ WINE_DEFAULT_DEBUG_CHANNEL(dcomp);
+ 
++struct composition_device
++{
++    IDCompositionDesktopDevice IDCompositionDesktopDevice_iface;
++    LONG refcount;
++    IUnknown *rendering_device;
++    struct list targets;
++    CRITICAL_SECTION cs;
++};
++
++struct composition_target
++{
++    IDCompositionTarget IDCompositionTarget_iface;
++    LONG refcount;
++    HWND hwnd;
++    struct composition_device *device;
++    IDCompositionVisual2 *root;
++    struct list entry;
++};
++
++struct composition_visual
++{
++    IDCompositionVisual2 IDCompositionVisual2_iface;
++    LONG refcount;
++    IUnknown *content;
++    struct list children;
++    struct list entry;
++};
++
++static struct composition_device *impl_device_from_IDCompositionDesktopDevice(IDCompositionDesktopDevice *iface)
++{
++    return CONTAINING_RECORD(iface, struct composition_device, IDCompositionDesktopDevice_iface);
++}
++
++static struct composition_target *impl_target_from_IDCompositionTarget(IDCompositionTarget *iface)
++{
++    return CONTAINING_RECORD(iface, struct composition_target, IDCompositionTarget_iface);
++}
++
++static struct composition_visual *impl_visual_from_IDCompositionVisual2(IDCompositionVisual2 *iface)
++{
++    return CONTAINING_RECORD(iface, struct composition_visual, IDCompositionVisual2_iface);
++}
++
++/* ----------------------------------------------------------------------
++ * Presentation registry + background blit thread.
++ *
++ * DirectComposition apps update content by Present()ing the swapchain, not
++ * by Commit()ing every frame, so we cannot rely on Commit to drive the
++ * blit. Instead, when a swapchain is bound to a visual that is rooted in a
++ * target, we register (hwnd, swapchain) and a worker thread copies the
++ * swapchain's current frame onto the window continuously.
++ * -------------------------------------------------------------------- */
++
++struct presentation
++{
++    struct list entry;
++    HWND hwnd;         /* the window dcomp was asked to present into (a Chromium-internal child) */
++    HWND present_hwnd; /* where we actually blit: the WC_PLUGPLUG_HTMLEXTENSION panel host if this is
++                        * a CEF/CEP panel, else == hwnd. Only panel hosts are given a subsurface. */
++    IDXGISwapChain *swapchain;
++    struct pbi_transport transport; /* owner-process pixel delivery */
++    BOOL synchronous;
++    BOOL   cross_proc; /* present_hwnd owned by another process (CEF panel) -> use shared px path */
++    UINT   last_present_count; /* NEUTRON perf: skip the staging copy when the swapchain hasn't presented */
++    BOOL   have_present_count;
++    BOOL   t_first_present; /* NEUTRON cold-start timing: first present observed */
++    BOOL   t_first_deliver; /* NEUTRON cold-start timing: first frame delivered to shared mem */
++    ID3D11Texture2D *staging; /* NEUTRON perf: cached staging texture, recreated only on size change */
++    UINT   staging_w, staging_h;
++    LONG   last_client_w, last_client_h; /* NEUTRON: pause blits while the target is mid-resize */
++};
++
++/* Pick the closest ancestor owned by the main Power BI process. WebView2
++ * browser/renderer/GPU processes have different owners; the receiving control
++ * belongs to PBIDesktop. Never guess a target from another swapchain's HWND. */
++static HWND find_cef_panel_host(HWND hwnd)
++{
++    WCHAR owner_text[24], cls[128];
++    DWORD owner, pid;
++    HWND window, host = NULL;
++    int depth;
++    BOOL webview = FALSE;
++    if (!GetEnvironmentVariableW(L"PBI_COMPOSITION_OWNER_PID", owner_text, 24)) return NULL;
++    owner = wcstoul(owner_text, NULL, 10);
++    if (!owner) return NULL;
++    for (window = hwnd, depth = 0; window && depth < 24;
++         window = GetAncestor(window, GA_PARENT), depth++)
++    {
++        if (GetClassNameW(window, cls, 128) > 0 && !wcsncmp(cls, L"Chrome_", 7)) webview = TRUE;
++        GetWindowThreadProcessId(window, &pid);
++        if (!host && pid == owner) host = window;
++    }
++    return webview ? host : NULL;
++}
++
++static struct list presentations = LIST_INIT(presentations);
++static CRITICAL_SECTION presentations_cs;
++static INIT_ONCE presentations_once = INIT_ONCE_STATIC_INIT;
++static HANDLE presentations_thread;
++
++/* NEUTRON gpu-churn fix (Premiere Edit<->Export stall):
++ * The final IDXGISwapChain_Release of a RETIRED swapchain must never run
++ * synchronously on the app's Present thread, and never under presentations_cs.
++ *
++ * Proven failure (gpu-churn.log, 2026-07-23): on a workspace switch CEF's GPU
++ * process (CEPHtmlEngine --type=gpu-process) recreates its swapchain for the
++ * resized panel; the next Present re-registers via dcomp_register_external ->
++ * register_presentation, which (a) took presentations_cs and (b) dropped the
++ * LAST reference to the old DXVK swapchain in place. DXVK's teardown
++ * (~D3D11SwapChain -> Presenter::destroyResources) waits UNBOUNDED on
++ * m_surfaceCond until !m_presentPending -- a present that will never complete
++ * once the app has abandoned the old swapchain mid-frame. The GPU process main
++ * thread hung >=120s holding presentations_cs (RtlpWaitForCriticalSection
++ * "blocked by <main tid>" at dcomp+0x10260 == presentations_cs), Chromium
++ * killed it (exit_code=2) and respawned it; the multi-second Vulkan re-init is
++ * the visible stall.
++ *
++ * Fix: swap the new swapchain in under the lock, then hand the old one to a
++ * one-shot reaper thread. If DXVK's teardown wait never satisfies, only the
++ * reaper idles (0%% CPU); the render thread, the blit thread and the process
++ * survive. Worst case is one parked thread + one leaked presenter per
++ * workspace switch, instead of GPU-process death. */
++struct swapchain_reaper_item
++{
++    IDXGISwapChain *swapchain;
++    ID3D11Texture2D *staging;
++};
++
++static DWORD WINAPI swapchain_reaper_proc(void *arg)
++{
++    struct swapchain_reaper_item *item = arg;
++    ULONGLONG t0 = GetTickCount64();
++
++    if (item->staging) ID3D11Texture2D_Release(item->staging);
++    if (item->swapchain) IDXGISwapChain_Release(item->swapchain);
++
++    /* ERR on purpose (project instrumentation style): tells the A/B log whether
++     * retired swapchains actually finish releasing (fast = fully resolved) or
++     * this line never appears (reaper parked = quarantined DXVK teardown hang,
++     * potential VRAM leak per switch — investigate DXVK m_presentPending). */
++    ERR("neutron-reap: released swapchain=%p staging=%p in %llu ms\n",
++        item->swapchain, item->staging, GetTickCount64() - t0);
++    free(item);
++    return 0;
++}
++
++static void release_swapchain_async(IDXGISwapChain *swapchain, ID3D11Texture2D *staging)
++{
++    struct swapchain_reaper_item *item;
++    HANDLE thread;
++
++    if (!swapchain && !staging) return;
++
++    if ((item = calloc(1, sizeof(*item))))
++    {
++        item->swapchain = swapchain;
++        item->staging = staging;
++        if ((thread = CreateThread(NULL, 0, swapchain_reaper_proc, item, 0, NULL)))
++        {
++            ERR("neutron-reap: queued async release of retired swapchain=%p staging=%p\n",
++                swapchain, staging);
++            CloseHandle(thread);
++            return;
++        }
++        free(item);
++    }
++    /* Allocation/thread failure: fall back to the old synchronous release. */
++    if (staging) ID3D11Texture2D_Release(staging);
++    if (swapchain) IDXGISwapChain_Release(swapchain);
++}
++
++static void blit_swapchain_to_hwnd(struct presentation *p)
++{
++    IDXGISwapChain *swapchain = p->swapchain;
++    HWND hwnd = p->present_hwnd;
++    ID3D11Texture2D *backbuffer = NULL, *staging = NULL;
++    ID3D11Device *d3d_device = NULL;
++    ID3D11DeviceContext *ctx = NULL;
++    ID3D10Multithread *mt = NULL;
++    D3D11_TEXTURE2D_DESC desc;
++    D3D11_MAPPED_SUBRESOURCE map;
++    BITMAPINFO bmi;
++    void *packed = NULL;
++    HDC hdc;
++    RECT rc;
++    UINT y;
++    HRESULT hr;
++    static LONG diag_n;
++    LONG n;
++    BOOL diag;
++    /* volatile so their post-__TRY values survive a page fault in the guarded block
++     * (must not skip the mt Leave -> would deadlock the app's resize). */
++    volatile BOOL mt_entered = FALSE, have_pixels = FALSE;
++
++    n = InterlockedIncrement(&diag_n);
++    diag = (n % 120 == 1);
++
++    /* NEUTRON: the app can resize/recreate this swapchain from another thread on
++     * maximize/un-maximize; our read then races its backbuffer teardown and faults
++     * deep in the D3D/DXGI/vkd3d layer (observed: unhandled AV in d3d12core on
++     * un-maximize). Guard the whole swapchain access with a page-fault handler and
++     * just drop the frame — this async blit is best-effort. The swapchain and device
++     * are ref-held (alive), so leaving the mt lock + releasing the objects afterwards
++     * stays safe; only the backbuffer contents are transiently invalid. */
++    __TRY
++    {
++        UINT count = 0;
++        if (!p->synchronous && p->cross_proc && SUCCEEDED(IDXGISwapChain_GetLastPresentCount(swapchain, &count)) &&
++            p->have_present_count && count == p->last_present_count)
++        {
++            /* No new frame presented since our last blit: skip. */
++        }
++        else
++        {
++            if (p->cross_proc)
++            {
++                p->last_present_count = count;
++                p->have_present_count = TRUE;
++                if (!p->t_first_present)
++                {
++                    p->t_first_present = TRUE;
++                    ERR("neutron-time: sc=%p host=%p FIRST-PRESENT tick=%llu presentcount=%u\n",
++                        swapchain, hwnd, GetTickCount64(), count);
++                }
++            }
++
++            if (FAILED(hr = IDXGISwapChain_GetBuffer(swapchain, 0, &IID_ID3D11Texture2D, (void **)&backbuffer)))
++            {
++                if (diag) ERR("diag: GetBuffer failed hr %#lx\n", hr);
++            }
++            else
++            {
++                ID3D11Texture2D_GetDevice(backbuffer, &d3d_device);
++                if (d3d_device)
++                {
++                    ID3D11Device_GetImmediateContext(d3d_device, &ctx);
++
++                    if (FAILED(ID3D11DeviceContext_QueryInterface(ctx, &IID_ID3D10Multithread, (void **)&mt)))
++                        ID3D11Device_QueryInterface(d3d_device, &IID_ID3D10Multithread, (void **)&mt);
++                    if (mt)
++                    {
++                        ID3D10Multithread_SetMultithreadProtected(mt, TRUE);
++                        ID3D10Multithread_Enter(mt);
++                        mt_entered = TRUE;
++                    }
++
++                    ID3D11Texture2D_GetDesc(backbuffer, &desc);
++                    desc.Usage = D3D11_USAGE_STAGING;
++                    desc.BindFlags = 0;
++                    desc.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
++                    desc.MiscFlags = 0;
++                    /* NEUTRON M1a: reuse a cached staging texture; (re)create only on a size
++                     * change instead of allocating+freeing ~33MB (at 4K) every 16ms tick. The
++                     * cache owns the ref (freed on size change / swapchain change / unregister);
++                     * `staging` here is a borrow and is NOT released in `done`. */
++                    if (!(p->staging && p->staging_w == desc.Width && p->staging_h == desc.Height))
++                    {
++                        if (p->staging) { ID3D11Texture2D_Release(p->staging); p->staging = NULL; }
++                        if (FAILED(hr = ID3D11Device_CreateTexture2D(d3d_device, &desc, NULL, &p->staging)))
++                        {
++                            if (diag) ERR("diag: CreateTexture2D(staging) failed hr %#lx\n", hr);
++                            p->staging = NULL;
++                        }
++                        else { p->staging_w = desc.Width; p->staging_h = desc.Height; }
++                    }
++                    staging = p->staging;
++                    if (staging)
++                    {
++                        ID3D11DeviceContext_CopyResource(ctx, (ID3D11Resource *)staging, (ID3D11Resource *)backbuffer);
++                        if (FAILED(hr = ID3D11DeviceContext_Map(ctx, (ID3D11Resource *)staging, 0, D3D11_MAP_READ, 0, &map)))
++                        {
++                            if (diag) ERR("diag: Map failed hr %#lx\n", hr);
++                        }
++                        else
++                        {
++                            if ((packed = malloc((SIZE_T)desc.Width * 4 * desc.Height)))
++                            {
++                                for (y = 0; y < desc.Height; y++)
++                                    memcpy((BYTE *)packed + (SIZE_T)y * desc.Width * 4,
++                                           (BYTE *)map.pData + (SIZE_T)y * map.RowPitch,
++                                           (SIZE_T)desc.Width * 4);
++                            }
++                            ID3D11DeviceContext_Unmap(ctx, (ID3D11Resource *)staging, 0);
++                            have_pixels = TRUE;
++                        }
++                    }
++                }
++            }
++        }
++    }
++    __EXCEPT_PAGE_FAULT
++    {
++        static LONG raced_n;
++        if (!(InterlockedIncrement(&raced_n) % 240))
++            WARN("neutron dcomp: blit raced a swapchain resize (n=%ld), dropping frame\n", raced_n);
++        have_pixels = FALSE;
++    }
++    __ENDTRY
++
++    if (mt_entered)
++    {
++        ID3D10Multithread_Leave(mt);
++    }
++    if (mt) ID3D10Multithread_Release(mt);
++
++    if (!have_pixels)
++    {
++        free(packed);
++        goto done;
++    }
++
++    if (packed && p->cross_proc)
++    {
++        if (pbi_transport_publish(&p->transport, hwnd, p->hwnd, packed, desc.Width, desc.Height) &&
++            !p->t_first_deliver)
++        {
++            p->t_first_deliver = TRUE;
++            WARN("pbi-dcomp: publisher pid=%lu host=%p first frame %ux%u synchronous=%d\n",
++                 GetCurrentProcessId(), hwnd, desc.Width, desc.Height, p->synchronous);
++        }
++    }
++    else if (packed)
++    {
++        /* same-process target (e.g. the program-monitor canvas): the classic GDI blit works. */
++        memset(&bmi, 0, sizeof(bmi));
++        bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
++        bmi.bmiHeader.biWidth = desc.Width;
++        bmi.bmiHeader.biHeight = -(LONG)desc.Height; /* top-down */
++        bmi.bmiHeader.biPlanes = 1;
++        bmi.bmiHeader.biBitCount = 32;
++        bmi.bmiHeader.biCompression = BI_RGB;
++
++        if ((hdc = GetDC(hwnd)))
++        {
++            GetClientRect(hwnd, &rc);
++            SetStretchBltMode(hdc, COLORONCOLOR);
++            StretchDIBits(hdc, 0, 0, rc.right - rc.left, rc.bottom - rc.top,
++                          0, 0, desc.Width, desc.Height,
++                          packed, &bmi, DIB_RGB_COLORS, SRCCOPY);
++            ReleaseDC(hwnd, hdc);
++        }
++    }
++    free(packed);
++
++done:
++    /* NEUTRON M1a: `staging` is a borrow of the cached p->staging — do NOT release it here.
++     * The cache is freed on size change (above), swapchain change, and unregister. */
++    if (ctx) ID3D11DeviceContext_Release(ctx);
++    if (d3d_device) ID3D11Device_Release(d3d_device);
++    if (backbuffer) ID3D11Texture2D_Release(backbuffer);
++}
++
++static DWORD WINAPI presentations_proc(void *arg)
++{
++    for (;;)
++    {
++        struct presentation *p;
++
++        EnterCriticalSection(&presentations_cs);
++        LIST_FOR_EACH_ENTRY(p, &presentations, struct presentation, entry)
++        {
++            if (!p->synchronous && p->swapchain && p->present_hwnd && IsWindow(p->present_hwnd) && IsWindowVisible(p->present_hwnd))
++            {
++                /* NEUTRON R3 (resize glitch): pause blits while the target is mid-resize.
++                 * Stretching a stale readback into a changing client rect every tick is the
++                 * visible resize artifact; skip while the client size is changing and resume
++                 * once it settles (a frame drop here is already accepted behaviour). */
++                RECT rc = {0};
++                LONG cw = 0, ch = 0;
++                if (GetClientRect(p->present_hwnd, &rc)) { cw = rc.right - rc.left; ch = rc.bottom - rc.top; }
++                if (cw == p->last_client_w && ch == p->last_client_h)
++                    blit_swapchain_to_hwnd(p);
++                p->last_client_w = cw;
++                p->last_client_h = ch;
++            }
++        }
++        LeaveCriticalSection(&presentations_cs);
++        Sleep(16);
++    }
++    return 0;
++}
++
++static BOOL CALLBACK presentations_init(INIT_ONCE *once, void *param, void **ctx)
++{
++    InitializeCriticalSection(&presentations_cs);
++    presentations_thread = CreateThread(NULL, 0, presentations_proc, NULL, 0, NULL);
++    return TRUE;
++}
++
++static void register_presentation(HWND hwnd, IUnknown *content, BOOL synchronous)
++{
++    IDXGISwapChain *swapchain = NULL;
++    struct presentation *p;
++    HWND host, target;
++    BOOL target_cross_proc = FALSE;
++
++    if (!hwnd || !content)
++        return;
++    if (FAILED(IUnknown_QueryInterface(content, &IID_IDXGISwapChain, (void **)&swapchain)))
++        return;
++
++    /* NEUTRON: only CEF/CEP panels (which have a WC_PLUGPLUG_HTMLEXTENSION host ancestor) get the
++     * subsurface treatment. We blit into that host and mark IT so win32u gives it its own window
++     * surface -> winewayland maps it as a subsurface ABOVE the parent's GPU (Vulkan/DXVK) client
++     * surface, making our GDI blit visible instead of hidden underneath. Non-CEF dcomp targets (e.g.
++     * the program-monitor canvas) return NULL here and are left completely untouched. */
++    host = find_cef_panel_host(hwnd);
++    if (synchronous && !host) { IDXGISwapChain_Release(swapchain); return; }
++    target = host ? host : hwnd;
++    {
++        DWORD tpid = 0;
++        GetWindowThreadProcessId(target, &tpid);
++        /* cross-process (CEF panel host owned by the Adobe app) -> shared-memory present path;
++         * same-process (program-monitor canvas) -> classic GDI blit. */
++        target_cross_proc = (tpid && tpid != GetCurrentProcessId());
++    }
++    {
++        /* NEUTRON diag: log the full ancestor chain (class + pid) once per hwnd so we can see whether a
++         * ForHwnd swapchain's CEF child resolves up to the Adobe-owned HTMLEXTENSION host. */
++        static HWND logged[32]; static int nlogged;
++        int li; BOOL seen = FALSE;
++        for (li = 0; li < nlogged; li++) if (logged[li] == hwnd) { seen = TRUE; break; }
++        if (!seen && nlogged < 32)
++        {
++            HWND a; int depth; char chain[512]; int off = 0;
++            logged[nlogged++] = hwnd;
++            for (a = hwnd, depth = 0; a && depth < 16; a = GetAncestor(a, GA_PARENT), depth++)
++            {
++                WCHAR cls[128]; DWORD apid = 0; char cn[128]; int j = 0;
++                if (GetClassNameW(a, cls, 128) <= 0) cls[0] = 0;
++                GetWindowThreadProcessId(a, &apid);
++                while (cls[j] && j < 40) { cn[j] = (char)cls[j]; j++; } cn[j] = 0;
++                off += snprintf(chain + off, sizeof(chain) - off, "%p[%s,pid%lu] <- ", a, cn, apid);
++                if (off > (int)sizeof(chain) - 80) break;
++            }
++            ERR("neutron-time: REGISTER hwnd=%p host=%p target=%p cross_proc=%d tick=%llu chain: %s\n",
++                hwnd, host, target, target_cross_proc, GetTickCount64(), chain);
++        }
++    }
++    /* Child windows already draw into their owner's surface in standard Wine.
++     * No cross-process SetWindowPos/FRAMECHANGED or Adobe-specific surface flags. */
++    InitOnceExecuteOnce(&presentations_once, presentations_init, NULL, NULL);
++
++    EnterCriticalSection(&presentations_cs);
++    LIST_FOR_EACH_ENTRY(p, &presentations, struct presentation, entry)
++    {
++        if (p->hwnd == hwnd)
++        {
++            p->synchronous = synchronous;
++            p->present_hwnd = target;
++            p->cross_proc = target_cross_proc;
++            if (p->swapchain != swapchain)
++            {
++                /* NEUTRON gpu-churn fix: retire the old swapchain OUTSIDE the lock and
++                 * OFF this (the app's Present) thread — the final release can wedge
++                 * forever in DXVK's Presenter::destroyResources (see reaper above). */
++                IDXGISwapChain *old_swapchain = p->swapchain;
++                ID3D11Texture2D *old_staging = p->staging;
++                p->swapchain = swapchain; /* take QI ref */
++                /* NEUTRON M1a: swapchain (and possibly its D3D device) changed -> drop the cached staging. */
++                p->staging = NULL; p->staging_w = p->staging_h = 0;
++                /* NEUTRON perf gate: force a fresh present-count comparison on the new swapchain. */
++                p->have_present_count = FALSE;
++                LeaveCriticalSection(&presentations_cs);
++                release_swapchain_async(old_swapchain, old_staging);
++                return;
++            }
++            else IDXGISwapChain_Release(swapchain);
++            LeaveCriticalSection(&presentations_cs);
++            return;
++        }
++    }
++
++    if ((p = calloc(1, sizeof(*p))))
++    {
++        p->hwnd = hwnd;
++        p->synchronous = synchronous;
++        p->present_hwnd = target;
++        p->cross_proc = target_cross_proc;
++        p->swapchain = swapchain; /* take QI ref */
++        list_add_tail(&presentations, &p->entry);
++        TRACE("registered presentation hwnd %p (blit target %p) swapchain %p.\n", hwnd, target, swapchain);
++    }
++    else IDXGISwapChain_Release(swapchain);
++    LeaveCriticalSection(&presentations_cs);
++}
++
++static void unregister_presentations_for_hwnd(HWND hwnd)
++{
++    struct presentation *p, *next;
++    struct list removed = LIST_INIT(removed);
++
++    InitOnceExecuteOnce(&presentations_once, presentations_init, NULL, NULL);
++
++    EnterCriticalSection(&presentations_cs);
++    LIST_FOR_EACH_ENTRY_SAFE(p, next, &presentations, struct presentation, entry)
++    {
++        if (p->hwnd == hwnd)
++        {
++            list_remove(&p->entry);
++            list_add_tail(&removed, &p->entry);
++        }
++    }
++    LeaveCriticalSection(&presentations_cs);
++
++    /* NEUTRON gpu-churn fix: do the final swapchain releases outside the lock and
++     * off this thread — same DXVK teardown wedge as in register_presentation. */
++    LIST_FOR_EACH_ENTRY_SAFE(p, next, &removed, struct presentation, entry)
++    {
++        list_remove(&p->entry);
++        release_swapchain_async(p->swapchain, p->staging);
++        pbi_transport_close(&p->transport);
++        free(p);
++    }
++}
++
++/* Walk a visual subtree and register any swapchain content against hwnd. */
++static void visual_register(struct composition_visual *visual, HWND hwnd)
++{
++    struct composition_visual *child;
++
++    if (visual->content)
++        register_presentation(hwnd, visual->content, FALSE);
++
++    LIST_FOR_EACH_ENTRY(child, &visual->children, struct composition_visual, entry)
++        visual_register(child, hwnd);
++}
++
++/* ----------------------------------------------------------------------
++ * IDCompositionVisual2
++ * -------------------------------------------------------------------- */
++
++static const IDCompositionVisual2Vtbl composition_visual_vtbl;
++
++static HRESULT WINAPI visual_QueryInterface(IDCompositionVisual2 *iface, REFIID iid, void **out)
++{
++    struct composition_visual *visual = impl_visual_from_IDCompositionVisual2(iface);
++
++    TRACE("%p, %s, %p.\n", iface, debugstr_guid(iid), out);
++
++    if (IsEqualGUID(iid, &IID_IUnknown)
++            || IsEqualGUID(iid, &IID_IDCompositionVisual)
++            || IsEqualGUID(iid, &IID_IDCompositionVisual2))
++    {
++        IDCompositionVisual2_AddRef(&visual->IDCompositionVisual2_iface);
++        *out = &visual->IDCompositionVisual2_iface;
++        return S_OK;
++    }
++
++    ERR("neutron-qi: VISUAL refused %s (E_NOINTERFACE) -- if Chromium wanted this, SetContent went here\n",
++        debugstr_guid(iid));
++    *out = NULL;
++    return E_NOINTERFACE;
++}
++
++static ULONG WINAPI visual_AddRef(IDCompositionVisual2 *iface)
++{
++    struct composition_visual *visual = impl_visual_from_IDCompositionVisual2(iface);
++    return InterlockedIncrement(&visual->refcount);
++}
++
++static ULONG WINAPI visual_Release(IDCompositionVisual2 *iface)
++{
++    struct composition_visual *visual = impl_visual_from_IDCompositionVisual2(iface);
++    ULONG refcount = InterlockedDecrement(&visual->refcount);
++    struct composition_visual *child, *next;
++
++    if (!refcount)
++    {
++        if (visual->content) IUnknown_Release(visual->content);
++        LIST_FOR_EACH_ENTRY_SAFE(child, next, &visual->children, struct composition_visual, entry)
++        {
++            list_remove(&child->entry);
++            IDCompositionVisual2_Release(&child->IDCompositionVisual2_iface);
++        }
++        free(visual);
++    }
++    return refcount;
++}
++
++static HRESULT WINAPI visual_SetOffsetXAnimation(IDCompositionVisual2 *iface, IDCompositionAnimation *animation)
++{
++    TRACE("%p, %p.\n", iface, animation);
++    return S_OK;
++}
++
++static HRESULT WINAPI visual_SetOffsetX(IDCompositionVisual2 *iface, float offset_x)
++{
++    TRACE("%p, %.8e.\n", iface, offset_x);
++    return S_OK;
++}
++
++static HRESULT WINAPI visual_SetOffsetYAnimation(IDCompositionVisual2 *iface, IDCompositionAnimation *animation)
++{
++    TRACE("%p, %p.\n", iface, animation);
++    return S_OK;
++}
++
++static HRESULT WINAPI visual_SetOffsetY(IDCompositionVisual2 *iface, float offset_y)
++{
++    TRACE("%p, %.8e.\n", iface, offset_y);
++    return S_OK;
++}
++
++static HRESULT WINAPI visual_SetTransformObject(IDCompositionVisual2 *iface, IDCompositionTransform *transform)
++{
++    TRACE("%p, %p.\n", iface, transform);
++    return S_OK;
++}
++
++static HRESULT WINAPI visual_SetTransform(IDCompositionVisual2 *iface, const D2D_MATRIX_3X2_F *matrix)
++{
++    TRACE("%p, %p.\n", iface, matrix);
++    return S_OK;
++}
++
++static HRESULT WINAPI visual_SetTransformParent(IDCompositionVisual2 *iface, IDCompositionVisual *visual)
++{
++    TRACE("%p, %p.\n", iface, visual);
++    return S_OK;
++}
++
++static HRESULT WINAPI visual_SetEffect(IDCompositionVisual2 *iface, IDCompositionEffect *effect)
++{
++    TRACE("%p, %p.\n", iface, effect);
++    return S_OK;
++}
++
++static HRESULT WINAPI visual_SetBitmapInterpolationMode(IDCompositionVisual2 *iface,
++        enum DCOMPOSITION_BITMAP_INTERPOLATION_MODE mode)
++{
++    TRACE("%p, %d.\n", iface, mode);
++    return S_OK;
++}
++
++static HRESULT WINAPI visual_SetBorderMode(IDCompositionVisual2 *iface, enum DCOMPOSITION_BORDER_MODE mode)
++{
++    TRACE("%p, %d.\n", iface, mode);
++    return S_OK;
++}
++
++static HRESULT WINAPI visual_SetClipObject(IDCompositionVisual2 *iface, IDCompositionClip *clip)
++{
++    TRACE("%p, %p.\n", iface, clip);
++    return S_OK;
++}
++
++static HRESULT WINAPI visual_SetClip(IDCompositionVisual2 *iface, const D2D_RECT_F *rect)
++{
++    TRACE("%p, %p.\n", iface, rect);
++    return S_OK;
++}
++
++static HRESULT WINAPI visual_SetContent(IDCompositionVisual2 *iface, IUnknown *content)
++{
++    struct composition_visual *visual = impl_visual_from_IDCompositionVisual2(iface);
++
++    TRACE("%p, %p.\n", iface, content);
++
++    if (content) IUnknown_AddRef(content);
++    if (visual->content) IUnknown_Release(visual->content);
++    visual->content = content;
++
++    if (content)
++    {
++        IDXGISwapChain *swapchain;
++        if (SUCCEEDED(IUnknown_QueryInterface(content, &IID_IDXGISwapChain, (void **)&swapchain)))
++        {
++            DXGI_SWAP_CHAIN_DESC d = {0};
++            IDXGISwapChain_GetDesc(swapchain, &d);
++            ERR("neutron-setcontent: visual=%p SWAPCHAIN=%p %ux%u fmt=%d buffers=%u swapeffect=%d\n",
++                iface, swapchain, d.BufferDesc.Width, d.BufferDesc.Height, d.BufferDesc.Format,
++                d.BufferCount, d.SwapEffect);
++            IDXGISwapChain_Release(swapchain);
++        }
++        else
++        {
++            /* If CEF presents the panel via an IDCompositionSurface (not a swapchain) we currently drop
++             * it -> the panel reads white. Log which interfaces this content DOES expose so we know what
++             * to handle. */
++            struct { const char *n; const GUID *iid; } probes[] = {
++                {"IDCompositionSurface",        &IID_IDCompositionSurface},
++                {"IDCompositionVirtualSurface", &IID_IDCompositionVirtualSurface},
++                {"IDXGIResource",               &IID_IDXGIResource},
++                {"ID3D11Texture2D",             &IID_ID3D11Texture2D},
++            };
++            char hit[256] = {0};
++            unsigned k;
++            for (k = 0; k < ARRAY_SIZE(probes); k++)
++            {
++                void *p = NULL;
++                if (SUCCEEDED(IUnknown_QueryInterface(content, probes[k].iid, &p)) && p)
++                {
++                    strcat(hit, probes[k].n); strcat(hit, " ");
++                    IUnknown_Release((IUnknown *)p);
++                }
++            }
++            ERR("neutron-setcontent: visual=%p NON-SWAPCHAIN content=%p exposes: [%s] (surface content NOT handled -> white)\n",
++                iface, content, hit[0] ? hit : "unknown");
++        }
++    }
++    return S_OK;
++}
++
++static HRESULT WINAPI visual_AddVisual(IDCompositionVisual2 *iface, IDCompositionVisual *child,
++        BOOL insert_above, IDCompositionVisual *reference)
++{
++    struct composition_visual *visual = impl_visual_from_IDCompositionVisual2(iface);
++    struct composition_visual *child_impl;
++
++    TRACE("%p, %p, %d, %p.\n", iface, child, insert_above, reference);
++
++    if (!child) return E_INVALIDARG;
++    child_impl = CONTAINING_RECORD((IDCompositionVisual2 *)child, struct composition_visual, IDCompositionVisual2_iface);
++    IDCompositionVisual2_AddRef(&child_impl->IDCompositionVisual2_iface);
++    list_add_tail(&visual->children, &child_impl->entry);
++    return S_OK;
++}
++
++static HRESULT WINAPI visual_RemoveVisual(IDCompositionVisual2 *iface, IDCompositionVisual *child)
++{
++    struct composition_visual *child_impl;
++
++    TRACE("%p, %p.\n", iface, child);
++
++    if (!child) return E_INVALIDARG;
++    child_impl = CONTAINING_RECORD((IDCompositionVisual2 *)child, struct composition_visual, IDCompositionVisual2_iface);
++    list_remove(&child_impl->entry);
++    IDCompositionVisual2_Release(&child_impl->IDCompositionVisual2_iface);
++    return S_OK;
++}
++
++static HRESULT WINAPI visual_RemoveAllVisuals(IDCompositionVisual2 *iface)
++{
++    struct composition_visual *visual = impl_visual_from_IDCompositionVisual2(iface);
++    struct composition_visual *child, *next;
++
++    TRACE("%p.\n", iface);
++
++    LIST_FOR_EACH_ENTRY_SAFE(child, next, &visual->children, struct composition_visual, entry)
++    {
++        list_remove(&child->entry);
++        IDCompositionVisual2_Release(&child->IDCompositionVisual2_iface);
++    }
++    return S_OK;
++}
++
++static HRESULT WINAPI visual_SetCompositeMode(IDCompositionVisual2 *iface, enum DCOMPOSITION_COMPOSITE_MODE mode)
++{
++    TRACE("%p, %d.\n", iface, mode);
++    return S_OK;
++}
++
++static HRESULT WINAPI visual_SetOpacityMode(IDCompositionVisual2 *iface, enum DCOMPOSITION_OPACITY_MODE mode)
++{
++    TRACE("%p, %d.\n", iface, mode);
++    return S_OK;
++}
++
++static HRESULT WINAPI visual_SetBackFaceVisibility(IDCompositionVisual2 *iface,
++        enum DCOMPOSITION_BACKFACE_VISIBILITY visibility)
++{
++    TRACE("%p, %d.\n", iface, visibility);
++    return S_OK;
++}
++
++static const IDCompositionVisual2Vtbl composition_visual_vtbl =
++{
++    visual_QueryInterface,
++    visual_AddRef,
++    visual_Release,
++    visual_SetOffsetXAnimation,
++    visual_SetOffsetX,
++    visual_SetOffsetYAnimation,
++    visual_SetOffsetY,
++    visual_SetTransformObject,
++    visual_SetTransform,
++    visual_SetTransformParent,
++    visual_SetEffect,
++    visual_SetBitmapInterpolationMode,
++    visual_SetBorderMode,
++    visual_SetClipObject,
++    visual_SetClip,
++    visual_SetContent,
++    visual_AddVisual,
++    visual_RemoveVisual,
++    visual_RemoveAllVisuals,
++    visual_SetCompositeMode,
++    visual_SetOpacityMode,
++    visual_SetBackFaceVisibility,
++};
++
++static HRESULT create_visual(struct composition_visual **out)
++{
++    struct composition_visual *visual;
++
++    if (!(visual = calloc(1, sizeof(*visual))))
++        return E_OUTOFMEMORY;
++    visual->IDCompositionVisual2_iface.lpVtbl = &composition_visual_vtbl;
++    visual->refcount = 1;
++    list_init(&visual->children);
++    *out = visual;
++    return S_OK;
++}
++
++/* ----------------------------------------------------------------------
++ * IDCompositionTarget
++ * -------------------------------------------------------------------- */
++
++static const IDCompositionTargetVtbl composition_target_vtbl;
++
++static HRESULT WINAPI target_QueryInterface(IDCompositionTarget *iface, REFIID iid, void **out)
++{
++    struct composition_target *target = impl_target_from_IDCompositionTarget(iface);
++
++    TRACE("%p, %s, %p.\n", iface, debugstr_guid(iid), out);
++
++    if (IsEqualGUID(iid, &IID_IUnknown) || IsEqualGUID(iid, &IID_IDCompositionTarget))
++    {
++        IDCompositionTarget_AddRef(&target->IDCompositionTarget_iface);
++        *out = &target->IDCompositionTarget_iface;
++        return S_OK;
++    }
++
++    WARN("%s not implemented.\n", debugstr_guid(iid));
++    *out = NULL;
++    return E_NOINTERFACE;
++}
++
++static ULONG WINAPI target_AddRef(IDCompositionTarget *iface)
++{
++    struct composition_target *target = impl_target_from_IDCompositionTarget(iface);
++    return InterlockedIncrement(&target->refcount);
++}
++
++static ULONG WINAPI target_Release(IDCompositionTarget *iface)
++{
++    struct composition_target *target = impl_target_from_IDCompositionTarget(iface);
++    ULONG refcount = InterlockedDecrement(&target->refcount);
++
++    if (!refcount)
++    {
++        struct composition_device *device = target->device;
++        unregister_presentations_for_hwnd(target->hwnd);
++        EnterCriticalSection(&device->cs);
++        list_remove(&target->entry);
++        LeaveCriticalSection(&device->cs);
++        if (target->root) IDCompositionVisual2_Release(target->root);
++        IDCompositionDesktopDevice_Release(&device->IDCompositionDesktopDevice_iface);
++        free(target);
++    }
++    return refcount;
++}
++
++static HRESULT WINAPI target_SetRoot(IDCompositionTarget *iface, IDCompositionVisual *visual)
++{
++    struct composition_target *target = impl_target_from_IDCompositionTarget(iface);
++    IDCompositionVisual2 *visual2 = (IDCompositionVisual2 *)visual;
++
++    TRACE("%p, %p.\n", iface, visual);
++
++    if (visual2) IDCompositionVisual2_AddRef(visual2);
++    if (target->root) IDCompositionVisual2_Release(target->root);
++    target->root = visual2;
++    return S_OK;
++}
++
++static const IDCompositionTargetVtbl composition_target_vtbl =
++{
++    target_QueryInterface,
++    target_AddRef,
++    target_Release,
++    target_SetRoot,
++};
++
++/* ----------------------------------------------------------------------
++ * IDCompositionDesktopDevice (covers IDCompositionDevice2)
++ * -------------------------------------------------------------------- */
++
++static const IDCompositionDesktopDeviceVtbl composition_device_vtbl;
++
++static HRESULT WINAPI device_QueryInterface(IDCompositionDesktopDevice *iface, REFIID iid, void **out)
++{
++    struct composition_device *device = impl_device_from_IDCompositionDesktopDevice(iface);
++
++    TRACE("%p, %s, %p.\n", iface, debugstr_guid(iid), out);
++
++    if (IsEqualGUID(iid, &IID_IUnknown)
++            || IsEqualGUID(iid, &IID_IDCompositionDevice2)
++            || IsEqualGUID(iid, &IID_IDCompositionDesktopDevice))
++    {
++        IDCompositionDesktopDevice_AddRef(&device->IDCompositionDesktopDevice_iface);
++        *out = &device->IDCompositionDesktopDevice_iface;
++        return S_OK;
++    }
++
++    ERR("neutron-qi: DEVICE refused %s (E_NOINTERFACE) -- e.g. IDCompositionDevice3 Chromium may need\n",
++        debugstr_guid(iid));
++    *out = NULL;
++    return E_NOINTERFACE;
++}
++
++static ULONG WINAPI device_AddRef(IDCompositionDesktopDevice *iface)
++{
++    struct composition_device *device = impl_device_from_IDCompositionDesktopDevice(iface);
++    return InterlockedIncrement(&device->refcount);
++}
++
++static ULONG WINAPI device_Release(IDCompositionDesktopDevice *iface)
++{
++    struct composition_device *device = impl_device_from_IDCompositionDesktopDevice(iface);
++    ULONG refcount = InterlockedDecrement(&device->refcount);
++
++    if (!refcount)
++    {
++        if (device->rendering_device) IUnknown_Release(device->rendering_device);
++        DeleteCriticalSection(&device->cs);
++        free(device);
++    }
++    return refcount;
++}
++
++static HRESULT WINAPI device_Commit(IDCompositionDesktopDevice *iface)
++{
++    struct composition_device *device = impl_device_from_IDCompositionDesktopDevice(iface);
++    struct composition_target *target;
++
++    TRACE("%p.\n", iface);
++
++    EnterCriticalSection(&device->cs);
++    LIST_FOR_EACH_ENTRY(target, &device->targets, struct composition_target, entry)
++    {
++        if (target->root && target->hwnd)
++            visual_register(impl_visual_from_IDCompositionVisual2(target->root), target->hwnd);
++    }
++    LeaveCriticalSection(&device->cs);
++    return S_OK;
++}
++
++static HRESULT WINAPI device_WaitForCommitCompletion(IDCompositionDesktopDevice *iface)
++{
++    TRACE("%p.\n", iface);
++    return S_OK;
++}
++
++static HRESULT WINAPI device_GetFrameStatistics(IDCompositionDesktopDevice *iface,
++        DCOMPOSITION_FRAME_STATISTICS *statistics)
++{
++    TRACE("%p, %p.\n", iface, statistics);
++    if (statistics) memset(statistics, 0, sizeof(*statistics));
++    return S_OK;
++}
++
++static HRESULT WINAPI device_CreateVisual(IDCompositionDesktopDevice *iface, IDCompositionVisual2 **visual)
++{
++    struct composition_visual *object;
++    HRESULT hr;
++
++    TRACE("%p, %p.\n", iface, visual);
++
++    if (FAILED(hr = create_visual(&object)))
++        return hr;
++    *visual = &object->IDCompositionVisual2_iface;
++    return S_OK;
++}
++
++static HRESULT WINAPI device_CreateSurfaceFactory(IDCompositionDesktopDevice *iface,
++        IUnknown *rendering_device, IDCompositionSurfaceFactory **surface_factory)
++{
++    FIXME("%p, %p, %p stub.\n", iface, rendering_device, surface_factory);
++    *surface_factory = NULL;
++    return E_NOTIMPL;
++}
++
++static HRESULT WINAPI device_CreateSurface(IDCompositionDesktopDevice *iface, UINT width, UINT height,
++        DXGI_FORMAT pixel_format, DXGI_ALPHA_MODE alpha_mode, IDCompositionSurface **surface)
++{
++    FIXME("%p, %u, %u, %d, %d, %p stub.\n", iface, width, height, pixel_format, alpha_mode, surface);
++    *surface = NULL;
++    return E_NOTIMPL;
++}
++
++static HRESULT WINAPI device_CreateVirtualSurface(IDCompositionDesktopDevice *iface, UINT width, UINT height,
++        DXGI_FORMAT pixel_format, DXGI_ALPHA_MODE alpha_mode, IDCompositionVirtualSurface **surface)
++{
++    FIXME("%p, %u, %u, %d, %d, %p stub.\n", iface, width, height, pixel_format, alpha_mode, surface);
++    *surface = NULL;
++    return E_NOTIMPL;
++}
++
++static HRESULT WINAPI device_CreateTranslateTransform(IDCompositionDesktopDevice *iface,
++        IDCompositionTranslateTransform **transform)
++{
++    FIXME("%p, %p stub.\n", iface, transform);
++    *transform = NULL;
++    return E_NOTIMPL;
++}
++
++static HRESULT WINAPI device_CreateScaleTransform(IDCompositionDesktopDevice *iface,
++        IDCompositionScaleTransform **transform)
++{
++    FIXME("%p, %p stub.\n", iface, transform);
++    *transform = NULL;
++    return E_NOTIMPL;
++}
++
++static HRESULT WINAPI device_CreateRotateTransform(IDCompositionDesktopDevice *iface,
++        IDCompositionRotateTransform **transform)
++{
++    FIXME("%p, %p stub.\n", iface, transform);
++    *transform = NULL;
++    return E_NOTIMPL;
++}
++
++static HRESULT WINAPI device_CreateSkewTransform(IDCompositionDesktopDevice *iface,
++        IDCompositionSkewTransform **transform)
++{
++    FIXME("%p, %p stub.\n", iface, transform);
++    *transform = NULL;
++    return E_NOTIMPL;
++}
++
++static HRESULT WINAPI device_CreateMatrixTransform(IDCompositionDesktopDevice *iface,
++        IDCompositionMatrixTransform **transform)
++{
++    FIXME("%p, %p stub.\n", iface, transform);
++    *transform = NULL;
++    return E_NOTIMPL;
++}
++
++static HRESULT WINAPI device_CreateTransformGroup(IDCompositionDesktopDevice *iface,
++        IDCompositionTransform **transforms, UINT elements, IDCompositionTransform **transform_group)
++{
++    FIXME("%p, %p, %u, %p stub.\n", iface, transforms, elements, transform_group);
++    *transform_group = NULL;
++    return E_NOTIMPL;
++}
++
++static HRESULT WINAPI device_CreateTranslateTransform3D(IDCompositionDesktopDevice *iface,
++        IDCompositionTranslateTransform3D **transform_3d)
++{
++    FIXME("%p, %p stub.\n", iface, transform_3d);
++    *transform_3d = NULL;
++    return E_NOTIMPL;
++}
++
++static HRESULT WINAPI device_CreateScaleTransform3D(IDCompositionDesktopDevice *iface,
++        IDCompositionScaleTransform3D **transform_3d)
++{
++    FIXME("%p, %p stub.\n", iface, transform_3d);
++    *transform_3d = NULL;
++    return E_NOTIMPL;
++}
++
++static HRESULT WINAPI device_CreateRotateTransform3D(IDCompositionDesktopDevice *iface,
++        IDCompositionRotateTransform3D **transform_3d)
++{
++    FIXME("%p, %p stub.\n", iface, transform_3d);
++    *transform_3d = NULL;
++    return E_NOTIMPL;
++}
++
++static HRESULT WINAPI device_CreateMatrixTransform3D(IDCompositionDesktopDevice *iface,
++        IDCompositionMatrixTransform3D **transform_3d)
++{
++    FIXME("%p, %p stub.\n", iface, transform_3d);
++    *transform_3d = NULL;
++    return E_NOTIMPL;
++}
++
++static HRESULT WINAPI device_CreateTransform3DGroup(IDCompositionDesktopDevice *iface,
++        IDCompositionTransform3D **transforms_3d, UINT elements, IDCompositionTransform3D **transform_3d_group)
++{
++    FIXME("%p, %p, %u, %p stub.\n", iface, transforms_3d, elements, transform_3d_group);
++    *transform_3d_group = NULL;
++    return E_NOTIMPL;
++}
++
++static HRESULT WINAPI device_CreateEffectGroup(IDCompositionDesktopDevice *iface,
++        IDCompositionEffectGroup **effect_group)
++{
++    FIXME("%p, %p stub.\n", iface, effect_group);
++    *effect_group = NULL;
++    return E_NOTIMPL;
++}
++
++static HRESULT WINAPI device_CreateRectangleClip(IDCompositionDesktopDevice *iface,
++        IDCompositionRectangleClip **clip)
++{
++    FIXME("%p, %p stub.\n", iface, clip);
++    *clip = NULL;
++    return E_NOTIMPL;
++}
++
++static HRESULT WINAPI device_CreateAnimation(IDCompositionDesktopDevice *iface,
++        IDCompositionAnimation **animation)
++{
++    FIXME("%p, %p stub.\n", iface, animation);
++    *animation = NULL;
++    return E_NOTIMPL;
++}
++
++static HRESULT WINAPI device_CreateTargetForHwnd(IDCompositionDesktopDevice *iface, HWND hwnd,
++        BOOL topmost, IDCompositionTarget **target)
++{
++    struct composition_device *device = impl_device_from_IDCompositionDesktopDevice(iface);
++    struct composition_target *object;
++
++    TRACE("%p, %p, %d, %p.\n", iface, hwnd, topmost, target);
++
++    if (!(object = calloc(1, sizeof(*object))))
++        return E_OUTOFMEMORY;
++    object->IDCompositionTarget_iface.lpVtbl = &composition_target_vtbl;
++    object->refcount = 1;
++    object->hwnd = hwnd;
++    object->device = device;
++    IDCompositionDesktopDevice_AddRef(&device->IDCompositionDesktopDevice_iface);
++
++    EnterCriticalSection(&device->cs);
++    list_add_tail(&device->targets, &object->entry);
++    LeaveCriticalSection(&device->cs);
++
++    *target = &object->IDCompositionTarget_iface;
++    return S_OK;
++}
++
++static HRESULT WINAPI device_CreateSurfaceFromHandle(IDCompositionDesktopDevice *iface,
++        HANDLE handle, IUnknown **surface)
++{
++    FIXME("%p, %p, %p stub.\n", iface, handle, surface);
++    *surface = NULL;
++    return E_NOTIMPL;
++}
++
++static HRESULT WINAPI device_CreateSurfaceFromHwnd(IDCompositionDesktopDevice *iface,
++        HWND hwnd, IUnknown **surface)
++{
++    FIXME("%p, %p, %p stub.\n", iface, hwnd, surface);
++    *surface = NULL;
++    return E_NOTIMPL;
++}
++
++static const IDCompositionDesktopDeviceVtbl composition_device_vtbl =
++{
++    device_QueryInterface,
++    device_AddRef,
++    device_Release,
++    device_Commit,
++    device_WaitForCommitCompletion,
++    device_GetFrameStatistics,
++    device_CreateVisual,
++    device_CreateSurfaceFactory,
++    device_CreateSurface,
++    device_CreateVirtualSurface,
++    device_CreateTranslateTransform,
++    device_CreateScaleTransform,
++    device_CreateRotateTransform,
++    device_CreateSkewTransform,
++    device_CreateMatrixTransform,
++    device_CreateTransformGroup,
++    device_CreateTranslateTransform3D,
++    device_CreateScaleTransform3D,
++    device_CreateRotateTransform3D,
++    device_CreateMatrixTransform3D,
++    device_CreateTransform3DGroup,
++    device_CreateEffectGroup,
++    device_CreateRectangleClip,
++    device_CreateAnimation,
++    device_CreateTargetForHwnd,
++    device_CreateSurfaceFromHandle,
++    device_CreateSurfaceFromHwnd,
++};
++
++static HRESULT create_device(IUnknown *rendering_device, REFIID iid, void **out)
++{
++    struct composition_device *device;
++    HRESULT hr;
++
++    if (!(device = calloc(1, sizeof(*device))))
++        return E_OUTOFMEMORY;
++    device->IDCompositionDesktopDevice_iface.lpVtbl = &composition_device_vtbl;
++    device->refcount = 1;
++    device->rendering_device = rendering_device;
++    if (rendering_device) IUnknown_AddRef(rendering_device);
++    list_init(&device->targets);
++    InitializeCriticalSection(&device->cs);
++
++    hr = IDCompositionDesktopDevice_QueryInterface(&device->IDCompositionDesktopDevice_iface, iid, out);
++    IDCompositionDesktopDevice_Release(&device->IDCompositionDesktopDevice_iface);
++    return hr;
++}
++
++/* HWND side-channel for the vkd3d-proton bridge. The program monitor presents
++ * through vkd3d-proton's own D3D12 swapchain, which knows its Vulkan surface
++ * but not the HWND. DXVK builds that surface from the HWND, so DXVK records the
++ * window here right before vkd3d creates the surface, and vkd3d reads it back at
++ * swapchain-init. Creation is synchronous on one thread, so a plain global is
++ * sufficient and avoids cross-DLL TLS quirks. */
++static HWND pending_hwnd;
++
++void dcomp_set_pending_hwnd(HWND hwnd)
++{
++    ERR("NEUTRON-DCOMP set(%p)\n", hwnd);
++    pending_hwnd = hwnd;
++}
++
++HWND dcomp_get_pending_hwnd(void)
++{
++    ERR("NEUTRON-DCOMP get -> %p\n", pending_hwnd);
++    return pending_hwnd;
++}
++
++/* External entry point: lets DXVK (or any module) hand us a real windowed
++ * swapchain so the blit thread can present it to its window via GDI. Used for
++ * surfaces that bypass DirectComposition (e.g. Premiere's program monitor),
++ * which otherwise present to an invisible Vulkan child-window surface. */
++void dcomp_register_external(HWND hwnd, IUnknown *swapchain)
++{
++    struct presentation *p;
++    /* A composition swapchain has no HWND until SetRoot/Commit binds its visual.
++     * Falling back to the last surface factory's window can target another tab.
++     * HWND swapchains are captured on their Present thread BEFORE flip rotation,
++     * so legitimate uniform/empty frames don't require a blank-frame heuristic. */
++    if (!hwnd || !find_cef_panel_host(hwnd) || !IsWindowVisible(hwnd)) return;
++    register_presentation(hwnd, swapchain, TRUE);
++    EnterCriticalSection(&presentations_cs);
++    LIST_FOR_EACH_ENTRY(p, &presentations, struct presentation, entry)
++    {
++        if (p->hwnd == hwnd && p->synchronous)
++        {
++            blit_swapchain_to_hwnd(p);
++            break;
++        }
++    }
++    LeaveCriticalSection(&presentations_cs);
++}
++
+ HRESULT WINAPI DCompositionCreateDevice(IDXGIDevice *dxgi_device, REFIID iid, void **device)
+ {
+-    FIXME("%p, %s, %p.\n", dxgi_device, debugstr_guid(iid), device);
+-
+-    return E_NOTIMPL;
++    TRACE("%p, %s, %p.\n", dxgi_device, debugstr_guid(iid), device);
++    return create_device((IUnknown *)dxgi_device, iid, device);
+ }
+ 
+ HRESULT WINAPI DCompositionCreateDevice2(IUnknown *rendering_device, REFIID iid, void **device)
+ {
+-    FIXME("%p, %s, %p.\n", rendering_device, debugstr_guid(iid), device);
+-
+-    return E_NOTIMPL;
++    TRACE("%p, %s, %p.\n", rendering_device, debugstr_guid(iid), device);
++    return create_device(rendering_device, iid, device);
+ }
+ 
+ HRESULT WINAPI DCompositionCreateDevice3(IUnknown *rendering_device, REFIID iid, void **device)
+ {
+-    FIXME("%p, %s, %p.\n", rendering_device, debugstr_guid(iid), device);
+-
+-    return E_NOTIMPL;
+-}
++    TRACE("%p, %s, %p.\n", rendering_device, debugstr_guid(iid), device);
++    return create_device(rendering_device, iid, device);
++}
++
++HWND pbi_dcomp_resolve_host(HWND hwnd) { return find_cef_panel_host(hwnd); }
+--- a/dlls/dcomp/dcomp.spec
++++ b/dlls/dcomp/dcomp.spec
+@@ -25,3 +25,9 @@
+ @ stub DwmFlush
+ @ stub DwmpEnableDDASupport
+ @ stub SerializeEffectDescription
++@ cdecl dcomp_register_external(long ptr)
++@ cdecl dcomp_set_pending_hwnd(long)
++@ cdecl dcomp_get_pending_hwnd()
++@ cdecl pbi_dcomp_start_consumer()
++@ cdecl pbi_dcomp_resolve_host(ptr)
++@ cdecl pbi_dcomp_publish(ptr ptr ptr long long long)
+--- a/dlls/dcomp/Makefile.in
++++ b/dlls/dcomp/Makefile.in
+@@ -1,6 +1,8 @@
+ MODULE    = dcomp.dll
++IMPORTS   = gdi32 user32 uuid
+ 
+ VER_PRODUCTVERSION = 10,0,14393,0
+ 
+ SOURCES = \
+-	device.c
++	device.c \
++	pbi_transport.c
+--- a/dlls/winewayland.drv/wayland_keyboard.c
++++ b/dlls/winewayland.drv/wayland_keyboard.c
+@@ -69,7 +69,7 @@
+ 
+ static HKL get_ime_hkl(LCID locale)
+ {
+-    return ULongToHandle(MAKELONG(locale, 0xe001));
++    return LongToHandle(MAKELONG(locale, 0xe001));
+ }
+ 
+ struct layout
+@@ -388,8 +388,8 @@
+ 
+ static HKL get_layout_hkl(struct layout *layout, LCID locale)
+ {
+-    if (!layout->layout_id) return (HKL)(UINT_PTR)MAKELONG(locale, layout->lang);
+-    else return (HKL)(UINT_PTR)MAKELONG(locale, 0xf000 | layout->layout_id);
++    if (!layout->layout_id) return (HKL)(INT_PTR)(LONG)MAKELONG(locale, layout->lang);
++    else return (HKL)(INT_PTR)(LONG)MAKELONG(locale, 0xf000 | layout->layout_id);
+ }
+ 
+ static void add_xkb_layout(const char *xkb_layout, struct xkb_keymap *xkb_keymap,
+--- a/dlls/winewayland.drv/window_surface.c
++++ b/dlls/winewayland.drv/window_surface.c
+@@ -26,6 +26,8 @@
+ 
+ #include <limits.h>
+ #include <stdlib.h>
++#include <stdio.h>
++#include <time.h>
+ 
+ #include "waylanddrv.h"
+ #include "wine/debug.h"
+@@ -46,6 +48,7 @@
+     struct window_surface header;
+     struct wayland_buffer_queue *wayland_buffer_queue;
+     BOOL layered;
++    uint64_t pbi_last_dump;
+ };
+ 
+ static struct wayland_window_surface *wayland_window_surface_cast(
+@@ -365,6 +368,40 @@
+     }
+ }
+ 
++/* Optional capture of the actual SHM buffer accepted by the Wayland surface.
++ * Restrict captures to Power BI; write one current file per HWND atomically.
++ * This shows the driver's output, whereas CDP only shows browser rendering. */
++static void pbi_dump_submitted_surface(struct wayland_window_surface *wws, struct wayland_shm_buffer *buffer)
++{
++    const char *directory = getenv("PBI_WAYLAND_CAPTURE_DIR");
++    struct timespec now;
++    uint64_t milliseconds;
++    char path[1024], temp[1024];
++    FILE *file;
++    BITMAPINFOHEADER header = {0};
++    unsigned char file_header[14] = {'B', 'M'};
++    uint32_t size;
++    if (!directory || !process_name || strcmp(process_name, "pbidesktop.exe")) return;
++    if (buffer->width < 200 || buffer->height < 100 || buffer->width > 4096 || buffer->height > 2304) return;
++    clock_gettime(CLOCK_MONOTONIC, &now);
++    milliseconds = (uint64_t)now.tv_sec * 1000 + now.tv_nsec / 1000000;
++    if (milliseconds - wws->pbi_last_dump < 500) return;
++    wws->pbi_last_dump = milliseconds;
++    snprintf(path, sizeof(path), "%s/wayland-%08x.bmp", directory, (unsigned int)(ULONG_PTR)wws->header.hwnd);
++    snprintf(temp, sizeof(temp), "%s/wayland-%08x.tmp", directory, (unsigned int)(ULONG_PTR)wws->header.hwnd);
++    if (!(file = fopen(temp, "wb"))) return;
++    size = 54 + buffer->width * buffer->height * 4;
++    memcpy(file_header + 2, &size, 4); file_header[10] = 54;
++    header.biSize = sizeof(header); header.biWidth = buffer->width;
++    header.biHeight = -buffer->height; header.biPlanes = 1; header.biBitCount = 32;
++    fwrite(file_header, 1, 14, file);
++    fwrite(&header, 1, sizeof(header), file);
++    fwrite(buffer->map_data, 1, buffer->width * buffer->height * 4, file);
++    fclose(file);
++    rename(temp, path);
++}
++
++
+ /***********************************************************************
+  *           wayland_window_surface_flush
+  */
+@@ -446,6 +483,7 @@
+     NtGdiSetRectRgn(shm_buffer->damage_region, 0, 0, 0, 0);
+ 
+     flushed = set_window_surface_contents(window_surface->hwnd, shm_buffer, surface_damage_region);
++    if (flushed) pbi_dump_submitted_surface(wws, shm_buffer);
+     wl_display_flush(process_wayland.wl_display);
+ 
+ done:
+--- a/dlls/winewayland.drv/wayland_pointer.c
++++ b/dlls/winewayland.drv/wayland_pointer.c
+@@ -546,10 +546,82 @@
+     return TRUE;
+ }
+ 
+-static void wayland_pointer_update_cursor_buffer(HCURSOR hcursor, double scale)
++/* NEUTRON: keep the last cursor that DID resolve when the current handle cannot be turned into pixels.
++ *
++ * The compositor shows whatever wl_pointer.set_cursor last named, per surface entry. The driver
++ * re-resolves the CURRENT Win32 cursor HANDLE into a bitmap at every entry and at every cursor-window
++ * change, and when get_icon_info() fails it falls through to set_cursor(NULL): the cursor is hidden.
++ * That is the wrong end of the failure. Windows keeps displaying the last cursor image whatever
++ * happens to the handle afterwards (user32 tests: DestroyCursor on the active cursor leaves it
++ * current while GetIconInfo fails), and winex11 simply leaves the previous X cursor in place.
++ *
++ * MEASURED 2026-09-14, Premiere Pro, log premiere-20260914-160333.log, WINEDEBUG=+cursor,+waylanddrv:
++ * a helper process (own Wayland client, CEF family) called NtUserSetCursor(0x302b4) on a thread input
++ * shared with Premiere's UI thread. win32u keeps cursor pixels per process, so Premiere's driver got
++ *     warn:cursor:get_icon_ptr icon handle 0x302b4 from other process
++ *     err:waylanddrv:wayland_pointer_update_cursor_buffer Failed to get icon info for cursor=0x302b4
++ * On the main window that is invisible: the next WM_SETCURSOR replaces the handle. Under a menu the
++ * popup is a FRESH surface -- pointer_handle_enter() issues set_cursor(NULL) by design and waits for
++ * the follow-up WM_WINE_SETCURSOR -- and the follow-up carried the same foreign handle, so nothing
++ * was ever attached and the cursor stayed hidden for the life of the menu. win32u sends no
++ * WM_SETCURSOR while a menu holds capture, so the app never got the chance to set a live one.
++ * Operator: "it doesn't disappear with time, it disappears with position".
++ *
++ * Fix: remember the last cursor that resolved (bitmap with its unscaled hotspot, or cursor-shape
++ * enum) at the OUTCOME of a successful resolve, and when a non-NULL handle fails to resolve, show
++ * that instead of nothing; with nothing retained, show the default arrow via the shape protocol.
++ * A NULL handle (an explicit hide, or a fresh surface awaiting its follow-up) still hides, and a
++ * fully transparent cursor still hides -- both are resolved outcomes, not failures. Covers every
++ * unresolvable handle (foreign, destroyed), not just this one.
++ *
++ * Kill switch PBI_CURSOR_KEEP=0 restores the upstream hide; PBI_COMPOSITION_DIAG=1 reports each
++ * substitution at the outcome. All state below is guarded by process_wayland.pointer.mutex. */
++static struct
++{
++    HCURSOR hcursor;                             /* handle the retained cursor was built from (diag) */
++    struct wayland_shm_buffer *shm_buffer;       /* own ref; the last resolved bitmap, if any */
++    int hotspot_x, hotspot_y;                    /* in buffer pixels, unscaled */
++    enum wp_cursor_shape_device_v1_shape shape;  /* nonzero if the last resolved cursor was a shape */
++} neutron_cursor_last;
++
++static BOOL neutron_cursor_keep_enabled(void)
++{
++    static int v = -1;
++    if (v < 0) { const char *e = getenv("PBI_CURSOR_KEEP"); v = !e || e[0] != '0'; }
++    return v;
++}
++
++static BOOL neutron_pointer_diag(void)
++{
++    static int v = -1;
++    if (v < 0) { const char *e = getenv("PBI_COMPOSITION_DIAG"); v = (e && e[0] == '1') ? 1 : 0; }
++    return v;
++}
++
++static void neutron_cursor_remember_buffer(HCURSOR hcursor, struct wayland_shm_buffer *buf, int hx, int hy)
++{
++    if (neutron_cursor_last.shm_buffer) wayland_shm_buffer_unref(neutron_cursor_last.shm_buffer);
++    wayland_shm_buffer_ref(buf);
++    neutron_cursor_last.shm_buffer = buf;
++    neutron_cursor_last.hotspot_x = hx;
++    neutron_cursor_last.hotspot_y = hy;
++    neutron_cursor_last.shape = 0;
++    neutron_cursor_last.hcursor = hcursor;
++}
++
++static void neutron_cursor_remember_shape(HCURSOR hcursor, enum wp_cursor_shape_device_v1_shape shape)
++{
++    neutron_cursor_last.shape = shape;
++    neutron_cursor_last.hcursor = hcursor;
++}
++
++/* NEUTRON: returns FALSE only when a non-NULL handle could not be resolved (get_icon_info or buffer
++ * creation failed). A NULL handle and a fully transparent cursor are resolved hides: TRUE. */
++static BOOL wayland_pointer_update_cursor_buffer(HCURSOR hcursor, double scale)
+ {
+     struct wayland_cursor *cursor = &process_wayland.pointer.cursor;
+     ICONINFOEXW info = {0};
++    BOOL resolved = TRUE;
+ 
+     if (!hcursor) goto clear_cursor;
+ 
+@@ -563,6 +635,7 @@
+     if (!get_icon_info(hcursor, &info))
+     {
+         ERR("Failed to get icon info for cursor=%p\n", hcursor);
++        resolved = FALSE;
+         goto clear_cursor;
+     }
+ 
+@@ -587,6 +660,7 @@
+     if (!cursor->shm_buffer)
+     {
+         ERR("Failed to create shm_buffer for cursor=%p\n", hcursor);
++        resolved = FALSE;
+         goto clear_cursor;
+     }
+ 
+@@ -601,10 +675,13 @@
+         cursor->hotspot_y = cursor->shm_buffer->height / 2;
+     }
+ 
++    /* NEUTRON: this handle resolved -- record it at the outcome, before the hotspot is scaled. */
++    neutron_cursor_remember_buffer(hcursor, cursor->shm_buffer, cursor->hotspot_x, cursor->hotspot_y);
++
+     cursor->hotspot_x = round(cursor->hotspot_x / scale);
+     cursor->hotspot_y = round(cursor->hotspot_y / scale);
+ 
+-    return;
++    return TRUE;
+ 
+ clear_cursor:
+     if (cursor->shm_buffer)
+@@ -612,6 +689,7 @@
+         wayland_shm_buffer_unref(cursor->shm_buffer);
+         cursor->shm_buffer = NULL;
+     }
++    return resolved;
+ }
+ 
+ static void wayland_pointer_clear_cursor_surface(void)
+@@ -754,6 +832,7 @@
+ 
+     wp_cursor_shape_device_v1_set_shape(pointer->wp_cursor_shape_device_v1,
+                                         pointer->enter_serial, shape);
++    neutron_cursor_remember_shape(hcursor, shape);
+ 
+     return TRUE;
+ }
+@@ -767,6 +846,57 @@
+         wp_cursor_shape_device_v1_destroy(pointer->wp_cursor_shape_device_v1);
+         pointer->wp_cursor_shape_device_v1 = NULL;
+     }
++}
++
++/* NEUTRON: called with pointer->mutex held, for a non-NULL handle that did not resolve. Applies the
++ * last resolved cursor (or the default arrow shape) and returns TRUE; FALSE means the caller keeps
++ * the upstream behaviour (hide). See neutron_cursor_last above. */
++static BOOL neutron_cursor_keep_last(HWND hwnd, HCURSOR hcursor, double scale)
++{
++    struct wayland_pointer *pointer = &process_wayland.pointer;
++    struct wayland_cursor *cursor = &pointer->cursor;
++    const char *what;
++
++    if (!neutron_cursor_keep_enabled()) return FALSE;
++
++    if (neutron_cursor_last.shape || !neutron_cursor_last.shm_buffer)
++    {
++        enum wp_cursor_shape_device_v1_shape shape = neutron_cursor_last.shape ?
++            neutron_cursor_last.shape : WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_DEFAULT;
++
++        if (!process_wayland.wp_cursor_shape_manager_v1) return FALSE;
++        if (!pointer->wp_cursor_shape_device_v1)
++            pointer->wp_cursor_shape_device_v1 =
++                wp_cursor_shape_manager_v1_get_pointer(
++                    process_wayland.wp_cursor_shape_manager_v1, pointer->wl_pointer);
++        if (!pointer->wp_cursor_shape_device_v1) return FALSE;
++        wayland_pointer_clear_cursor_surface();
++        wp_cursor_shape_device_v1_set_shape(pointer->wp_cursor_shape_device_v1,
++                                            pointer->enter_serial, shape);
++        what = neutron_cursor_last.shape ? "last shape" : "default shape (nothing retained)";
++    }
++    else
++    {
++        if (cursor->shm_buffer) wayland_shm_buffer_unref(cursor->shm_buffer);
++        wayland_shm_buffer_ref(neutron_cursor_last.shm_buffer);
++        cursor->shm_buffer = neutron_cursor_last.shm_buffer;
++        cursor->hotspot_x = round(neutron_cursor_last.hotspot_x / scale);
++        cursor->hotspot_y = round(neutron_cursor_last.hotspot_y / scale);
++        wayland_pointer_update_cursor_surface(scale);
++        if (!cursor->shm_buffer) return FALSE;
++        wl_pointer_set_cursor(pointer->wl_pointer,
++                              pointer->enter_serial,
++                              cursor->wl_surface,
++                              cursor->hotspot_x,
++                              cursor->hotspot_y);
++        wayland_pointer_clear_cursor_shape();
++        what = "last bitmap";
++    }
++
++    if (neutron_pointer_diag())
++        WARN("pbi-cursor-keep: hwnd=%p hcursor=%p unresolvable -> kept %s (built from hcursor=%p)\n",
++            hwnd, hcursor, what, neutron_cursor_last.hcursor);
++    return TRUE;
+ }
+ 
+ static void wayland_set_cursor(HWND hwnd, HCURSOR hcursor, BOOL use_hcursor)
+@@ -805,14 +935,20 @@
+         }
+         else
+         {
+-            if (use_hcursor) wayland_pointer_update_cursor_buffer(hcursor, scale);
+-            wayland_pointer_update_cursor_surface(scale);
+-            wl_pointer_set_cursor(pointer->wl_pointer,
+-                                  pointer->enter_serial,
+-                                  pointer->cursor.wl_surface,
+-                                  pointer->cursor.hotspot_x,
+-                                  pointer->cursor.hotspot_y);
+-            wayland_pointer_clear_cursor_shape();
++            BOOL resolved = TRUE;
++
++            if (use_hcursor) resolved = wayland_pointer_update_cursor_buffer(hcursor, scale);
++            /* NEUTRON: an unresolvable handle shows the last resolved cursor, not nothing. */
++            if (resolved || !hcursor || !neutron_cursor_keep_last(hwnd, hcursor, scale))
++            {
++                wayland_pointer_update_cursor_surface(scale);
++                wl_pointer_set_cursor(pointer->wl_pointer,
++                                      pointer->enter_serial,
++                                      pointer->cursor.wl_surface,
++                                      pointer->cursor.hotspot_x,
++                                      pointer->cursor.hotspot_y);
++                wayland_pointer_clear_cursor_shape();
++            }
+         }
+         wl_display_flush(process_wayland.wl_display);
+         reapply_clip = TRUE;
+--- a/dlls/ntdll/unix/virtual.c
++++ b/dlls/ntdll/unix/virtual.c
+@@ -2338,6 +2338,45 @@
+ }
+ 
+ 
++/* Opt-in Linux backing for large, unaligned PE sections. MAP_PRIVATE keeps
++ * Windows write-copy/relocation semantics. Source PE files remain authoritative;
++ * cache entries are prebuilt, content-verified by the launcher, and keyed by
++ * inode, ctime, size and byte range. Missing/stale entries use Wine's read path. */
++static BOOL pbi_map_cached_pe_section(struct file_view *view, int fd, void *address,
++                                      size_t bytes, size_t mapped, off_t offset,
++                                      int prot, unsigned int vprot, BOOL removable)
++{
++#ifdef __linux__
++    const char *directory = getenv("PBI_PE_SECTION_CACHE");
++    struct stat source, cache;
++    char name[2048], magic[8];
++    int cache_fd;
++    BOOL success = FALSE;
++    if (!directory || !(view->protect & SEC_IMAGE) || removable || (vprot & VPROT_WRITE) ||
++        !(offset & host_page_mask) || bytes < 16 * 1024 * 1024 || fstat(fd, &source)) return FALSE;
++    if (snprintf(name, sizeof(name), "%s/%llx-%llx-%llx-%llx-%llx-%llx-%llx.bin", directory,
++                 (unsigned long long)source.st_dev, (unsigned long long)source.st_ino,
++                 (unsigned long long)source.st_ctim.tv_sec, (unsigned long long)source.st_ctim.tv_nsec,
++                 (unsigned long long)source.st_size, (unsigned long long)offset,
++                 (unsigned long long)bytes) >= sizeof(name)) return FALSE;
++    cache_fd = open(name, O_RDONLY | O_CLOEXEC | O_NOFOLLOW);
++    if (cache_fd < 0) return FALSE;
++    if (!fstat(cache_fd, &cache) && S_ISREG(cache.st_mode) && cache.st_uid == getuid() &&
++        !(cache.st_mode & 0222) && cache.st_size == mapped + 4096 &&
++        pread(cache_fd, magic, sizeof(magic), 0) == sizeof(magic) && !memcmp(magic, "PBICACH1", 8))
++    {
++        success = mmap(address, mapped, prot, MAP_FIXED | MAP_PRIVATE, cache_fd, 4096) != MAP_FAILED;
++        if (success && getenv("PBI_COMPOSITION_DIAG"))
++            WARN("pbi-pe-cache: mapped %zu bytes at %p source-offset=%llx\n", mapped, address,
++                 (unsigned long long)offset);
++    }
++    close(cache_fd);
++    return success;
++#else
++    return FALSE;
++#endif
++}
++
+ /***********************************************************************
+  *           map_file_into_view
+  *
+@@ -2380,6 +2419,9 @@
+        and if alignment is correct */
+     if ((!removable || (flags & MAP_SHARED)) && host_addr == map_addr && host_size == map_size)
+     {
++        if (pbi_map_cached_pe_section(view, fd, host_addr, size, host_size, offset, prot, vprot, removable))
++            return STATUS_SUCCESS;
++
+         if (mmap( host_addr, host_size, prot, flags, fd, offset ) != MAP_FAILED)
+             return STATUS_SUCCESS;
+ 
+--- a/dlls/dcomp/pbi_transport.c
++++ b/dlls/dcomp/pbi_transport.c
+@@ -0,0 +1,350 @@
++/*
++ * SPDX-License-Identifier: LGPL-2.1-or-later
++ * Owner-process delivery adapted from Neutron's winewayland.drv consumer.
++ * Uses public Win32 APIs, so the same Wine 11.18 driver can remain in place.
++ * A named mutex guards the complete frame, including its dimensions, against
++ * concurrent resize and delivery. Uniform frames are legitimate and retained.
++ */
++#include <stdarg.h>
++#include <stdlib.h>
++#include <string.h>
++#include <stdio.h>
++#include "windef.h"
++#include "winbase.h"
++#include "wingdi.h"
++#include "winuser.h"
++#include "wine/debug.h"
++#include "pbi_transport.h"
++
++WINE_DEFAULT_DEBUG_CHANNEL(dcomp);
++
++#define MAX_WIDTH 4096
++#define MAX_HEIGHT 2304
++#define MAX_HOSTS 64
++struct shared_frame { LONG sequence, width, height; DWORD publisher, window; BYTE pixels[1]; };
++#define FRAME_BYTES (sizeof(struct shared_frame) + (SIZE_T)MAX_WIDTH * MAX_HEIGHT * 4)
++struct registry { DWORD hwnds[MAX_HOSTS]; };
++static HANDLE registry_map, registry_mutex;
++static struct registry *registry_view;
++static INIT_ONCE registry_once = INIT_ONCE_STATIC_INIT;
++static INIT_ONCE consumer_once = INIT_ONCE_STATIC_INIT;
++
++static BOOL acquire(HANDLE mutex)
++{
++    DWORD result = WaitForSingleObject(mutex, 0);
++    return result == WAIT_OBJECT_0 || result == WAIT_ABANDONED;
++}
++
++static void object_name(WCHAR *name, HWND hwnd, BOOL mutex)
++{
++    wsprintfW(name, mutex ? L"__pbi_dcomp_v2_lock_%08x" : L"__pbi_dcomp_v2_px_%08x",
++              (DWORD)(ULONG_PTR)hwnd);
++}
++
++static BOOL CALLBACK registry_init(INIT_ONCE *once, void *param, void **context)
++{
++    registry_mutex = CreateMutexW(NULL, FALSE, L"__pbi_dcomp_v2_registry_lock");
++    registry_map = CreateFileMappingW(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE,
++                                     0, sizeof(struct registry), L"__pbi_dcomp_v2_registry");
++    if (registry_map) registry_view = MapViewOfFile(registry_map, FILE_MAP_WRITE, 0, 0,
++                                                  sizeof(struct registry));
++    if (registry_mutex && registry_view) return TRUE;
++    if (registry_view) UnmapViewOfFile(registry_view);
++    if (registry_map) CloseHandle(registry_map);
++    if (registry_mutex) CloseHandle(registry_mutex);
++    registry_view = NULL; registry_map = registry_mutex = NULL;
++    return FALSE;
++}
++
++static BOOL register_host(HWND hwnd)
++{
++    int i, free_slot = -1;
++    BOOL found = FALSE;
++    if (!InitOnceExecuteOnce(&registry_once, registry_init, NULL, NULL) || !acquire(registry_mutex))
++        return FALSE;
++    for (i = 0; i < MAX_HOSTS; i++)
++    {
++        if (registry_view->hwnds[i] == (DWORD)(ULONG_PTR)hwnd) { found = TRUE; break; }
++        if (!registry_view->hwnds[i] || !IsWindow((HWND)(ULONG_PTR)registry_view->hwnds[i]))
++            if (free_slot < 0) free_slot = i;
++    }
++    if (!found && free_slot >= 0)
++    {
++        registry_view->hwnds[free_slot] = (DWORD)(ULONG_PTR)hwnd;
++        found = TRUE;
++    }
++    ReleaseMutex(registry_mutex);
++    return found;
++}
++
++void pbi_transport_close(struct pbi_transport *transport)
++{
++    if (transport->view) UnmapViewOfFile(transport->view);
++    if (transport->mapping) CloseHandle(transport->mapping);
++    if (transport->mutex) CloseHandle(transport->mutex);
++    memset(transport, 0, sizeof(*transport));
++}
++
++BOOL pbi_transport_publish(struct pbi_transport *transport, HWND hwnd, HWND window,
++                           const void *pixels, UINT width, UINT height)
++{
++    struct shared_frame *frame;
++    WCHAR name[64];
++    if (!width || !height || width > MAX_WIDTH || height > MAX_HEIGHT) return FALSE;
++    if (transport->hwnd && transport->hwnd != hwnd) pbi_transport_close(transport);
++    if (!transport->view)
++    {
++        object_name(name, hwnd, TRUE);
++        transport->mutex = CreateMutexW(NULL, FALSE, name);
++        object_name(name, hwnd, FALSE);
++        transport->mapping = CreateFileMappingW(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE,
++                                                0, (DWORD)FRAME_BYTES, name);
++        if (transport->mapping) transport->view = MapViewOfFile(transport->mapping,
++                                                               FILE_MAP_WRITE, 0, 0, FRAME_BYTES);
++        if (!transport->mutex || !transport->view) { pbi_transport_close(transport); return FALSE; }
++        transport->hwnd = hwnd;
++    }
++    if (!register_host(hwnd) || !acquire(transport->mutex)) return FALSE;
++    frame = transport->view;
++    frame->width = width; frame->height = height; frame->publisher = GetCurrentProcessId();
++    frame->window = (DWORD)(ULONG_PTR)window;
++    memcpy(frame->pixels, pixels, (SIZE_T)width * height * 4);
++    InterlockedIncrement(&frame->sequence);
++    ReleaseMutex(transport->mutex);
++    return TRUE;
++}
++
++struct consumer_slot
++{
++    struct pbi_transport transport;
++    LONG sequence;
++    DWORD publisher;
++    ULONGLONG refreshed;
++    BYTE *copy;
++    SIZE_T capacity;
++    ULONGLONG diagnosed;
++};
++
++/* WS_VISIBLE is also set on WebView2's preloaded proxy windows. Confirm that
++ * this host is actually exposed in the Win32 window tree. Sampling its client
++ * area handles partial coverage by a popup without painting hidden siblings. */
++static BOOL host_exposed(HWND host)
++{
++    RECT rect;
++    POINT point;
++    HWND window;
++    WCHAR cls[128];
++    DWORD pid;
++    int x, y, depth;
++    if (!GetClientRect(host, &rect) || rect.right <= 0 || rect.bottom <= 0) return FALSE;
++    for (y = 0; y < 3; ++y) for (x = 0; x < 3; ++x)
++    {
++        point.x = (2*x+1)*rect.right/6;
++        point.y = (2*y+1)*rect.bottom/6;
++        ClientToScreen(host, &point);
++        for (window = WindowFromPoint(point), depth = 0; window && depth < 24;
++             window = GetAncestor(window, GA_PARENT), ++depth)
++        {
++            GetWindowThreadProcessId(window, &pid);
++            if (pid != GetCurrentProcessId()) continue;
++            GetClassNameW(window, cls, 128);
++            if (wcsncmp(cls, L"Chrome_", 7)) continue;
++            if (window == host) return TRUE;
++            break;
++        }
++    }
++    return FALSE;
++}
++
++static void consume(struct consumer_slot *slot, HWND hwnd)
++{
++    struct pbi_transport *transport = &slot->transport;
++    struct shared_frame *frame;
++    WCHAR name[64];
++    LONG sequence, width, height;
++    DWORD publisher, owner;
++    HWND window;
++    SIZE_T bytes;
++    BYTE *copy;
++    HDC dc;
++    RECT rect;
++    BITMAPINFO bmi = {0};
++    ULONGLONG now = GetTickCount64();
++    if (!transport->view)
++    {
++        object_name(name, hwnd, TRUE);
++        transport->mutex = OpenMutexW(SYNCHRONIZE | MUTEX_MODIFY_STATE, FALSE, name);
++        object_name(name, hwnd, FALSE);
++        transport->mapping = OpenFileMappingW(FILE_MAP_READ, FALSE, name);
++        if (transport->mapping) transport->view = MapViewOfFile(transport->mapping,
++                                                               FILE_MAP_READ, 0, 0, FRAME_BYTES);
++        if (!transport->mutex || !transport->view) { pbi_transport_close(transport); return; }
++        transport->hwnd = hwnd;
++    }
++    if (!acquire(transport->mutex)) return;
++    frame = transport->view;
++    sequence = frame->sequence; width = frame->width; height = frame->height; publisher = frame->publisher;
++    window = (HWND)(ULONG_PTR)frame->window;
++    if (!sequence || width <= 0 || height <= 0 || width > MAX_WIDTH || height > MAX_HEIGHT ||
++        (sequence == slot->sequence && publisher == slot->publisher && now - slot->refreshed < 500))
++    { ReleaseMutex(transport->mutex); return; }
++    if (!IsWindow(window) || !IsWindowVisible(window) || !host_exposed(hwnd))
++    { ReleaseMutex(transport->mutex); return; }
++    GetWindowThreadProcessId(GetAncestor(window, GA_ROOT), &owner);
++    if (owner != GetCurrentProcessId()) { ReleaseMutex(transport->mutex); return; }
++    bytes = (SIZE_T)width * height * 4;
++    if (bytes > slot->capacity)
++    {
++        copy = realloc(slot->copy, bytes);
++        if (!copy) { ReleaseMutex(transport->mutex); return; }
++        slot->copy = copy; slot->capacity = bytes;
++    }
++    memcpy(slot->copy, frame->pixels, bytes);
++    ReleaseMutex(transport->mutex);
++    /* The browser child may have its own foreign-process surface. Deliver to
++     * the owner proxy, but only when that proxy is exposed. Using its DC with
++     * WS_CLIPCHILDREN would exclude the browser's entire content area. */
++    if (!GetClientRect(hwnd, &rect) || rect.right <= 0 || rect.bottom <= 0) return;
++    if (!(dc = GetDCEx(hwnd, NULL, DCX_CACHE | DCX_CLIPSIBLINGS))) return;
++    bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
++    bmi.bmiHeader.biWidth = width; bmi.bmiHeader.biHeight = -height;
++    bmi.bmiHeader.biPlanes = 1; bmi.bmiHeader.biBitCount = 32;
++    bmi.bmiHeader.biCompression = BI_RGB;
++    SetStretchBltMode(dc, COLORONCOLOR);
++    if (now-slot->diagnosed>2000 && GetEnvironmentVariableA("PBI_COMPOSITION_DIAG",NULL,0))
++    {
++        char directory[700], path[1024];
++        RECT clip;
++        RECT screen;
++        POINT point;
++        HWND hit;
++        HWND ancestor;
++        WCHAR cls[128];
++        DWORD pid;
++        int i;
++        int region=GetClipBox(dc,&clip);
++        GetWindowRect(hwnd,&screen);
++        point.x=(screen.left+screen.right)/2;point.y=(screen.top+screen.bottom)/2;
++        hit=WindowFromPoint(point);
++        ancestor=hit;
++        for(i=0;ancestor && i<24;++i,ancestor=GetAncestor(ancestor,GA_PARENT))
++        {
++            GetWindowThreadProcessId(ancestor,&pid);
++            GetClassNameW(ancestor,cls,128);
++            if(pid==GetCurrentProcessId() && !wcsncmp(cls,L"Chrome_",7)) break;
++        }
++        WARN("pbi-frame: host=%p source=%p sequence=%ld previous=%ld visible=%d clip=%d rect=%s\n",
++             hwnd,window,sequence,slot->sequence,IsWindowVisible(window),region,wine_dbgstr_rect(&clip));
++        WARN("pbi-layout: host=%p style=%lx ex=%lx root=%p rect=%s center-hit=%p owner-host=%p\n",
++             hwnd,GetWindowLongW(hwnd,GWL_STYLE),GetWindowLongW(hwnd,GWL_EXSTYLE),GetAncestor(hwnd,GA_ROOT),wine_dbgstr_rect(&screen),hit,ancestor);
++        if (GetEnvironmentVariableA("PBI_WAYLAND_CAPTURE_DIR",directory,sizeof(directory)))
++        {
++            BITMAPFILEHEADER header={0};
++            DWORD written;
++            HANDLE file;
++            snprintf(path,sizeof(path),"Z:%s/publisher-%08x.bmp",directory,(DWORD)(ULONG_PTR)hwnd);
++            file=CreateFileA(path,GENERIC_WRITE,0,NULL,CREATE_ALWAYS,FILE_ATTRIBUTE_NORMAL,NULL);
++            if(file!=INVALID_HANDLE_VALUE)
++            {
++                header.bfType=0x4d42;header.bfOffBits=sizeof(header)+sizeof(BITMAPINFOHEADER);
++                header.bfSize=header.bfOffBits+bytes;
++                WriteFile(file,&header,sizeof(header),&written,NULL);
++                WriteFile(file,&bmi.bmiHeader,sizeof(BITMAPINFOHEADER),&written,NULL);
++                WriteFile(file,slot->copy,bytes,&written,NULL);CloseHandle(file);
++            }
++        }
++        slot->diagnosed=now;
++    }
++    if (StretchDIBits(dc, 0, 0, rect.right, rect.bottom, 0, 0, width, height,
++                     slot->copy, &bmi, DIB_RGB_COLORS, SRCCOPY) != GDI_ERROR)
++    {
++        if (!slot->refreshed) WARN("pbi-dcomp: owner pid=%lu delivered host=%p %ldx%ld publisher=%lu\n",
++                                   GetCurrentProcessId(), hwnd, width, height, publisher);
++        slot->sequence = sequence; slot->publisher = publisher; slot->refreshed = now;
++    }
++    ReleaseDC(hwnd, dc);
++    GdiFlush();
++}
++
++static DWORD WINAPI consumer_thread(void *arg)
++{
++    struct consumer_slot slots[MAX_HOSTS] = {0};
++    DWORD hosts[MAX_HOSTS], self = GetCurrentProcessId();
++    int i;
++    MSG message;
++    /* Coordinates used for the readback are physical pixels. */
++    SetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
++    for (;;)
++    {
++        /* Lock contention is not window destruction. Keep the receiver's
++         * mappings/copies intact and retry the next tick. */
++        if (!InitOnceExecuteOnce(&registry_once, registry_init, NULL, NULL) || !acquire(registry_mutex))
++        { Sleep(16); continue; }
++        memcpy(hosts, registry_view->hwnds, sizeof(hosts));
++        ReleaseMutex(registry_mutex);
++        for (i = 0; i < MAX_HOSTS; i++)
++        {
++            HWND hwnd = (HWND)(ULONG_PTR)hosts[i];
++            DWORD owner = 0;
++            if (hwnd) GetWindowThreadProcessId(hwnd, &owner);
++            if (slots[i].transport.hwnd && (slots[i].transport.hwnd != hwnd || !IsWindow(hwnd)))
++            {
++                pbi_transport_close(&slots[i].transport);
++                free(slots[i].copy); memset(&slots[i], 0, sizeof(slots[i]));
++            }
++            if (owner == self && IsWindowVisible(hwnd)) consume(&slots[i], hwnd);
++        }
++        /* An empty PeekMessage is Wine 11.18's public path to flush this process's
++         * window surfaces. It replaces Neutron's private driver/win32u operation.
++         * The receiver has its own empty message queue and owns no windows. */
++        PeekMessageW(&message, NULL, 0, 0, PM_NOREMOVE);
++        Sleep(16);
++    }
++    return 0;
++}
++
++static BOOL CALLBACK consumer_init(INIT_ONCE *once, void *param, void **context)
++{
++    HANDLE thread;
++    WCHAR owner[24];
++    wsprintfW(owner, L"%lu", GetCurrentProcessId());
++    if (!SetEnvironmentVariableW(L"PBI_COMPOSITION_OWNER_PID", owner)) return FALSE;
++    thread = CreateThread(NULL, 0, consumer_thread, NULL, 0, NULL);
++    if (!thread) return FALSE;
++    CloseHandle(thread);
++    WARN("pbi-dcomp: receiver started owner=%lu\n", GetCurrentProcessId());
++    return TRUE;
++}
++
++BOOL pbi_dcomp_start_consumer(void)
++{
++    return InitOnceExecuteOnce(&consumer_once, consumer_init, NULL, NULL);
++}
++
++/* Called after the D3D11 context flush, rather than from a DXGI pre-Present
++ * hook. Each process publishes at most 64 live owner HWNDs. Never wait on
++ * another publisher while holding the graphics context lock. */
++BOOL pbi_dcomp_publish(HWND hwnd, HWND window, const void *pixels, UINT width, UINT height, UINT pitch)
++{
++    static struct pbi_transport writers[MAX_HOSTS];
++    static LONG busy;
++    int i, available = -1;
++    BOOL result = FALSE;
++    if (!IsWindow(hwnd) || !IsWindow(window) || !pixels || pitch != width * 4) return FALSE;
++    if (InterlockedCompareExchange(&busy, 1, 0)) return FALSE;
++    for (i = 0; i < MAX_HOSTS; ++i)
++    {
++        if (writers[i].hwnd && !IsWindow(writers[i].hwnd)) pbi_transport_close(&writers[i]);
++        if (writers[i].hwnd == hwnd) { available = i; break; }
++        if (!writers[i].hwnd && available < 0) available = i;
++    }
++    if (available >= 0)
++    {
++        BOOL first = !writers[available].hwnd;
++        result = pbi_transport_publish(&writers[available], hwnd, window, pixels, width, height);
++        if (first && result) WARN("pbi-dcomp: direct publisher pid=%lu host=%p %ux%u\n",
++                                 GetCurrentProcessId(), hwnd, width, height);
++    }
++    InterlockedExchange(&busy, 0);
++    return result;
++}
+--- a/dlls/dcomp/pbi_transport.h
++++ b/dlls/dcomp/pbi_transport.h
+@@ -0,0 +1,18 @@
++/* SPDX-License-Identifier: LGPL-2.1-or-later */
++#ifndef PBI_TRANSPORT_H
++#define PBI_TRANSPORT_H
++
++struct pbi_transport
++{
++    HANDLE mapping;
++    HANDLE mutex;
++    void *view;
++    HWND hwnd;
++};
++
++BOOL pbi_transport_publish(struct pbi_transport *transport, HWND hwnd, HWND window,
++                           const void *pixels, UINT width, UINT height);
++void pbi_transport_close(struct pbi_transport *transport);
++BOOL pbi_dcomp_start_consumer(void);
++
++#endif

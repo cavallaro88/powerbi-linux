@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mime-info xmlns="http://www.freedesktop.org/standards/shared-mime-info">
+  <mime-type type="application/x-powerbi-pbix"><comment>Power BI report</comment><glob pattern="*.pbix"/></mime-type>
+  <mime-type type="application/x-powerbi-pbip"><comment>Power BI project</comment><glob pattern="*.pbip"/><sub-class-of type="application/json"/></mime-type>
+  <mime-type type="application/x-powerbi-pbir"><comment>Power BI report definition</comment><glob pattern="*.pbir"/><sub-class-of type="application/json"/></mime-type>
+</mime-info>

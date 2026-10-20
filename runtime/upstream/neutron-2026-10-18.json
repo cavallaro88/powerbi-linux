@@ -1,0 +1,2049 @@
+{
+  "schema": 1,
+  "review_date": "2026-10-18",
+  "upstream_url": "https://github.com/Nico-LaFoucate/neutron-wine",
+  "baseline": "5afd8d479ca83f57b56a2350274927647519da90",
+  "reviewed_head": "8ecb7fd1789dde9db03811cdaa4980eb8c6c2a91",
+  "commit_count": 87,
+  "changed_patch_files": 59,
+  "production_neutron_base_unchanged": true,
+  "runtime_version_unchanged": "0.1.3",
+  "adopted_behavior": "Reviewed patch registry and full-build/input/payload packaging receipt; no runtime patch enabled by this review",
+  "patch_decision_counts": {
+    "diagnostic-only": 2,
+    "requires-port": 22,
+    "outside-target": 3,
+    "stack-specific": 6,
+    "candidate": 11,
+    "outside-workload": 9,
+    "partial-upstream": 1,
+    "candidate-staged": 3,
+    "rejected-semantics": 2
+  },
+  "commits": [
+    {
+      "commit": "b7679785dde073d6ab035cda6535439bfbe17039",
+      "subject": "winewayland: a non-topmost click-through owned window stacks with its owner",
+      "files": [
+        "patches/neutron-zzzzzzzzzzzzzf-winewayland-clickthrough-overlay-not-topmost.mypatch"
+      ],
+      "patch_decisions": [
+        "winewayland-clickthrough-overlay-not-topmost"
+      ],
+      "decision": "reviewed-patch-changes",
+      "reason": "See individual patch decisions; no blanket production merge."
+    },
+    {
+      "commit": "530c79639ad62e55eed4d4d8f4feb6fc274f7487",
+      "subject": "winewayland: owned overlays stack in Win32 order (Lightroom first-run help froze the app)",
+      "files": [
+        "patches/neutron-zzzzzzzzzzzzzg-winewayland-owned-overlay-zorder.mypatch"
+      ],
+      "patch_decisions": [
+        "winewayland-owned-overlay-zorder"
+      ],
+      "decision": "reviewed-patch-changes",
+      "reason": "See individual patch decisions; no blanket production merge."
+    },
+    {
+      "commit": "0bdbbc79c691bef6e0694536dbeedcb4bf12d394",
+      "subject": "Release version 11.10-101",
+      "files": [
+        "build/VERSION",
+        "patches/MANIFEST.md"
+      ],
+      "patch_decisions": [],
+      "decision": "metadata-only",
+      "reason": "Upstream release numbering or documentation; retain provenance without replacing this project version."
+    },
+    {
+      "commit": "265f8dba0cf51c8a2d6aaef385f13388589d03ef",
+      "subject": "winewayland: drag-and-drop and the clipboard on compositors with data-control (Hyprland crash)",
+      "files": [
+        "patches/neutron-zzzzzzzzzzzzzh-winewayland-dnd-with-data-control.mypatch"
+      ],
+      "patch_decisions": [
+        "winewayland-dnd-with-data-control"
+      ],
+      "decision": "reviewed-patch-changes",
+      "reason": "See individual patch decisions; no blanket production merge."
+    },
+    {
+      "commit": "6870b512d2942705bf460a4de5c76ceb0b66b534",
+      "subject": "Release version 11.10-102",
+      "files": [
+        "build/VERSION",
+        "patches/MANIFEST.md"
+      ],
+      "patch_decisions": [],
+      "decision": "metadata-only",
+      "reason": "Upstream release numbering or documentation; retain provenance without replacing this project version."
+    },
+    {
+      "commit": "b3e0ca2147f8405b44b9003c0499059037615b08",
+      "subject": "winewayland: restack every client subsurface, not just the first 64 windows' (Lightroom Develop tips)",
+      "files": [
+        "patches/neutron-zzzzzzzzzzzzzi-winewayland-restack-all-client-subsurfaces.mypatch"
+      ],
+      "patch_decisions": [
+        "winewayland-restack-all-client-subsurfaces"
+      ],
+      "decision": "reviewed-patch-changes",
+      "reason": "See individual patch decisions; no blanket production merge."
+    },
+    {
+      "commit": "3cf44623de4c27c3958f1001ea99a0ddc78300ed",
+      "subject": "Release version 11.10-103",
+      "files": [
+        "build/VERSION",
+        "patches/MANIFEST.md"
+      ],
+      "patch_decisions": [],
+      "decision": "metadata-only",
+      "reason": "Upstream release numbering or documentation; retain provenance without replacing this project version."
+    },
+    {
+      "commit": "b4a6c028317849fc0bfaf13d35e6da1597cc9d15",
+      "subject": "kernel32: add UnregisterApplicationRecoveryCallback (Lightroom's relaunch showed a crash dialog)",
+      "files": [
+        "patches/neutron-zzzzzzzzzzzzzj-kernel32-unregister-app-recovery-callback.mypatch"
+      ],
+      "patch_decisions": [
+        "kernel32-unregister-app-recovery-callback"
+      ],
+      "decision": "reviewed-patch-changes",
+      "reason": "See individual patch decisions; no blanket production merge."
+    },
+    {
+      "commit": "7b220f3cc5f2e65162200c29b9334a76f81c727f",
+      "subject": "11.10-103 also carries the kernel32 recovery-callback fix",
+      "files": [
+        "patches/MANIFEST.md"
+      ],
+      "patch_decisions": [],
+      "decision": "metadata-only",
+      "reason": "Upstream release numbering or documentation; retain provenance without replacing this project version."
+    },
+    {
+      "commit": "191ee9552383da055ce1b9ba4026f8410f361a7c",
+      "subject": "user32: readable text in standard controls under a dark palette (Lightroom About box)",
+      "files": [
+        "patches/neutron-zzzzzzzzzzzzzk-user32-readable-control-text.mypatch"
+      ],
+      "patch_decisions": [
+        "user32-readable-control-text"
+      ],
+      "decision": "reviewed-patch-changes",
+      "reason": "See individual patch decisions; no blanket production merge."
+    },
+    {
+      "commit": "50a2e8abd0d7cb8771120d30bfe6066b32395805",
+      "subject": "Release version 11.10-104",
+      "files": [
+        "build/VERSION",
+        "patches/MANIFEST.md"
+      ],
+      "patch_decisions": [],
+      "decision": "metadata-only",
+      "reason": "Upstream release numbering or documentation; retain provenance without replacing this project version."
+    },
+    {
+      "commit": "69650746af17c856bffd623fa7fce5a5b3b909a8",
+      "subject": "d2d1: unwrite a layer's stencil mask where it was written (Lightroom Navigator cut-off)",
+      "files": [
+        "patches/neutron-zzzzzzzzzzzzzl-d2d1-layer-unwrite-at-push-transform.mypatch"
+      ],
+      "patch_decisions": [
+        "d2d1-layer-unwrite-at-push-transform"
+      ],
+      "decision": "reviewed-patch-changes",
+      "reason": "See individual patch decisions; no blanket production merge."
+    },
+    {
+      "commit": "06e4b8784cc43a0fe1ee8f2a9924b4f81a96ed67",
+      "subject": "Release version 11.10-105",
+      "files": [
+        "build/VERSION",
+        "patches/MANIFEST.md"
+      ],
+      "patch_decisions": [],
+      "decision": "metadata-only",
+      "reason": "Upstream release numbering or documentation; retain provenance without replacing this project version."
+    },
+    {
+      "commit": "fbc5d7b2371ce1a7de1cc41fdde85869a8aa118a",
+      "subject": "winewayland: take a remapped control key's VK from its keysym (Hyprland caps:swapescape)",
+      "files": [
+        "patches/neutron-zzzzzzzzzzzzzm-winewayland-remapped-control-key-vkey.mypatch"
+      ],
+      "patch_decisions": [
+        "winewayland-remapped-control-key-vkey"
+      ],
+      "decision": "reviewed-patch-changes",
+      "reason": "See individual patch decisions; no blanket production merge."
+    },
+    {
+      "commit": "47e9d871346af62173e81e0a0c6f3aae3f9994c7",
+      "subject": "Release version 11.10-106",
+      "files": [
+        "build/VERSION",
+        "patches/MANIFEST.md"
+      ],
+      "patch_decisions": [],
+      "decision": "metadata-only",
+      "reason": "Upstream release numbering or documentation; retain provenance without replacing this project version."
+    },
+    {
+      "commit": "27febd1023c7e08ec9f7cbbc91d081ae58483e5c",
+      "subject": "windows.media.playback.mediaplayer: MediaSource, AdaptiveMediaSource statics, a working MediaPlayer (Lightroom help videos)",
+      "files": [
+        "external/README.md",
+        "external/patches/dxvk/0002-neutron-winrt-direct3d11-interop.patch",
+        "patches/neutron-zzzzzzzzzzzzzn-winrt-mediasource-mediaplayer.mypatch"
+      ],
+      "patch_decisions": [
+        "winrt-mediasource-mediaplayer"
+      ],
+      "decision": "reviewed-patch-changes",
+      "reason": "See individual patch decisions; no blanket production merge."
+    },
+    {
+      "commit": "5583059e6dfe6177f1cc526a83308340524217e8",
+      "subject": "Release version 11.10-107",
+      "files": [
+        "build/VERSION",
+        "patches/MANIFEST.md"
+      ],
+      "patch_decisions": [],
+      "decision": "metadata-only",
+      "reason": "Upstream release numbering or documentation; retain provenance without replacing this project version."
+    },
+    {
+      "commit": "a314d8ac20c895e32cd4460458c0e5cd1092b53a",
+      "subject": "dcomp, winewayland.drv: show CEP panels hosted in a plain app window (Audition Learn panel)",
+      "files": [
+        "patches/neutron-zzzzzzzzzzzzzo-cep-panel-host-container-shape.mypatch"
+      ],
+      "patch_decisions": [
+        "cep-panel-host-container-shape"
+      ],
+      "decision": "reviewed-patch-changes",
+      "reason": "See individual patch decisions; no blanket production merge."
+    },
+    {
+      "commit": "abcec0d0ea4347a271965ee3c0852af972e18f1f",
+      "subject": "ntdll, kernelbase: start threads with NT_TIB.Version = 0x1e00; track fibers by HasFiberData",
+      "files": [
+        "patches/neutron-zzzzzzzzzzzzzp-teb-version-1e00-fiber-flag.mypatch"
+      ],
+      "patch_decisions": [
+        "teb-version-1e00-fiber-flag"
+      ],
+      "decision": "reviewed-patch-changes",
+      "reason": "See individual patch decisions; no blanket production merge."
+    },
+    {
+      "commit": "6de432c2f4e1e99472a3802c02b81887e2054f77",
+      "subject": "winhttp: run a request synchronously when no status callback is installed (Adobe Help, Neutron#13)",
+      "files": [
+        "patches/neutron-zzzzzzzzzzzzzq-winhttp-async-without-callback-is-sync.mypatch"
+      ],
+      "patch_decisions": [
+        "winhttp-async-without-callback-is-sync"
+      ],
+      "decision": "reviewed-patch-changes",
+      "reason": "See individual patch decisions; no blanket production merge."
+    },
+    {
+      "commit": "c4b4373ac7088b243e48ee5164d63c733a9a7f7f",
+      "subject": "Release version 11.10-108",
+      "files": [
+        "build/VERSION",
+        "patches/MANIFEST.md"
+      ],
+      "patch_decisions": [],
+      "decision": "metadata-only",
+      "reason": "Upstream release numbering or documentation; retain provenance without replacing this project version."
+    },
+    {
+      "commit": "0f504be74b01ef889fc216879e7c24ce0b3acfad",
+      "subject": "winewayland.drv: present a popup larger than the screen where the app put it, unstretched (Animate first launch)",
+      "files": [
+        "patches/neutron-zzzzzzzzzzzzzr-winewayland-oversized-popup-as-placed.mypatch"
+      ],
+      "patch_decisions": [
+        "winewayland-oversized-popup-as-placed"
+      ],
+      "decision": "reviewed-patch-changes",
+      "reason": "See individual patch decisions; no blanket production merge."
+    },
+    {
+      "commit": "7f54c1596240be8beba38c5bedd0335dc18a6ec6",
+      "subject": "Release version 11.10-109",
+      "files": [
+        "build/VERSION",
+        "patches/MANIFEST.md"
+      ],
+      "patch_decisions": [],
+      "decision": "metadata-only",
+      "reason": "Upstream release numbering or documentation; retain provenance without replacing this project version."
+    },
+    {
+      "commit": "9613a49514c6cbd05d97faf8c48fe4221a23215d",
+      "subject": "patches: win32u owner-drawn menu items readable under a dark palette (InDesign font menu)",
+      "files": [
+        "patches/MANIFEST.md",
+        "patches/neutron-zzzzzzzzzzzzzs-win32u-owner-drawn-menu-readable-text.mypatch"
+      ],
+      "patch_decisions": [
+        "win32u-owner-drawn-menu-readable-text"
+      ],
+      "decision": "reviewed-patch-changes",
+      "reason": "See individual patch decisions; no blanket production merge."
+    },
+    {
+      "commit": "a37c03a471c0b3939cb7feecee47a847d1dab0b3",
+      "subject": "build: 11.10-110",
+      "files": [
+        "build/VERSION"
+      ],
+      "patch_decisions": [],
+      "decision": "metadata-only",
+      "reason": "Upstream release numbering or documentation; retain provenance without replacing this project version."
+    },
+    {
+      "commit": "d414610fa5949ecf86d76fe851b03d7a64c60346",
+      "subject": "patches: ntdll honors <probing privatePath> in module .config files (After Effects Mocha plug-in)",
+      "files": [
+        "patches/MANIFEST.md",
+        "patches/neutron-zzzzzzzzzzzzzt-ntdll-actctx-config-private-path.mypatch"
+      ],
+      "patch_decisions": [
+        "ntdll-actctx-config-private-path"
+      ],
+      "decision": "reviewed-patch-changes",
+      "reason": "See individual patch decisions; no blanket production merge."
+    },
+    {
+      "commit": "1e7ea6db1d9ebc6d7367b0658434c32a742866ae",
+      "subject": "build: 11.10-111",
+      "files": [
+        "build/VERSION"
+      ],
+      "patch_decisions": [],
+      "decision": "metadata-only",
+      "reason": "Upstream release numbering or documentation; retain provenance without replacing this project version."
+    },
+    {
+      "commit": "bdaf23628f899fd7ece69bf0b89352033351574f",
+      "subject": "patches: winmm gives waveIn a 1 s capture buffer (Premiere voice-over gaps)",
+      "files": [
+        "patches/MANIFEST.md",
+        "patches/neutron-zzzzzzzzzzzzzu-winmm-capture-buffer-1s.mypatch"
+      ],
+      "patch_decisions": [
+        "winmm-capture-buffer-1s"
+      ],
+      "decision": "reviewed-patch-changes",
+      "reason": "See individual patch decisions; no blanket production merge."
+    },
+    {
+      "commit": "12d2e7a1b3ff30ea6a76505c358de53ab13cd5ee",
+      "subject": "build: 11.10-112",
+      "files": [
+        "build/VERSION"
+      ],
+      "patch_decisions": [],
+      "decision": "metadata-only",
+      "reason": "Upstream release numbering or documentation; retain provenance without replacing this project version."
+    },
+    {
+      "commit": "cef5dcf16fcbf0e2ea068cbc514cd44a41e4bb8e",
+      "subject": "patches: dwrite keys cached glyph bitmaps by rendering mode (After Effects crash while scrubbing)",
+      "files": [
+        "patches/MANIFEST.md",
+        "patches/neutron-zzzzzzzzzzzzzv-dwrite-glyph-cache-rendering-mode.mypatch"
+      ],
+      "patch_decisions": [
+        "dwrite-glyph-cache-rendering-mode"
+      ],
+      "decision": "reviewed-patch-changes",
+      "reason": "See individual patch decisions; no blanket production merge."
+    },
+    {
+      "commit": "cb77331b6614aa2eaf30e984748651215f219e53",
+      "subject": "build: 11.10-113",
+      "files": [
+        "build/VERSION"
+      ],
+      "patch_decisions": [],
+      "decision": "metadata-only",
+      "reason": "Upstream release numbering or documentation; retain provenance without replacing this project version."
+    },
+    {
+      "commit": "1485727a4754179fc41df270eb70605878771d2d",
+      "subject": "patches: d2d1 and dwrite rasterize glyph runs only where visible (After Effects expression-error crash)",
+      "files": [
+        "patches/MANIFEST.md",
+        "patches/neutron-zzzzzzzzzzzzzw-d2d1-dwrite-glyph-run-clip-to-target.mypatch"
+      ],
+      "patch_decisions": [
+        "d2d1-dwrite-glyph-run-clip-to-target"
+      ],
+      "decision": "reviewed-patch-changes",
+      "reason": "See individual patch decisions; no blanket production merge."
+    },
+    {
+      "commit": "75a36e1425bd2b158bf760eb28c4ca807ca8adb2",
+      "subject": "build: 11.10-114",
+      "files": [
+        "build/VERSION"
+      ],
+      "patch_decisions": [],
+      "decision": "metadata-only",
+      "reason": "Upstream release numbering or documentation; retain provenance without replacing this project version."
+    },
+    {
+      "commit": "75d49aa79c2377832c5f2b272ace44cd781789a5",
+      "subject": "patches: d2d1 command lists keep offsets, not pointers, into their buffer (After Effects garbled text)",
+      "files": [
+        "patches/MANIFEST.md",
+        "patches/neutron-zzzzzzzzzzzzzx-d2d1-command-list-field-offsets.mypatch"
+      ],
+      "patch_decisions": [
+        "d2d1-command-list-field-offsets"
+      ],
+      "decision": "reviewed-patch-changes",
+      "reason": "See individual patch decisions; no blanket production merge."
+    },
+    {
+      "commit": "3628804a3a973816822fe740d4dcdbd905e93bc4",
+      "subject": "build: 11.10-115",
+      "files": [
+        "build/VERSION"
+      ],
+      "patch_decisions": [],
+      "decision": "metadata-only",
+      "reason": "Upstream release numbering or documentation; retain provenance without replacing this project version."
+    },
+    {
+      "commit": "63f5abfecd128a8cc5a05e53499818a6778956b3",
+      "subject": "patches: winewayland puts the primary monitor at (0,0) (Premiere clicks above the pointer on GNOME)",
+      "files": [
+        "patches/MANIFEST.md",
+        "patches/neutron-zzzzzzzzzzzzzy-winewayland-primary-monitor-origin.mypatch"
+      ],
+      "patch_decisions": [
+        "winewayland-primary-monitor-origin"
+      ],
+      "decision": "reviewed-patch-changes",
+      "reason": "See individual patch decisions; no blanket production merge."
+    },
+    {
+      "commit": "c58b2013d1d7cf3bcc0c103d0ff1ffcb921bd97a",
+      "subject": "build: 11.10-116",
+      "files": [
+        "build/VERSION"
+      ],
+      "patch_decisions": [],
+      "decision": "metadata-only",
+      "reason": "Upstream release numbering or documentation; retain provenance without replacing this project version."
+    },
+    {
+      "commit": "93b77a93c82e141b1a638cc02faee47bb7610921",
+      "subject": "patches: name audio endpoints \"<endpoint> (<card>)\" like Windows (Premiere's MME list cut both Scarlett inputs alike)",
+      "files": [
+        "patches/MANIFEST.md",
+        "patches/neutron-zzzzzzzzzzzzzz-winepulse-endpoint-names-like-windows.mypatch"
+      ],
+      "patch_decisions": [
+        "winepulse-endpoint-names-like-windows"
+      ],
+      "decision": "reviewed-patch-changes",
+      "reason": "See individual patch decisions; no blanket production merge."
+    },
+    {
+      "commit": "136889886ebae1cbd28e5155a57322c845cb17ba",
+      "subject": "patches: dsound DESCRIPTION reports WaveDeviceId (Premiere's named audio devices \"(Not working)\")",
+      "files": [
+        "patches/MANIFEST.md",
+        "patches/neutron-zzzzzzzzzzzzzzz-dsound-description-wavedeviceid.mypatch"
+      ],
+      "patch_decisions": [
+        "dsound-description-wavedeviceid"
+      ],
+      "decision": "reviewed-patch-changes",
+      "reason": "See individual patch decisions; no blanket production merge."
+    },
+    {
+      "commit": "c1a28b2cca941eedb6130d5cd370e376d8524cfd",
+      "subject": "build: 11.10-117",
+      "files": [
+        "build/VERSION"
+      ],
+      "patch_decisions": [],
+      "decision": "metadata-only",
+      "reason": "Upstream release numbering or documentation; retain provenance without replacing this project version."
+    },
+    {
+      "commit": "beadb6a8fc5a0f520ae598bd1f5367fc81027022",
+      "subject": "patches: an app started by another app gets its own environment (Dynamic Link: After Effects ran with Premiere's settings)",
+      "files": [
+        "patches/MANIFEST.md",
+        "patches/neutron-zzzzzzzzzzzzzzzz-ntdll-appenv-per-app-environment.mypatch"
+      ],
+      "patch_decisions": [
+        "ntdll-appenv-per-app-environment"
+      ],
+      "decision": "reviewed-patch-changes",
+      "reason": "See individual patch decisions; no blanket production merge."
+    },
+    {
+      "commit": "4f0df7764856180077f6a9f8295149b74314755c",
+      "subject": "build: 11.10-118",
+      "files": [
+        "build/VERSION"
+      ],
+      "patch_decisions": [],
+      "decision": "metadata-only",
+      "reason": "Upstream release numbering or documentation; retain provenance without replacing this project version."
+    },
+    {
+      "commit": "ce2ccbe80e9ce63c2180c233268df147980216d3",
+      "subject": "patches: clip GPU child windows to their ancestors (Lightroom What's New videos); crop origin for layers and input (Premiere black line)",
+      "files": [
+        "patches/MANIFEST.md",
+        "patches/neutron-zzzzzzzzzzzzzzzzz-winewayland-clip-gpu-children-to-ancestors.mypatch",
+        "patches/neutron-zzzzzzzzzzzzzzzzzz-winewayland-crop-origin.mypatch"
+      ],
+      "patch_decisions": [
+        "winewayland-clip-gpu-children-to-ancestors",
+        "winewayland-crop-origin"
+      ],
+      "decision": "reviewed-patch-changes",
+      "reason": "See individual patch decisions; no blanket production merge."
+    },
+    {
+      "commit": "70166f86241ad82d3feb2671bcf4a96ba7a9b411",
+      "subject": "build: 11.10-119",
+      "files": [
+        "build/VERSION"
+      ],
+      "patch_decisions": [],
+      "decision": "metadata-only",
+      "reason": "Upstream release numbering or documentation; retain provenance without replacing this project version."
+    },
+    {
+      "commit": "afc8a7d8a13bd9d9a308a9db6b60de3aaf1052c9",
+      "subject": "patches: winmm keeps the part of a capture packet that does not fit (mic audio dropped)",
+      "files": [
+        "patches/MANIFEST.md",
+        "patches/neutron-zzzzzzzzzzzzzzzzzzz-winmm-keep-capture-remainder.mypatch"
+      ],
+      "patch_decisions": [
+        "winmm-keep-capture-remainder"
+      ],
+      "decision": "reviewed-patch-changes",
+      "reason": "See individual patch decisions; no blanket production merge."
+    },
+    {
+      "commit": "cb020fc81b987961601c1b3248ab245167a54de5",
+      "subject": "build: 11.10-120",
+      "files": [
+        "build/VERSION"
+      ],
+      "patch_decisions": [],
+      "decision": "metadata-only",
+      "reason": "Upstream release numbering or documentation; retain provenance without replacing this project version."
+    },
+    {
+      "commit": "c2de8f088889869bd4932dbd72d1f8fafed9f4a0",
+      "subject": "external: dxgi stores the swap chain background color (Neutron#21)",
+      "files": [
+        "external/README.md",
+        "external/build-external.sh",
+        "external/patches/dxvk-dxgi/0002-neutron-dxgi-background-color.patch",
+        "external/sources.conf"
+      ],
+      "patch_decisions": [],
+      "decision": "reviewed-external",
+      "reason": "AMD video encoding and D3D12/CUDA shared resources are outside the D3D11 Power BI runtime. DXGI background color is a separate potential candidate; WinRT D3D11 media exports are not the missing CLR bridge."
+    },
+    {
+      "commit": "a2ac22236bc54f0e29748e72551cbb3e534a9e39",
+      "subject": "build: 11.10-121",
+      "files": [
+        "build/VERSION"
+      ],
+      "patch_decisions": [],
+      "decision": "metadata-only",
+      "reason": "Upstream release numbering or documentation; retain provenance without replacing this project version."
+    },
+    {
+      "commit": "480d6a4a1fd3660430e7eb0a2c0fd817d515c4cf",
+      "subject": "build: package.sh refuses a build that applied untracked patches; d2d1 rectlog moves to diagnostic/",
+      "files": [
+        "build/build.sh",
+        "build/package.sh",
+        "patches/diagnostic/neutron-zzzzzzzzzzzzzd-d2d1-rectlog-diagnostic.mypatch"
+      ],
+      "patch_decisions": [
+        "d2d1-rectlog-diagnostic"
+      ],
+      "decision": "adopted-build-protection",
+      "reason": "Reimplemented unreviewed-patch packaging protection, strengthened by successful-build/input/payload receipt and immutable artifact names."
+    },
+    {
+      "commit": "fd490a6bb9a5cc578c3639c29c79d059bd7597fd",
+      "subject": "patches: winewayland reports rotated (portrait) monitors in the desktop's orientation (Neutron#20)",
+      "files": [
+        "patches/neutron-zzzzzzzzzzzzzzzzzzzzz-winewayland-output-transform.mypatch"
+      ],
+      "patch_decisions": [
+        "winewayland-output-transform"
+      ],
+      "decision": "reviewed-patch-changes",
+      "reason": "See individual patch decisions; no blanket production merge."
+    },
+    {
+      "commit": "e02f311bd0d9884165109d819ad82c2ca188e41b",
+      "subject": "external: vkd3d-proton exports shared committed buffers; nvcuda imports D3D12 memory and fences (Neutron#21)",
+      "files": [
+        "external/README.md",
+        "external/build-external.sh",
+        "external/patches/nvcuda/0002-neutron-d3d12-interop.patch",
+        "external/patches/vkd3d-proton/0002-neutron-shared-committed-buffers.patch",
+        "patches/MANIFEST.md"
+      ],
+      "patch_decisions": [],
+      "decision": "reviewed-external",
+      "reason": "AMD video encoding and D3D12/CUDA shared resources are outside the D3D11 Power BI runtime. DXGI background color is a separate potential candidate; WinRT D3D11 media exports are not the missing CLR bridge."
+    },
+    {
+      "commit": "2ae0e51825d3db4f020be2365867b57606500baa",
+      "subject": "build: 11.10-122",
+      "files": [
+        "build/VERSION"
+      ],
+      "patch_decisions": [],
+      "decision": "metadata-only",
+      "reason": "Upstream release numbering or documentation; retain provenance without replacing this project version."
+    },
+    {
+      "commit": "d16d09ed460170d9dcc5e4295a8664b5e38ea90e",
+      "subject": "patches: dxcore describes the real adapter and answers IsValid/IsAttributeSupported/IsPropertySupported (Neutron#18)",
+      "files": [
+        "patches/MANIFEST.md",
+        "patches/neutron-zzzzzzzzzzzzzzzzzzzz-dxcore-real-adapter-identity.mypatch"
+      ],
+      "patch_decisions": [
+        "dxcore-real-adapter-identity"
+      ],
+      "decision": "reviewed-patch-changes",
+      "reason": "See individual patch decisions; no blanket production merge."
+    },
+    {
+      "commit": "59ac5729b4a9a76d6ee9bb699b54d341d5785351",
+      "subject": "patches: winewayland ends an open menu when the focus leaves the application",
+      "files": [
+        "patches/neutron-zzzzzzzzzzzzzzzzzzzzzz-winewayland-deact-end-menu.mypatch"
+      ],
+      "patch_decisions": [
+        "winewayland-deact-end-menu"
+      ],
+      "decision": "reviewed-patch-changes",
+      "reason": "See individual patch decisions; no blanket production merge."
+    },
+    {
+      "commit": "96db50b6bc00a179ee7ce8c4d911782299af26a3",
+      "subject": "patches: mountmgr announces a removable drive when it is mounted, not on every udisks update (Neutron#15)",
+      "files": [
+        "patches/neutron-zzzzzzzzzzzzzzzzzzzzzzz-mountmgr-announce-on-mount.mypatch"
+      ],
+      "patch_decisions": [
+        "mountmgr-announce-on-mount"
+      ],
+      "decision": "reviewed-patch-changes",
+      "reason": "See individual patch decisions; no blanket production merge."
+    },
+    {
+      "commit": "c6233c04d32af60ad8fb5c5d06af7c392a33fea5",
+      "subject": "patches: mountmgr reports a card reader or USB stick as a removable drive (Neutron#15)",
+      "files": [
+        "patches/neutron-zzzzzzzzzzzzzzzzzzzzzzzz-mountmgr-removable-media-type.mypatch"
+      ],
+      "patch_decisions": [
+        "mountmgr-removable-media-type"
+      ],
+      "decision": "reviewed-patch-changes",
+      "reason": "See individual patch decisions; no blanket production merge."
+    },
+    {
+      "commit": "89a95d3d3627030e8ba8675d2cac90b5feada334",
+      "subject": "patches: winewayland puts a maximized window on the monitor of the output it is shown on (Neutron#20)",
+      "files": [
+        "patches/neutron-zzzzzzzzzzzzzzzzzzzzzzzzz-winewayland-follow-output.mypatch"
+      ],
+      "patch_decisions": [
+        "winewayland-follow-output"
+      ],
+      "decision": "reviewed-patch-changes",
+      "reason": "See individual patch decisions; no blanket production merge."
+    },
+    {
+      "commit": "a8a3f97f603bb4d637f478cb102b3dc400176b9d",
+      "subject": "patches: MANIFEST entries for the 11.10-123 patches",
+      "files": [
+        "patches/MANIFEST.md"
+      ],
+      "patch_decisions": [],
+      "decision": "metadata-only",
+      "reason": "Upstream release numbering or documentation; retain provenance without replacing this project version."
+    },
+    {
+      "commit": "f5a6f720ded705774efbafe1670d4132335475e6",
+      "subject": "build: 11.10-123",
+      "files": [
+        "build/VERSION"
+      ],
+      "patch_decisions": [],
+      "decision": "metadata-only",
+      "reason": "Upstream release numbering or documentation; retain provenance without replacing this project version."
+    },
+    {
+      "commit": "deb037c7aa820a885ce8d59dbae936d3ccecf26c",
+      "subject": "patches: winewayland stops drawing a maximized window's frame on the next monitor",
+      "files": [
+        "patches/MANIFEST.md",
+        "patches/neutron-zzzzzzzzzzzzzzzzzzzzzzzzzz-winewayland-maximized-crop.mypatch"
+      ],
+      "patch_decisions": [
+        "winewayland-maximized-crop"
+      ],
+      "decision": "reviewed-patch-changes",
+      "reason": "See individual patch decisions; no blanket production merge."
+    },
+    {
+      "commit": "d8b383cd61151248583d1da0a2b48aec8564faa6",
+      "subject": "patches: winewayland makes the desktop's primary output Wine's primary monitor (KDE)",
+      "files": [
+        "patches/MANIFEST.md",
+        "patches/neutron-zzzzzzzzzzzzzzzzzzzzzzzzzzz-winewayland-kde-primary.mypatch"
+      ],
+      "patch_decisions": [
+        "winewayland-kde-primary"
+      ],
+      "decision": "reviewed-patch-changes",
+      "reason": "See individual patch decisions; no blanket production merge."
+    },
+    {
+      "commit": "81400f3c1fc570d1ed4e371013cb915621333e08",
+      "subject": "patches: maximize on a non-primary monitor of a mixed-DPI desktop (win32u raw monitor lookup, follow-output scale, per-output work area)",
+      "files": [
+        "patches/MANIFEST.md",
+        "patches/neutron-zzzzzzzzzzzzzzzzzzzzzzzzzzzz-mixed-dpi-maximize.mypatch"
+      ],
+      "patch_decisions": [
+        "mixed-dpi-maximize"
+      ],
+      "decision": "reviewed-patch-changes",
+      "reason": "See individual patch decisions; no blanket production merge."
+    },
+    {
+      "commit": "6e6b94f02d57e30ceef4fb29b668926c2fe9584b",
+      "subject": "build: 11.10-124",
+      "files": [
+        "build/VERSION"
+      ],
+      "patch_decisions": [],
+      "decision": "metadata-only",
+      "reason": "Upstream release numbering or documentation; retain provenance without replacing this project version."
+    },
+    {
+      "commit": "b7a12f3a5a65cc9f0ee1d76646bb3fb2e071478d",
+      "subject": "patches: opencl exports clCreateCommandQueueWithProperties (OpenCL 2.0), as Windows' OpenCL loader does (Neutron#18)",
+      "files": [
+        "patches/MANIFEST.md",
+        "patches/neutron-zzzzzzzzzzzzzzzzzzzzzzzzzzzzz-opencl-command-queue-with-properties.mypatch"
+      ],
+      "patch_decisions": [
+        "opencl-command-queue-with-properties"
+      ],
+      "decision": "reviewed-patch-changes",
+      "reason": "See individual patch decisions; no blanket production merge."
+    },
+    {
+      "commit": "3878d4917189ceefc726c7affbae5ac94860f6fe",
+      "subject": "LrC Masking lag + white boxes: z-order reuse, role-less flush, dark fresh surface",
+      "files": [
+        "patches/MANIFEST.md",
+        "patches/neutron-zzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-winewayland-zorder-reuse.mypatch",
+        "patches/neutron-zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-winewayland-roleless-flush.mypatch",
+        "patches/neutron-zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-winewayland-zorder-scan-reuse.mypatch",
+        "patches/neutron-zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-win32u-fresh-surface-dark.mypatch"
+      ],
+      "patch_decisions": [
+        "winewayland-zorder-reuse",
+        "winewayland-roleless-flush",
+        "winewayland-zorder-scan-reuse",
+        "win32u-fresh-surface-dark"
+      ],
+      "decision": "reviewed-patch-changes",
+      "reason": "See individual patch decisions; no blanket production merge."
+    },
+    {
+      "commit": "1bdc3e58cbf78a10133edb6fe78d057a66338436",
+      "subject": "Window tree in shared memory, caption fixes, restore two ps2026-complete reverts",
+      "files": [
+        "patches/MANIFEST.md",
+        "patches/neutron-zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-restore-ps2026-reverts.mypatch",
+        "patches/neutron-zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-window-tree-shm.mypatch",
+        "patches/neutron-zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-caption-text-and-stale-redraw.mypatch"
+      ],
+      "patch_decisions": [
+        "restore-ps2026-reverts",
+        "window-tree-shm",
+        "caption-text-and-stale-redraw"
+      ],
+      "decision": "reviewed-patch-changes",
+      "reason": "See individual patch decisions; no blanket production merge."
+    },
+    {
+      "commit": "95f58b9d3c7965c69c719ee0e095f4751c4c4dbf",
+      "subject": "LrC Masks panel: stack with its owner, drag without losing activation; captured drags get no WM_MOUSELEAVE",
+      "files": [
+        "patches/MANIFEST.md",
+        "patches/neutron-zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-winewayland-popup-topmost-only.mypatch",
+        "patches/neutron-zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-win32u-noactivate-click.mypatch",
+        "patches/neutron-zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-win32u-capture-tracking.mypatch"
+      ],
+      "patch_decisions": [
+        "winewayland-popup-topmost-only",
+        "win32u-noactivate-click",
+        "win32u-capture-tracking"
+      ],
+      "decision": "reviewed-patch-changes",
+      "reason": "See individual patch decisions; no blanket production merge."
+    },
+    {
+      "commit": "a4928c591bbfeb494a7a443a0c71350fa03b821a",
+      "subject": "user32: answer IsWindow/GetParent/GetWindow/GetWindowLong from shared memory, like Windows' desktop heap",
+      "files": [
+        "patches/MANIFEST.md",
+        "patches/neutron-zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-user32-window-info-shm.mypatch"
+      ],
+      "patch_decisions": [
+        "user32-window-info-shm"
+      ],
+      "decision": "reviewed-patch-changes",
+      "reason": "See individual patch decisions; no blanket production merge."
+    },
+    {
+      "commit": "b6490ed34680a835d93fa3c3c43934ef0650e94b",
+      "subject": "MANIFEST: OpenCL queue export confirmed on AMD/ROCm by the #18 reporter",
+      "files": [
+        "patches/MANIFEST.md"
+      ],
+      "patch_decisions": [],
+      "decision": "metadata-only",
+      "reason": "Upstream release numbering or documentation; retain provenance without replacing this project version."
+    },
+    {
+      "commit": "1cc9aca3e9a6b52b42f603fa7625b89254343a48",
+      "subject": "build: 11.10-126",
+      "files": [
+        "build/VERSION"
+      ],
+      "patch_decisions": [],
+      "decision": "metadata-only",
+      "reason": "Upstream release numbering or documentation; retain provenance without replacing this project version."
+    },
+    {
+      "commit": "49adea26719462f1acf1067ddd3d758c1a3eb3c8",
+      "subject": "LrC Masks panel: no blank frame on resize; moved windows copy only their visible pixels",
+      "files": [
+        "patches/MANIFEST.md",
+        "patches/neutron-zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-win32u-copy-before-shape.mypatch",
+        "patches/neutron-zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-win32u-copy-visible-bits-only.mypatch"
+      ],
+      "patch_decisions": [
+        "win32u-copy-before-shape",
+        "win32u-copy-visible-bits-only"
+      ],
+      "decision": "reviewed-patch-changes",
+      "reason": "See individual patch decisions; no blanket production merge."
+    },
+    {
+      "commit": "44de431fb66e89a7617bfde0e88fd6905e293d9e",
+      "subject": "win32u: compute a child window's monitor DPI once at its top-level; lock-free session block check",
+      "files": [
+        "patches/MANIFEST.md",
+        "patches/neutron-zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-win32u-dpi-walk.mypatch"
+      ],
+      "patch_decisions": [
+        "win32u-dpi-walk"
+      ],
+      "decision": "reviewed-patch-changes",
+      "reason": "See individual patch decisions; no blanket production merge."
+    },
+    {
+      "commit": "b9a9ac24769b38584011a802fb9a1aa4c971edab",
+      "subject": "build: 11.10-127",
+      "files": [
+        "build/VERSION"
+      ],
+      "patch_decisions": [],
+      "decision": "metadata-only",
+      "reason": "Upstream release numbering or documentation; retain provenance without replacing this project version."
+    },
+    {
+      "commit": "9252eb505ea85f5c8b1950af306b5d04f0c50226",
+      "subject": "external/amfrt64: AMD hardware encoding for Premiere, Media Encoder and After Effects on Mesa",
+      "files": [
+        "external/README.md",
+        "external/amfrt64/amfrt64.c",
+        "external/amfrt64/amfrt64.spec",
+        "external/amfrt64/build-wine64.txt",
+        "external/amfrt64/meson.build",
+        "external/amfrt64/meson_options.txt",
+        "external/amfrt64/test-vkenc.sh",
+        "external/amfrt64/vkenc-test.c",
+        "external/amfrt64/vkenc.c",
+        "external/amfrt64/vkenc.h",
+        "external/amfrt64/vkenc_stub.c",
+        "external/build-external.sh"
+      ],
+      "patch_decisions": [],
+      "decision": "reviewed-external",
+      "reason": "AMD video encoding and D3D12/CUDA shared resources are outside the D3D11 Power BI runtime. DXGI background color is a separate potential candidate; WinRT D3D11 media exports are not the missing CLR bridge."
+    },
+    {
+      "commit": "d5d66d6856930cd8c53d1ab72937903ffee84eac",
+      "subject": "build: 11.10-128",
+      "files": [
+        "build/VERSION"
+      ],
+      "patch_decisions": [],
+      "decision": "metadata-only",
+      "reason": "Upstream release numbering or documentation; retain provenance without replacing this project version."
+    },
+    {
+      "commit": "d93c7823686f109430e40ea428879cc32e6f79d9",
+      "subject": "external/amfrt64: VA-API fallback, and a status file for neutron doctor",
+      "files": [
+        "external/README.md",
+        "external/amfrt64/amfrt64.c",
+        "external/amfrt64/encoder.c",
+        "external/amfrt64/meson.build",
+        "external/amfrt64/test-vkenc.sh",
+        "external/amfrt64/vaenc.c",
+        "external/amfrt64/vkenc-test.c",
+        "external/amfrt64/vkenc.c",
+        "external/amfrt64/vkenc.h",
+        "external/amfrt64/vkenc_backend.h",
+        "external/amfrt64/vkenc_stub.c"
+      ],
+      "patch_decisions": [],
+      "decision": "reviewed-external",
+      "reason": "AMD video encoding and D3D12/CUDA shared resources are outside the D3D11 Power BI runtime. DXGI background color is a separate potential candidate; WinRT D3D11 media exports are not the missing CLR bridge."
+    },
+    {
+      "commit": "72c49a0e0f049e5907162fe2ad593b16dd5660bf",
+      "subject": "winewayland: write plain windows' XRGB byte as opaque (every Wine window broke on KWin 6.8)",
+      "files": [
+        "patches/MANIFEST.md",
+        "patches/neutron-zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-winewayland-xrgb-opaque.mypatch"
+      ],
+      "patch_decisions": [
+        "winewayland-xrgb-opaque"
+      ],
+      "decision": "reviewed-patch-changes",
+      "reason": "See individual patch decisions; no blanket production merge."
+    },
+    {
+      "commit": "a25d4aea376fea952a289955c76abb27693e66ac",
+      "subject": "win32u: after a move, update only the moved window's client surfaces (LrC Masks panel boxes)",
+      "files": [
+        "patches/MANIFEST.md",
+        "patches/neutron-zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-win32u-client-surface-subtree.mypatch"
+      ],
+      "patch_decisions": [
+        "win32u-client-surface-subtree"
+      ],
+      "decision": "reviewed-patch-changes",
+      "reason": "See individual patch decisions; no blanket production merge."
+    },
+    {
+      "commit": "17752b9a6cd00ac829bf0511850c65bac0e29fb5",
+      "subject": "win32u: hold a grown window's new surface until it has painted (LrC Masks panel boxes)",
+      "files": [
+        "patches/MANIFEST.md",
+        "patches/neutron-zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-win32u-resize-hold.mypatch"
+      ],
+      "patch_decisions": [
+        "win32u-resize-hold"
+      ],
+      "decision": "reviewed-patch-changes",
+      "reason": "See individual patch decisions; no blanket production merge."
+    },
+    {
+      "commit": "7783f0124bbcdcd566856a6b69c84d486e49bead",
+      "subject": "windowscodecs/d2d1: never take a stale \"write lock held\" for \"untouched\" (Premiere ruler pile-up)",
+      "files": [
+        "patches/MANIFEST.md",
+        "patches/neutron-zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-wic-seed-skip-stale-busy-generation.mypatch"
+      ],
+      "patch_decisions": [
+        "wic-seed-skip-stale-busy-generation"
+      ],
+      "decision": "reviewed-patch-changes",
+      "reason": "See individual patch decisions; no blanket production merge."
+    },
+    {
+      "commit": "4b6a1eec52fc68cea9a5fe7d2a3dcfa1adcbffcb",
+      "subject": "advapi32: RegCreate/Open/DeleteKeyTransacted do the plain operation (Adobe CoreSync helper crash)",
+      "files": [
+        "patches/MANIFEST.md",
+        "patches/neutron-zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-advapi32-transacted-registry.mypatch"
+      ],
+      "patch_decisions": [
+        "advapi32-transacted-registry"
+      ],
+      "decision": "reviewed-patch-changes",
+      "reason": "See individual patch decisions; no blanket production merge."
+    },
+    {
+      "commit": "70be0b81aa6420252cde39a116b8228adaf42027",
+      "subject": "shell32: IShellItemImageFactory::GetImage fails a thumbnail-only request (LrC card thumbnails)",
+      "files": [
+        "patches/MANIFEST.md",
+        "patches/neutron-zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-shell32-imagefactory-thumbnailonly.mypatch"
+      ],
+      "patch_decisions": [
+        "shell32-imagefactory-thumbnailonly"
+      ],
+      "decision": "reviewed-patch-changes",
+      "reason": "See individual patch decisions; no blanket production merge."
+    },
+    {
+      "commit": "0b18ea8109b1327db0850057263b2def379f4f24",
+      "subject": "MANIFEST: shell32 thumbnail-only fix passed his real-card check",
+      "files": [
+        "patches/MANIFEST.md"
+      ],
+      "patch_decisions": [],
+      "decision": "metadata-only",
+      "reason": "Upstream release numbering or documentation; retain provenance without replacing this project version."
+    },
+    {
+      "commit": "27fe9c94f25c2024065bf00e06e9afa09635ad68",
+      "subject": "ntdll: on the first critical-section timeout, log every thread's stack (hang report)",
+      "files": [
+        "patches/MANIFEST.md",
+        "patches/neutron-zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-ntdll-hang-report.mypatch"
+      ],
+      "patch_decisions": [
+        "ntdll-hang-report"
+      ],
+      "decision": "reviewed-patch-changes",
+      "reason": "See individual patch decisions; no blanket production merge."
+    },
+    {
+      "commit": "d4508916071f781af51109813614d4ec33fd270c",
+      "subject": "MANIFEST: shell32 fix shipped in 11.10-134, hang report in 11.10-135",
+      "files": [
+        "patches/MANIFEST.md"
+      ],
+      "patch_decisions": [],
+      "decision": "metadata-only",
+      "reason": "Upstream release numbering or documentation; retain provenance without replacing this project version."
+    },
+    {
+      "commit": "1b5589e7d43c154721ca05b7c254e3db7df46db7",
+      "subject": "winewayland: never make an app's main window a subsurface of the window under its corner (Neutron#28)",
+      "files": [
+        "patches/MANIFEST.md",
+        "patches/neutron-zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-winewayland-owner-hint-strict.mypatch"
+      ],
+      "patch_decisions": [
+        "winewayland-owner-hint-strict"
+      ],
+      "decision": "reviewed-patch-changes",
+      "reason": "See individual patch decisions; no blanket production merge."
+    },
+    {
+      "commit": "8ecb7fd1789dde9db03811cdaa4980eb8c6c2a91",
+      "subject": "MANIFEST: owner-hint fix shipped in 11.10-136",
+      "files": [
+        "patches/MANIFEST.md"
+      ],
+      "patch_decisions": [],
+      "decision": "metadata-only",
+      "reason": "Upstream release numbering or documentation; retain provenance without replacing this project version."
+    }
+  ],
+  "patches": [
+    {
+      "path": "patches/diagnostic/neutron-zzzzzzzzzzzzzd-d2d1-rectlog-diagnostic.mypatch",
+      "summary": "d2d1: NEUTRON_D2D_RECTLOG -- log where each distinct fill/stroke/clip/layer/bitmap lands",
+      "targets": [
+        "dlls/d2d1/device.c"
+      ],
+      "applies_to_current_prepared_wine_11_18": false,
+      "dry_run_exit_code": 1,
+      "status": "diagnostic-only",
+      "id": "d2d1-rectlog-diagnostic",
+      "priority": "P2",
+      "reason": "Useful for targeted private rendering/lock investigations; diagnostic collection is not a production correctness fix. Thread suspension needs its own safety/performance checks.",
+      "sha256": "6e16556d7f0e42518a498f78ef6374c9b48bf4c9d5640efe63c7103d0bfd844f"
+    },
+    {
+      "path": "patches/neutron-zzzzzzzzzzzzzf-winewayland-clickthrough-overlay-not-topmost.mypatch",
+      "summary": "winewayland: a non-topmost click-through owned window stacks with its owner",
+      "targets": [
+        "dlls/winewayland.drv/window.c"
+      ],
+      "applies_to_current_prepared_wine_11_18": false,
+      "dry_run_exit_code": 1,
+      "status": "requires-port",
+      "id": "winewayland-clickthrough-overlay-not-topmost",
+      "priority": "P1",
+      "reason": "Relevant to modal/overlay ordering, but depends on Neutron-specific role promotion, topmost and z-order machinery absent from this stack. Preserve the existing PBI owner/transient rules; reproduce overlap and nested-dialog behavior first.",
+      "sha256": "e11f4fe3b9861bf3845ac09280cd5bece12c0be070566bee53b0b64ae6887781"
+    },
+    {
+      "path": "patches/neutron-zzzzzzzzzzzzzg-winewayland-owned-overlay-zorder.mypatch",
+      "summary": "winewayland: owned overlays stack in Win32 order (Lightroom first-run help froze the app)",
+      "targets": [
+        "dlls/winewayland.drv/waylanddrv.h",
+        "dlls/winewayland.drv/wayland_surface.c",
+        "dlls/winewayland.drv/window.c"
+      ],
+      "applies_to_current_prepared_wine_11_18": false,
+      "dry_run_exit_code": 1,
+      "status": "requires-port",
+      "id": "winewayland-owned-overlay-zorder",
+      "priority": "P1",
+      "reason": "Relevant to modal/overlay ordering, but depends on Neutron-specific role promotion, topmost and z-order machinery absent from this stack. Preserve the existing PBI owner/transient rules; reproduce overlap and nested-dialog behavior first.",
+      "sha256": "c4baff939bb73e7e4b60e8f82596feea268d77ad69927ffdb0431a80a4d0ecee"
+    },
+    {
+      "path": "patches/neutron-zzzzzzzzzzzzzh-winewayland-dnd-with-data-control.mypatch",
+      "summary": "winewayland: drag-and-drop and the clipboard on compositors with data-control (Hyprland crash)",
+      "targets": [
+        "dlls/winewayland.drv/wayland_data_device.c",
+        "dlls/winewayland.drv/waylanddrv.h"
+      ],
+      "applies_to_current_prepared_wine_11_18": false,
+      "dry_run_exit_code": 1,
+      "status": "outside-target",
+      "id": "winewayland-dnd-with-data-control",
+      "priority": "P3",
+      "reason": "Depends on data-control compositor support and addresses Hyprland clipboard/DND; current target is the documented Fedora native Wayland stack. Reassess for a supported compositor reproducer.",
+      "sha256": "329ff6eab704639c86b90a28c307b79f1cba1c61332edc5df751f8ac5aff8e66"
+    },
+    {
+      "path": "patches/neutron-zzzzzzzzzzzzzi-winewayland-restack-all-client-subsurfaces.mypatch",
+      "summary": "winewayland: restack every client subsurface, not just the first 64 windows' (Lightroom Develop tips)",
+      "targets": [
+        "dlls/winewayland.drv/waylanddrv.h",
+        "dlls/winewayland.drv/wayland_surface.c",
+        "dlls/winewayland.drv/window.c"
+      ],
+      "applies_to_current_prepared_wine_11_18": false,
+      "dry_run_exit_code": 1,
+      "status": "stack-specific",
+      "id": "winewayland-restack-all-client-subsurfaces",
+      "priority": "P2",
+      "reason": "Fixes Neutron phase-A/B restacking or its 64-window scan/cache; that implementation is not present here. Do not introduce its complete stacking subsystem solely to take the follow-up optimization.",
+      "sha256": "eedaff095041eff638337d64d5b797c430331be7baa7e6c9bdefb1c5530ac040"
+    },
+    {
+      "path": "patches/neutron-zzzzzzzzzzzzzj-kernel32-unregister-app-recovery-callback.mypatch",
+      "summary": "kernel32: add UnregisterApplicationRecoveryCallback (Lightroom's relaunch showed a crash dialog)",
+      "targets": [
+        "dlls/kernel32/kernel32.spec",
+        "dlls/kernel32/process.c"
+      ],
+      "applies_to_current_prepared_wine_11_18": true,
+      "dry_run_exit_code": 0,
+      "status": "candidate",
+      "id": "kernel32-unregister-app-recovery-callback",
+      "priority": "P2",
+      "reason": "General API/UI behavior is potentially useful, but no corresponding Power BI failure was reproduced. Requires focused native controls plus actual Desktop regression before adoption.",
+      "sha256": "49a66e935cfc64c7bc3072f97dd7ff245e3ac7449d0f7d451450f5423d01cd57"
+    },
+    {
+      "path": "patches/neutron-zzzzzzzzzzzzzk-user32-readable-control-text.mypatch",
+      "summary": "user32: readable text in standard controls under a dark palette (Lightroom About box)",
+      "targets": [
+        "dlls/user32/text.c"
+      ],
+      "applies_to_current_prepared_wine_11_18": true,
+      "dry_run_exit_code": 0,
+      "status": "candidate",
+      "id": "user32-readable-control-text",
+      "priority": "P2",
+      "reason": "General API/UI behavior is potentially useful, but no corresponding Power BI failure was reproduced. Requires focused native controls plus actual Desktop regression before adoption.",
+      "sha256": "68906c9fe6099004bf946ba53b839481fedc4f05575506add7eb379d1f012ed9"
+    },
+    {
+      "path": "patches/neutron-zzzzzzzzzzzzzl-d2d1-layer-unwrite-at-push-transform.mypatch",
+      "summary": "D2d1: unwrite a layer's stencil mask where it was written (Lightroom Navigator cut-off)",
+      "targets": [
+        "dlls/d2d1/device.c"
+      ],
+      "applies_to_current_prepared_wine_11_18": false,
+      "dry_run_exit_code": 1,
+      "status": "requires-port",
+      "id": "d2d1-layer-unwrite-at-push-transform",
+      "priority": "P2",
+      "reason": "Changes a Direct2D layer path with Neutron-specific surrounding code. A Power BI clip/layer reproducer and Wine 11.18 port are required.",
+      "sha256": "a8e113cde9706749d4f9e1c5c0b96a887f661043894018b0d49e3a3b43d073ce"
+    },
+    {
+      "path": "patches/neutron-zzzzzzzzzzzzzm-winewayland-remapped-control-key-vkey.mypatch",
+      "summary": "Winewayland: take a remapped control key's VK from its keysym (Hyprland caps:swapescape)",
+      "targets": [
+        "dlls/winewayland.drv/wayland_keyboard.c"
+      ],
+      "applies_to_current_prepared_wine_11_18": false,
+      "dry_run_exit_code": 1,
+      "status": "outside-target",
+      "id": "winewayland-remapped-control-key-vkey",
+      "priority": "P3",
+      "reason": "Depends on data-control compositor support and addresses Hyprland clipboard/DND; current target is the documented Fedora native Wayland stack. Reassess for a supported compositor reproducer.",
+      "sha256": "8f52cbe77d9a5e7db985c4655e6b04f9b19ca5ee359a860da987f530e9dab662"
+    },
+    {
+      "path": "patches/neutron-zzzzzzzzzzzzzn-winrt-mediasource-mediaplayer.mypatch",
+      "summary": "Windows.media.playback.mediaplayer: MediaSource, AdaptiveMediaSource statics, a working MediaPlayer (Lightroom help videos)",
+      "targets": [
+        "dlls/windows.media.playback.mediaplayer/classes.idl",
+        "dlls/windows.media.playback.mediaplayer/engine.c",
+        "dlls/windows.media.playback.mediaplayer/main.c",
+        "dlls/windows.media.playback.mediaplayer/Makefile.in",
+        "dlls/windows.media.playback.mediaplayer/mediasource.c",
+        "dlls/windows.media.playback.mediaplayer/playbackitem.c",
+        "dlls/windows.media.playback.mediaplayer/private.h",
+        "dlls/windows.media.playback.mediaplayer/session.c",
+        "include/windows.media.core.idl",
+        "include/windows.media.playback.idl"
+      ],
+      "applies_to_current_prepared_wine_11_18": true,
+      "dry_run_exit_code": 0,
+      "status": "outside-workload",
+      "id": "winrt-mediasource-mediaplayer",
+      "priority": "P3",
+      "reason": "Adds Adobe video/help playback, audio capture/device names or OpenCL compute. These are not demonstrated Power BI failures and add unrelated API surface.",
+      "sha256": "8417e9cb2e6fc560641e3a273999f085d70cf1dee5f2eda2dc5881fa96d899e2"
+    },
+    {
+      "path": "patches/neutron-zzzzzzzzzzzzzo-cep-panel-host-container-shape.mypatch",
+      "summary": "dcomp, winewayland.drv: show CEP panels hosted in a plain app window (Audition Learn panel)",
+      "targets": [
+        "dlls/dcomp/device.c",
+        "dlls/winewayland.drv/dllmain.c"
+      ],
+      "applies_to_current_prepared_wine_11_18": false,
+      "dry_run_exit_code": 1,
+      "status": "stack-specific",
+      "id": "cep-panel-host-container-shape",
+      "priority": "P3",
+      "reason": "Relaxes Adobe CEP host recognition; Power BI deliberately selects its own WebView2 owner process and HWND. Importing this host heuristic could target the wrong surface.",
+      "sha256": "965c5fa04d701ef7418d5381a95651fefd3857de2ff3d8a48cfeb3408d916700"
+    },
+    {
+      "path": "patches/neutron-zzzzzzzzzzzzzp-teb-version-1e00-fiber-flag.mypatch",
+      "summary": "ntdll, kernelbase: start threads with NT_TIB.Version = 0x1e00; track fibers by HasFiberData",
+      "targets": [
+        "dlls/kernelbase/thread.c",
+        "dlls/ntdll/unix/virtual.c"
+      ],
+      "applies_to_current_prepared_wine_11_18": false,
+      "dry_run_exit_code": 1,
+      "status": "partial-upstream",
+      "id": "teb-version-1e00-fiber-flag",
+      "priority": "P2",
+      "reason": "Wine 11.18 already initializes native/WoW64 TIB to 0x1e00 and tests HasFiberData; ConvertFiberToThread still resets FiberData to NULL. Do not replay the full older patch or infer this is the PBIP cache failure.",
+      "sha256": "57f0e09e4d8c5318d4eb1ba15faa7b92b1ff68a2770de09eee7bfe2c83a6b67b"
+    },
+    {
+      "path": "patches/neutron-zzzzzzzzzzzzzq-winhttp-async-without-callback-is-sync.mypatch",
+      "summary": "winhttp: run a request synchronously when no status callback is installed (Adobe Help, Neutron#13)",
+      "targets": [
+        "dlls/winhttp/request.c"
+      ],
+      "applies_to_current_prepared_wine_11_18": true,
+      "dry_run_exit_code": 0,
+      "status": "candidate",
+      "id": "winhttp-async-without-callback-is-sync",
+      "priority": "P2",
+      "reason": "WinHTTP no-callback synchronous fallback could affect authentication/networking, but upstream Windows parity is inferred. Current browser sign-in works; require local HTTP tests with callback/no-callback and auth regression.",
+      "sha256": "9471df6fe754ae1f4a63bf840666c688334cbcae7a11b1b0fd806b093f7440a7"
+    },
+    {
+      "path": "patches/neutron-zzzzzzzzzzzzzr-winewayland-oversized-popup-as-placed.mypatch",
+      "summary": "winewayland.drv: present a popup larger than the screen where the app put it, unstretched (Animate first launch)",
+      "targets": [
+        "dlls/winewayland.drv/waylanddrv.h",
+        "dlls/winewayland.drv/wayland_surface.c"
+      ],
+      "applies_to_current_prepared_wine_11_18": false,
+      "dry_run_exit_code": 1,
+      "status": "requires-port",
+      "id": "winewayland-oversized-popup-as-placed",
+      "priority": "P2",
+      "reason": "Potentially relevant to oversized Options/dropdowns; depends on Neutron popup placement. Reproduce with our modal/popup driver instead of replacing its current rules.",
+      "sha256": "27169384f4664a2b98dab55a0275a3f884b66eab55600ccedca7ccddca2804c0"
+    },
+    {
+      "path": "patches/neutron-zzzzzzzzzzzzzs-win32u-owner-drawn-menu-readable-text.mypatch",
+      "summary": "win32u: readable text in owner-drawn menu items under a dark palette (InDesign font menu)",
+      "targets": [
+        "dlls/win32u/menu.c"
+      ],
+      "applies_to_current_prepared_wine_11_18": true,
+      "dry_run_exit_code": 0,
+      "status": "candidate",
+      "id": "win32u-owner-drawn-menu-readable-text",
+      "priority": "P2",
+      "reason": "General API/UI behavior is potentially useful, but no corresponding Power BI failure was reproduced. Requires focused native controls plus actual Desktop regression before adoption.",
+      "sha256": "399e1b101be9074d0dc53e497951cc7fae36345f49ea8afa012f3f6d9b41b810"
+    },
+    {
+      "path": "patches/neutron-zzzzzzzzzzzzzt-ntdll-actctx-config-private-path.mypatch",
+      "summary": "ntdll: honor <probing privatePath> in a module's application configuration file (After Effects' Mocha plug-in)",
+      "targets": [
+        "dlls/ntdll/actctx.c"
+      ],
+      "applies_to_current_prepared_wine_11_18": true,
+      "dry_run_exit_code": 0,
+      "status": "candidate",
+      "id": "ntdll-actctx-config-private-path",
+      "priority": "P2",
+      "reason": "Native activation-context privatePath probing may help native plugins, but is distinct from CLR assembly resolution and registered database providers. Needs a synthetic side-by-side manifest fixture.",
+      "sha256": "1bf29f0cb3488491da392c04ebf17907530b573d6ec762ff63ef08ea41fdba1e"
+    },
+    {
+      "path": "patches/neutron-zzzzzzzzzzzzzu-winmm-capture-buffer-1s.mypatch",
+      "summary": "winmm: give waveIn a 1 s capture buffer so short app stalls don't lose audio (Premiere voice-over)",
+      "targets": [
+        "dlls/winmm/waveform.c"
+      ],
+      "applies_to_current_prepared_wine_11_18": true,
+      "dry_run_exit_code": 0,
+      "status": "outside-workload",
+      "id": "winmm-capture-buffer-1s",
+      "priority": "P3",
+      "reason": "Adds Adobe video/help playback, audio capture/device names or OpenCL compute. These are not demonstrated Power BI failures and add unrelated API surface.",
+      "sha256": "97de9df72ea19ecfc1442241579329921f915dc778e016d98deb1c5ad96f3491"
+    },
+    {
+      "path": "patches/neutron-zzzzzzzzzzzzzv-dwrite-glyph-cache-rendering-mode.mypatch",
+      "summary": "dwrite: key cached glyph bitmaps by rendering mode (After Effects crash while scrubbing)",
+      "targets": [
+        "dlls/dwrite/font.c"
+      ],
+      "applies_to_current_prepared_wine_11_18": false,
+      "dry_run_exit_code": 1,
+      "status": "candidate-staged",
+      "id": "dwrite-glyph-cache-rendering-mode",
+      "priority": "P1",
+      "reason": "Wine 11.18 still keys bitmap cache entries without rendering mode and copies cached size into the requested buffer. A bounded port preserves transformed-glyph cache bypass. Patch applies/reverses with zero fuzz; compilation and native bitmap/heap regression remain pending.",
+      "sha256": "a4f41ceafa5ff5a4a98573d8c48f279ddcc42dd85339a8a3a7c9478099971f13"
+    },
+    {
+      "path": "patches/neutron-zzzzzzzzzzzzzw-d2d1-dwrite-glyph-run-clip-to-target.mypatch",
+      "summary": "d2d1, dwrite: rasterize glyph runs only where they can be seen (After Effects crash on expression errors)",
+      "targets": [
+        "dlls/d2d1/device.c",
+        "dlls/dwrite/font.c"
+      ],
+      "applies_to_current_prepared_wine_11_18": true,
+      "dry_run_exit_code": 0,
+      "status": "candidate",
+      "id": "d2d1-dwrite-glyph-run-clip-to-target",
+      "priority": "P1",
+      "reason": "Current Direct2D command recording retains buffer-relative pointers across growth; clipping/size checks also matter for malformed/oversized runs. Needs a Wine 11.18 port and native command-stream/render comparison; not proof of a current Power BI crash.",
+      "sha256": "fa55968031627021192a093294187b00c0bb85aa330abd53cbd7d02efafdca34"
+    },
+    {
+      "path": "patches/neutron-zzzzzzzzzzzzzx-d2d1-command-list-field-offsets.mypatch",
+      "summary": "d2d1: recorded commands keep offsets, not pointers, into the command buffer (After Effects garbled text)",
+      "targets": [
+        "dlls/d2d1/command_list.c"
+      ],
+      "applies_to_current_prepared_wine_11_18": false,
+      "dry_run_exit_code": 1,
+      "status": "candidate",
+      "id": "d2d1-command-list-field-offsets",
+      "priority": "P1",
+      "reason": "Current Direct2D command recording retains buffer-relative pointers across growth; clipping/size checks also matter for malformed/oversized runs. Needs a Wine 11.18 port and native command-stream/render comparison; not proof of a current Power BI crash.",
+      "sha256": "cccd92e1479202c5cfc19d32b266eb61d795cef39ebbc31d916c801cc862c9e3"
+    },
+    {
+      "path": "patches/neutron-zzzzzzzzzzzzzy-winewayland-primary-monitor-origin.mypatch",
+      "summary": "winewayland: put the primary monitor at (0,0) (Premiere clicks landed above the pointer on GNOME)",
+      "targets": [
+        "dlls/winewayland.drv/display.c"
+      ],
+      "applies_to_current_prepared_wine_11_18": false,
+      "dry_run_exit_code": 1,
+      "status": "requires-port",
+      "id": "winewayland-primary-monitor-origin",
+      "priority": "P1",
+      "reason": "Relevant to Fedora multi-monitor positioning, rotated outputs and mixed-DPI hit testing. Neutron display/geometry context differs; validate negative origins and monitor arrangements with our compositor before enabling.",
+      "sha256": "35eb5cc4c15e49b5b78944a4c2794362118f59d8be03dc185f2335ea959ab4ef"
+    },
+    {
+      "path": "patches/neutron-zzzzzzzzzzzzzz-winepulse-endpoint-names-like-windows.mypatch",
+      "summary": "winepulse/mmdevapi: name endpoints \"<endpoint> (<card>)\" like Windows (no two MME names alike)",
+      "targets": [
+        "dlls/mmdevapi/devenum.c",
+        "dlls/winepulse.drv/pulse.c"
+      ],
+      "applies_to_current_prepared_wine_11_18": false,
+      "dry_run_exit_code": 1,
+      "status": "outside-workload",
+      "id": "winepulse-endpoint-names-like-windows",
+      "priority": "P3",
+      "reason": "Adds Adobe video/help playback, audio capture/device names or OpenCL compute. These are not demonstrated Power BI failures and add unrelated API surface.",
+      "sha256": "5481ad95eda21f98e10d964784ac08b3563f39e812d02fd82cc518cd41ef55e7"
+    },
+    {
+      "path": "patches/neutron-zzzzzzzzzzzzzzz-dsound-description-wavedeviceid.mypatch",
+      "summary": "dsound: report WaveDeviceId in DSPROPERTY_DIRECTSOUNDDEVICE_DESCRIPTION (Premiere's named audio devices \"(Not working)\")",
+      "targets": [
+        "dlls/dsound/propset.c"
+      ],
+      "applies_to_current_prepared_wine_11_18": true,
+      "dry_run_exit_code": 0,
+      "status": "outside-workload",
+      "id": "dsound-description-wavedeviceid",
+      "priority": "P3",
+      "reason": "Adds Adobe video/help playback, audio capture/device names or OpenCL compute. These are not demonstrated Power BI failures and add unrelated API surface.",
+      "sha256": "ebbe0e277392f45e423324721d59acd8fdc95a82473c4bdf7efd726626233e86"
+    },
+    {
+      "path": "patches/neutron-zzzzzzzzzzzzzzzz-ntdll-appenv-per-app-environment.mypatch",
+      "summary": "ntdll: give an app started by another app its own environment (neutron-appenv.conf)",
+      "targets": [
+        "dlls/ntdll/unix/env.c"
+      ],
+      "applies_to_current_prepared_wine_11_18": true,
+      "dry_run_exit_code": 0,
+      "status": "outside-workload",
+      "id": "ntdll-appenv-per-app-environment",
+      "priority": "P3",
+      "reason": "Per-Adobe-application environment switching enables Dynamic Link between incompatible app profiles. Power BI is one managed app; current launcher already owns its environment policy.",
+      "sha256": "e7b448848d140e3149b0f0483c1bcbd58577f70d75a38c75a5ea14f7c6f3cf53"
+    },
+    {
+      "path": "patches/neutron-zzzzzzzzzzzzzzzzz-winewayland-clip-gpu-children-to-ancestors.mypatch",
+      "summary": "winewayland/win32u: clip GPU child windows to their ancestors (Lightroom Classic What's New videos)",
+      "targets": [
+        "dlls/win32u/vulkan.c",
+        "dlls/winewayland.drv/waylanddrv.h",
+        "dlls/winewayland.drv/wayland_surface.c",
+        "include/wine/gdi_driver.h"
+      ],
+      "applies_to_current_prepared_wine_11_18": false,
+      "dry_run_exit_code": 1,
+      "status": "requires-port",
+      "id": "winewayland-clip-gpu-children-to-ancestors",
+      "priority": "P1",
+      "reason": "GPU child clipping/crop and origin mapping could improve embedded WebView2, but the patches depend on Neutron ancestor/shape machinery. Need scroll/resize/pointer coordinates and visual comparisons in our stack.",
+      "sha256": "3b35ca0808e0c285b26b09cad306b6b53daab4fa2ca403f2633f522fb8c5e584"
+    },
+    {
+      "path": "patches/neutron-zzzzzzzzzzzzzzzzzz-winewayland-crop-origin.mypatch",
+      "summary": "winewayland: position GPU child windows and map input from the cropped window's real origin (Premiere black line)",
+      "targets": [
+        "dlls/winewayland.drv/wayland_data_device.c",
+        "dlls/winewayland.drv/waylanddrv.h",
+        "dlls/winewayland.drv/wayland_pointer.c",
+        "dlls/winewayland.drv/wayland_surface.c",
+        "dlls/winewayland.drv/wayland_tablet.c",
+        "dlls/winewayland.drv/wintab.c"
+      ],
+      "applies_to_current_prepared_wine_11_18": false,
+      "dry_run_exit_code": 1,
+      "status": "requires-port",
+      "id": "winewayland-crop-origin",
+      "priority": "P1",
+      "reason": "GPU child clipping/crop and origin mapping could improve embedded WebView2, but the patches depend on Neutron ancestor/shape machinery. Need scroll/resize/pointer coordinates and visual comparisons in our stack.",
+      "sha256": "54f346dd54ca89c2c583609f4d6642d4869796ac3b1b5ad4d4917b6d8f3ae2ee"
+    },
+    {
+      "path": "patches/neutron-zzzzzzzzzzzzzzzzzzz-winmm-keep-capture-remainder.mypatch",
+      "summary": "winmm: keep the part of a capture packet that does not fit in the app's buffers (Premiere mic audio dropped)",
+      "targets": [
+        "dlls/winmm/waveform.c"
+      ],
+      "applies_to_current_prepared_wine_11_18": true,
+      "dry_run_exit_code": 0,
+      "status": "outside-workload",
+      "id": "winmm-keep-capture-remainder",
+      "priority": "P3",
+      "reason": "Adds Adobe video/help playback, audio capture/device names or OpenCL compute. These are not demonstrated Power BI failures and add unrelated API surface.",
+      "sha256": "6b8db8bb95009b62892914d738ab13bf410ef5759195f9ae9aa5ebfd0e096f1e"
+    },
+    {
+      "path": "patches/neutron-zzzzzzzzzzzzzzzzzzzz-dxcore-real-adapter-identity.mypatch",
+      "summary": "dxcore: describe the real adapter (name, PCI IDs) and answer IsValid/IsAttributeSupported/IsPropertySupported",
+      "targets": [
+        "dlls/dxcore/dxcore.c",
+        "dlls/dxcore/Makefile.in"
+      ],
+      "applies_to_current_prepared_wine_11_18": true,
+      "dry_run_exit_code": 0,
+      "status": "candidate",
+      "id": "dxcore-real-adapter-identity",
+      "priority": "P2",
+      "reason": "General API/UI behavior is potentially useful, but no corresponding Power BI failure was reproduced. Requires focused native controls plus actual Desktop regression before adoption.",
+      "sha256": "d3febf890d3407d9f6ebe4b6512d1daee5d7d1275b3823fb6ea8a5bfb71a169e"
+    },
+    {
+      "path": "patches/neutron-zzzzzzzzzzzzzzzzzzzzz-winewayland-output-transform.mypatch",
+      "summary": "winewayland: report rotated (portrait) monitors in the desktop's orientation (GitHub Neutron#20)",
+      "targets": [
+        "dlls/winewayland.drv/display.c",
+        "dlls/winewayland.drv/waylanddrv.h",
+        "dlls/winewayland.drv/wayland_output.c"
+      ],
+      "applies_to_current_prepared_wine_11_18": false,
+      "dry_run_exit_code": 1,
+      "status": "requires-port",
+      "id": "winewayland-output-transform",
+      "priority": "P1",
+      "reason": "Relevant to Fedora multi-monitor positioning, rotated outputs and mixed-DPI hit testing. Neutron display/geometry context differs; validate negative origins and monitor arrangements with our compositor before enabling.",
+      "sha256": "c9d30f88806dd11f3f0067dce0a9e482d6c6cec7987e482dbef6689780f5ba3a"
+    },
+    {
+      "path": "patches/neutron-zzzzzzzzzzzzzzzzzzzzzz-winewayland-deact-end-menu.mypatch",
+      "summary": "winewayland: end an open menu when the focus leaves the application",
+      "targets": [
+        "dlls/winewayland.drv/window.c"
+      ],
+      "applies_to_current_prepared_wine_11_18": false,
+      "dry_run_exit_code": 1,
+      "status": "requires-port",
+      "id": "winewayland-deact-end-menu",
+      "priority": "P2",
+      "reason": "Ending popup menus on focus loss is relevant, but the called Neutron deactivate-on-focus-leave helper is absent. Port the behavior only after an Alt-Tab/menu reproducer.",
+      "sha256": "4ccadb55de3c6573fe0b66fa273b408f2b644c0bc290ae890760d4c9b14ecdd2"
+    },
+    {
+      "path": "patches/neutron-zzzzzzzzzzzzzzzzzzzzzzz-mountmgr-announce-on-mount.mypatch",
+      "summary": "mountmgr: announce a removable drive when it is mounted, not on every udisks update (GitHub Neutron#15)",
+      "targets": [
+        "dlls/mountmgr.sys/device.c",
+        "dlls/mountmgr.sys/unixlib.c",
+        "dlls/mountmgr.sys/unixlib.h"
+      ],
+      "applies_to_current_prepared_wine_11_18": true,
+      "dry_run_exit_code": 0,
+      "status": "outside-workload",
+      "id": "mountmgr-announce-on-mount",
+      "priority": "P3",
+      "reason": "Removable card mounting notifications/types address Lightroom import; no current Power BI mount-event regression justifies changing system device enumeration.",
+      "sha256": "378d6a7ff7e04ca7f64af979fafc10517048ce037afaceccfa1984bbd5721645"
+    },
+    {
+      "path": "patches/neutron-zzzzzzzzzzzzzzzzzzzzzzzz-mountmgr-removable-media-type.mypatch",
+      "summary": "mountmgr: report a card reader or USB stick as a removable drive (Neutron#15 follow-up)",
+      "targets": [
+        "dlls/mountmgr.sys/dbus.c"
+      ],
+      "applies_to_current_prepared_wine_11_18": true,
+      "dry_run_exit_code": 0,
+      "status": "outside-workload",
+      "id": "mountmgr-removable-media-type",
+      "priority": "P3",
+      "reason": "Removable card mounting notifications/types address Lightroom import; no current Power BI mount-event regression justifies changing system device enumeration.",
+      "sha256": "d91d73384f522a464d02486c3d3c6bcf12ba8b8dfb7f2ea62fae45e9a353598c"
+    },
+    {
+      "path": "patches/neutron-zzzzzzzzzzzzzzzzzzzzzzzzz-winewayland-follow-output.mypatch",
+      "summary": "winewayland: put a maximized window on the monitor of the output the compositor shows it on (GitHub Neutron#20)",
+      "targets": [
+        "dlls/winewayland.drv/waylanddrv.h",
+        "dlls/winewayland.drv/wayland_surface.c",
+        "dlls/winewayland.drv/window.c"
+      ],
+      "applies_to_current_prepared_wine_11_18": false,
+      "dry_run_exit_code": 1,
+      "status": "requires-port",
+      "id": "winewayland-follow-output",
+      "priority": "P1",
+      "reason": "Relevant to Fedora multi-monitor positioning, rotated outputs and mixed-DPI hit testing. Neutron display/geometry context differs; validate negative origins and monitor arrangements with our compositor before enabling.",
+      "sha256": "7b5cb7f117bcceb09bf7c7f886317803509e86eb67affe105bf5472061ed1175"
+    },
+    {
+      "path": "patches/neutron-zzzzzzzzzzzzzzzzzzzzzzzzzz-winewayland-maximized-crop.mypatch",
+      "summary": "winewayland: do not draw a maximized window's frame on the next monitor",
+      "targets": [
+        "dlls/winewayland.drv/wayland_surface.c"
+      ],
+      "applies_to_current_prepared_wine_11_18": false,
+      "dry_run_exit_code": 1,
+      "status": "requires-port",
+      "id": "winewayland-maximized-crop",
+      "priority": "P1",
+      "reason": "Relevant to Fedora multi-monitor positioning, rotated outputs and mixed-DPI hit testing. Neutron display/geometry context differs; validate negative origins and monitor arrangements with our compositor before enabling.",
+      "sha256": "5104aa664917e7b4072b63e9bc37ccaab9707fbb1bc1c387f4ba3eb8dfcb74a7"
+    },
+    {
+      "path": "patches/neutron-zzzzzzzzzzzzzzzzzzzzzzzzzzz-winewayland-kde-primary.mypatch",
+      "summary": "winewayland: make the desktop's primary output Wine's primary monitor (KDE)",
+      "targets": [
+        "dlls/winewayland.drv/display.c",
+        "dlls/winewayland.drv/kde-output-order-v1.xml",
+        "dlls/winewayland.drv/Makefile.in",
+        "dlls/winewayland.drv/wayland.c",
+        "dlls/winewayland.drv/waylanddrv.h",
+        "dlls/winewayland.drv/wayland_output.c"
+      ],
+      "applies_to_current_prepared_wine_11_18": false,
+      "dry_run_exit_code": 1,
+      "status": "outside-target",
+      "id": "winewayland-kde-primary",
+      "priority": "P3",
+      "reason": "Uses KDE-specific primary-output discovery. GNOME validation does not certify this protocol/path; retain for a supported KDE test effort.",
+      "sha256": "8252aacd3aaed962daf71badd86862beeba74e640b4069d4cd336cabc897ed10"
+    },
+    {
+      "path": "patches/neutron-zzzzzzzzzzzzzzzzzzzzzzzzzzzz-mixed-dpi-maximize.mypatch",
+      "summary": "win32u, winewayland: maximize on a monitor that is not the primary on a mixed-DPI desktop",
+      "targets": [
+        "dlls/win32u/sysparams.c",
+        "dlls/winewayland.drv/display.c",
+        "dlls/winewayland.drv/waylanddrv.h",
+        "dlls/winewayland.drv/wayland_output.c",
+        "dlls/winewayland.drv/window.c"
+      ],
+      "applies_to_current_prepared_wine_11_18": false,
+      "dry_run_exit_code": 1,
+      "status": "requires-port",
+      "id": "mixed-dpi-maximize",
+      "priority": "P1",
+      "reason": "Relevant to Fedora multi-monitor positioning, rotated outputs and mixed-DPI hit testing. Neutron display/geometry context differs; validate negative origins and monitor arrangements with our compositor before enabling.",
+      "sha256": "2438c955417d150c9ff91b3275913d0485505828857a9ab81ed38533dd79293d"
+    },
+    {
+      "path": "patches/neutron-zzzzzzzzzzzzzzzzzzzzzzzzzzzzz-opencl-command-queue-with-properties.mypatch",
+      "summary": "opencl: export clCreateCommandQueueWithProperties (OpenCL 2.0), as Windows' OpenCL loader does (GitHub Neutron#18)",
+      "targets": [
+        "dlls/opencl/make_opencl",
+        "dlls/opencl/opencl.spec",
+        "dlls/opencl/opencl_types.h",
+        "dlls/opencl/pe_thunks.c",
+        "dlls/opencl/unixlib.h",
+        "dlls/opencl/unix_thunks.c"
+      ],
+      "applies_to_current_prepared_wine_11_18": true,
+      "dry_run_exit_code": 0,
+      "status": "outside-workload",
+      "id": "opencl-command-queue-with-properties",
+      "priority": "P3",
+      "reason": "Adds Adobe video/help playback, audio capture/device names or OpenCL compute. These are not demonstrated Power BI failures and add unrelated API surface.",
+      "sha256": "ed4bcbc809831dc6153e25af1f62df6d8a7227f5d2176fb351be1ebec26eb877"
+    },
+    {
+      "path": "patches/neutron-zzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-winewayland-zorder-reuse.mypatch",
+      "summary": "winewayland: reuse the subsurface z-order walk while the Win32 stacking is unchanged",
+      "targets": [
+        "dlls/winewayland.drv/waylanddrv.h",
+        "dlls/winewayland.drv/wayland_surface.c",
+        "dlls/winewayland.drv/window.c"
+      ],
+      "applies_to_current_prepared_wine_11_18": false,
+      "dry_run_exit_code": 1,
+      "status": "stack-specific",
+      "id": "winewayland-zorder-reuse",
+      "priority": "P2",
+      "reason": "Fixes Neutron phase-A/B restacking or its 64-window scan/cache; that implementation is not present here. Do not introduce its complete stacking subsystem solely to take the follow-up optimization.",
+      "sha256": "bc6a202ee213c2d5dde2abdb5048bb7b5340d49ede36a356fb369ddcfba38ccc"
+    },
+    {
+      "path": "patches/neutron-zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-winewayland-roleless-flush.mypatch",
+      "summary": "winewayland: hold a role-less window's flush and expose it at the role assignment, instead of retrying it forever",
+      "targets": [
+        "dlls/winewayland.drv/waylanddrv.h",
+        "dlls/winewayland.drv/window.c",
+        "dlls/winewayland.drv/window_surface.c"
+      ],
+      "applies_to_current_prepared_wine_11_18": false,
+      "dry_run_exit_code": 1,
+      "status": "stack-specific",
+      "id": "winewayland-roleless-flush",
+      "priority": "P2",
+      "reason": "Consumes flushes blocked by Neutron role gate and exposes on assignment. That exact gate/retry path is absent here; measure hidden-window CPU before porting.",
+      "sha256": "6bd4c9d64f6af9543424f571507013015f5d2fa4ce94b5c8587a8fdf73939cdf"
+    },
+    {
+      "path": "patches/neutron-zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-winewayland-zorder-scan-reuse.mypatch",
+      "summary": "winewayland: reuse phase B's subsurface scans while the stacking is unchanged; NEUTRON_ZORDER_VERIFY",
+      "targets": [
+        "dlls/winewayland.drv/wayland_surface.c",
+        "dlls/winewayland.drv/window.c"
+      ],
+      "applies_to_current_prepared_wine_11_18": false,
+      "dry_run_exit_code": 1,
+      "status": "stack-specific",
+      "id": "winewayland-zorder-scan-reuse",
+      "priority": "P2",
+      "reason": "Fixes Neutron phase-A/B restacking or its 64-window scan/cache; that implementation is not present here. Do not introduce its complete stacking subsystem solely to take the follow-up optimization.",
+      "sha256": "f55d78b21b910ef9f6cd2e7cc74ccd7f607ff6e6bb1161447e0342922076406a"
+    },
+    {
+      "path": "patches/neutron-zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-win32u-fresh-surface-dark.mypatch",
+      "summary": "win32u: start a fresh window surface opaque dark grey instead of white (restores a fix lost on 2026-07-20)",
+      "targets": [
+        "dlls/win32u/dce.c"
+      ],
+      "applies_to_current_prepared_wine_11_18": true,
+      "dry_run_exit_code": 0,
+      "status": "rejected-semantics",
+      "id": "win32u-fresh-surface-dark",
+      "priority": "P3",
+      "reason": "Replaces blank surfaces globally with a dark fill to hide Adobe white flashes. Does not repair missing paint and conflicts with the default light Power BI UI.",
+      "sha256": "43aa19c8545ba4cd852bf920f2cbc84794dfcbe11abf1b28f0488e8058cab7de"
+    },
+    {
+      "path": "patches/neutron-zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-restore-ps2026-reverts.mypatch",
+      "summary": "server, win32u: restore two fixes neutron-zzz-ps2026-complete reverted by accident",
+      "targets": [
+        "dlls/win32u/dce.c",
+        "server/user.h"
+      ],
+      "applies_to_current_prepared_wine_11_18": false,
+      "dry_run_exit_code": 1,
+      "status": "candidate-staged",
+      "id": "restore-ps2026-reverts",
+      "priority": "P1",
+      "reason": "Separated the signed DPI arithmetic portion from the unrelated Neutron WM_PAINT restoration. Wine 11.18 ratio-based helper compiled unchanged before/after candidate: 6 of 14 arithmetic controls failed before, 0 after. Full Wine server/compositor validation is pending; production disabled.",
+      "sha256": "c68d599ddb4b6cf16dfcd396a9a9107d0c31a99d2e4aeb19906048b2cfcbcb0e"
+    },
+    {
+      "path": "patches/neutron-zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-window-tree-shm.mypatch",
+      "summary": "server, win32u: publish the window tree in shared memory; answer GetWindow, the child/sibling lists and the",
+      "targets": [
+        "dlls/win32u/window.c",
+        "include/wine/server_protocol.h",
+        "server/protocol.def",
+        "server/window.c"
+      ],
+      "applies_to_current_prepared_wine_11_18": false,
+      "dry_run_exit_code": 1,
+      "status": "requires-port",
+      "id": "window-tree-shm",
+      "priority": "P2",
+      "reason": "Shared-memory USER/window-tree and DPI lookup optimizations touch server/client structures, synchronization and handle lifetimes. Need a consistent full runtime and cross-process/handle-reuse tests; no cherry-picking individual structures.",
+      "sha256": "ce51f69d7ddf30618a3cb51b44527efccadf82131d53bf7925bada87f28eb5aa"
+    },
+    {
+      "path": "patches/neutron-zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-caption-text-and-stale-redraw.mypatch",
+      "summary": "win32u: draw the caption from the window's own text, and draw a title set while WS_VISIBLE was off",
+      "targets": [
+        "dlls/win32u/defwnd.c",
+        "dlls/win32u/ntuser_private.h",
+        "dlls/win32u/win32u_private.h",
+        "dlls/win32u/window.c"
+      ],
+      "applies_to_current_prepared_wine_11_18": false,
+      "dry_run_exit_code": 1,
+      "status": "candidate",
+      "id": "caption-text-and-stale-redraw",
+      "priority": "P2",
+      "reason": "General API/UI behavior is potentially useful, but no corresponding Power BI failure was reproduced. Requires focused native controls plus actual Desktop regression before adoption.",
+      "sha256": "6c24a0326a358203a10c9449aaa0f563d4a880f02c50d0c7c881aafd9e1bdd41"
+    },
+    {
+      "path": "patches/neutron-zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-winewayland-popup-topmost-only.mypatch",
+      "summary": "winewayland: only a topmost owned window becomes an xdg_popup; a normal one is a subsurface of its owner",
+      "targets": [
+        "dlls/winewayland.drv/window.c"
+      ],
+      "applies_to_current_prepared_wine_11_18": false,
+      "dry_run_exit_code": 1,
+      "status": "requires-port",
+      "id": "winewayland-popup-topmost-only",
+      "priority": "P1",
+      "reason": "Relevant to modal/overlay ordering, but depends on Neutron-specific role promotion, topmost and z-order machinery absent from this stack. Preserve the existing PBI owner/transient rules; reproduce overlap and nested-dialog behavior first.",
+      "sha256": "92a03f6eb117a4cf9d35d34efec3e121df1b6f266d6f6617b2bc9c03f290339a"
+    },
+    {
+      "path": "patches/neutron-zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-win32u-noactivate-click.mypatch",
+      "summary": "win32u: a click does not activate a WS_EX_NOACTIVATE top-level window",
+      "targets": [
+        "dlls/win32u/input.c",
+        "dlls/win32u/message.c",
+        "dlls/win32u/win32u_private.h"
+      ],
+      "applies_to_current_prepared_wine_11_18": false,
+      "dry_run_exit_code": 1,
+      "status": "requires-port",
+      "id": "win32u-noactivate-click",
+      "priority": "P1",
+      "reason": "Honoring NOACTIVATE clicks can preserve active-window/capture state, but depends on an earlier Neutron helper. Requires popup/drag tests and no lost normal activation.",
+      "sha256": "b01d2188d6fddab3cc8b2ed1f5e057391e35889639dafc22b6d9d7917ad2e422"
+    },
+    {
+      "path": "patches/neutron-zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-win32u-capture-tracking.mypatch",
+      "summary": "win32u: mouse tracking follows the capture window, so a captured drag gets no WM_MOUSELEAVE",
+      "targets": [
+        "dlls/win32u/input.c"
+      ],
+      "applies_to_current_prepared_wine_11_18": true,
+      "dry_run_exit_code": 0,
+      "status": "candidate-staged",
+      "id": "win32u-capture-tracking",
+      "priority": "P1",
+      "reason": "Tracking the capture HWND can prevent premature WM_MOUSELEAVE during drags. Upstream patch applies/reverses to our Wine source with zero fuzz; compositor drag/release behavior and native regression remain pending.",
+      "sha256": "91ad898da7fd422bd3f4761424b176007a423276c90a42ab908be7c9ca1322c0"
+    },
+    {
+      "path": "patches/neutron-zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-user32-window-info-shm.mypatch",
+      "summary": "user32: answer IsWindow, GetParent, GetWindow, GetWindowLong and GetWindowThreadProcessId from shared memory",
+      "targets": [
+        "dlls/user32/win.c",
+        "include/wine/server_protocol.h",
+        "server/protocol.def",
+        "server/window.c"
+      ],
+      "applies_to_current_prepared_wine_11_18": false,
+      "dry_run_exit_code": 1,
+      "status": "requires-port",
+      "id": "user32-window-info-shm",
+      "priority": "P2",
+      "reason": "Shared-memory USER/window-tree and DPI lookup optimizations touch server/client structures, synchronization and handle lifetimes. Need a consistent full runtime and cross-process/handle-reuse tests; no cherry-picking individual structures.",
+      "sha256": "4edb4e63c35c65c7cf7f892d640189e8a1994917db00fb24d173d542cfd0de4a"
+    },
+    {
+      "path": "patches/neutron-zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-win32u-copy-before-shape.mypatch",
+      "summary": "win32u: copy a resized window's old contents into its new surface before the first flush",
+      "targets": [
+        "dlls/win32u/window.c"
+      ],
+      "applies_to_current_prepared_wine_11_18": true,
+      "dry_run_exit_code": 0,
+      "status": "candidate",
+      "id": "win32u-copy-before-shape",
+      "priority": "P1",
+      "reason": "Copying old surface contents before shape flush can remove an observable blank frame on resize. Applies cleanly but needs layered/plain resize pixel evidence, not a changed fill color.",
+      "sha256": "2a62fc923842c735d34779b2281ca0f06865366f257278ca2ce2dd60055b1417"
+    },
+    {
+      "path": "patches/neutron-zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-win32u-copy-visible-bits-only.mypatch",
+      "summary": "win32u: when a child window moves, copy only what was visible before and after, as Windows does",
+      "targets": [
+        "dlls/win32u/dce.c",
+        "dlls/win32u/win32u_private.h",
+        "dlls/win32u/window.c"
+      ],
+      "applies_to_current_prepared_wine_11_18": false,
+      "dry_run_exit_code": 1,
+      "status": "requires-port",
+      "id": "win32u-copy-visible-bits-only",
+      "priority": "P2",
+      "reason": "Surface move/copy and resize-hold/subtree optimizations affect invalidation and visible pixels. Dependencies differ; use overlapping-row and grow/shrink fixtures before adoption.",
+      "sha256": "a419cab287600719786b795fb4e4b98307ce010c988bf508544ed4a10cd1dfd1"
+    },
+    {
+      "path": "patches/neutron-zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-win32u-dpi-walk.mypatch",
+      "summary": "win32u: compute a child window's monitor DPI at its top-level window once; check the last session block lock-free",
+      "targets": [
+        "dlls/win32u/sysparams.c",
+        "dlls/win32u/winstation.c"
+      ],
+      "applies_to_current_prepared_wine_11_18": false,
+      "dry_run_exit_code": 1,
+      "status": "requires-port",
+      "id": "win32u-dpi-walk",
+      "priority": "P2",
+      "reason": "Shared-memory USER/window-tree and DPI lookup optimizations touch server/client structures, synchronization and handle lifetimes. Need a consistent full runtime and cross-process/handle-reuse tests; no cherry-picking individual structures.",
+      "sha256": "c71f783a7d0b03261acd2c68bea948c99bc11ab6cd4b59df5e0dc7a1f77d2c77"
+    },
+    {
+      "path": "patches/neutron-zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-winewayland-xrgb-opaque.mypatch",
+      "summary": "--- a/dlls/winewayland.drv/window_surface.c",
+      "targets": [
+        "dlls/winewayland.drv/window_surface.c"
+      ],
+      "applies_to_current_prepared_wine_11_18": false,
+      "dry_run_exit_code": 1,
+      "status": "requires-port",
+      "id": "winewayland-xrgb-opaque",
+      "priority": "P2",
+      "reason": "Addresses KWin 6.8 interpreting XRGB spare byte as alpha in Neutron alpha conversion. This file/context differs and current target was validated on GNOME; require KWin-specific frame evidence.",
+      "sha256": "b3c242009fb8cf6352f9ab4f80d95f248425eed645caae9fe1daa852a9987719"
+    },
+    {
+      "path": "patches/neutron-zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-win32u-client-surface-subtree.mypatch",
+      "summary": "--- a/dlls/win32u/window.c",
+      "targets": [
+        "dlls/win32u/window.c"
+      ],
+      "applies_to_current_prepared_wine_11_18": false,
+      "dry_run_exit_code": 1,
+      "status": "requires-port",
+      "id": "win32u-client-surface-subtree",
+      "priority": "P2",
+      "reason": "Surface move/copy and resize-hold/subtree optimizations affect invalidation and visible pixels. Dependencies differ; use overlapping-row and grow/shrink fixtures before adoption.",
+      "sha256": "5009a91d2e08b5ce92358e9f68189361ee4c00315dd466743fbb482017d86da1"
+    },
+    {
+      "path": "patches/neutron-zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-win32u-resize-hold.mypatch",
+      "summary": "--- a/dlls/win32u/dce.c",
+      "targets": [
+        "dlls/win32u/dce.c",
+        "dlls/win32u/win32u_private.h",
+        "dlls/win32u/window.c"
+      ],
+      "applies_to_current_prepared_wine_11_18": false,
+      "dry_run_exit_code": 1,
+      "status": "requires-port",
+      "id": "win32u-resize-hold",
+      "priority": "P2",
+      "reason": "Surface move/copy and resize-hold/subtree optimizations affect invalidation and visible pixels. Dependencies differ; use overlapping-row and grow/shrink fixtures before adoption.",
+      "sha256": "d2ad6f31aef78fb96194e4ec7089a4c09aa27a196b7cea1e957bf43fb927122b"
+    },
+    {
+      "path": "patches/neutron-zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-wic-seed-skip-stale-busy-generation.mypatch",
+      "summary": "--- a/dlls/d2d1/wic_render_target.c",
+      "targets": [
+        "dlls/d2d1/wic_render_target.c",
+        "dlls/windowscodecs/bitmap.c",
+        "include/wine/neutron_wicgpu.h"
+      ],
+      "applies_to_current_prepared_wine_11_18": false,
+      "dry_run_exit_code": 1,
+      "status": "stack-specific",
+      "id": "wic-seed-skip-stale-busy-generation",
+      "priority": "P3",
+      "reason": "Depends on Neutron WIC GPU interfaces, pooled render targets and generation counters absent here. Its measured video-timeline gain cannot be transferred to WebView2 or imported blindly.",
+      "sha256": "9b48e2cd561daf67bf9e823410779d3dda5a68e4475bca349af225d8983426a7"
+    },
+    {
+      "path": "patches/neutron-zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-advapi32-transacted-registry.mypatch",
+      "summary": "--- a/dlls/advapi32/advapi32.spec",
+      "targets": [
+        "dlls/advapi32/advapi32.spec",
+        "dlls/advapi32/registry.c",
+        "include/winreg.h"
+      ],
+      "applies_to_current_prepared_wine_11_18": true,
+      "dry_run_exit_code": 0,
+      "status": "rejected-semantics",
+      "id": "advapi32-transacted-registry",
+      "priority": "P2",
+      "reason": "Makes transacted registry writes immediate without rollback semantics. No Power BI installer failure requires that compromise; do not silently alter transactional behavior.",
+      "sha256": "9a99951286b7dcbbed98ed773bb4a4c753e3808215391aba1e47952977e9668b"
+    },
+    {
+      "path": "patches/neutron-zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-shell32-imagefactory-thumbnailonly.mypatch",
+      "summary": "shell32: IShellItemImageFactory::GetImage fails a thumbnail-only request (LrC card thumbnails)",
+      "targets": [
+        "dlls/shell32/shellitem.c"
+      ],
+      "applies_to_current_prepared_wine_11_18": true,
+      "dry_run_exit_code": 0,
+      "status": "candidate",
+      "id": "shell32-imagefactory-thumbnailonly",
+      "priority": "P2",
+      "reason": "General API/UI behavior is potentially useful, but no corresponding Power BI failure was reproduced. Requires focused native controls plus actual Desktop regression before adoption.",
+      "sha256": "de9c09fb9e64c50c45cd3d18e802a9319bbeadfc0a29801ca92d6a0f6384b712"
+    },
+    {
+      "path": "patches/neutron-zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-ntdll-hang-report.mypatch",
+      "summary": "ntdll: on the first critical-section timeout, log every thread's stack (hang report)",
+      "targets": [
+        "dlls/ntdll/sync.c"
+      ],
+      "applies_to_current_prepared_wine_11_18": true,
+      "dry_run_exit_code": 0,
+      "status": "diagnostic-only",
+      "id": "ntdll-hang-report",
+      "priority": "P2",
+      "reason": "Useful for targeted private rendering/lock investigations; diagnostic collection is not a production correctness fix. Thread suspension needs its own safety/performance checks.",
+      "sha256": "e3c1ab5cac0af35dfc16b8e4da8f46f818fc8828a76ee6e88c79176100f3bf00"
+    },
+    {
+      "path": "patches/neutron-zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-winewayland-owner-hint-strict.mypatch",
+      "summary": "winewayland: an app's main window is never a subsurface of the window under its corner (GitHub Neutron#28)",
+      "targets": [
+        "dlls/winewayland.drv/window.c"
+      ],
+      "applies_to_current_prepared_wine_11_18": false,
+      "dry_run_exit_code": 1,
+      "status": "requires-port",
+      "id": "winewayland-owner-hint-strict",
+      "priority": "P1",
+      "reason": "Relevant to modal/overlay ordering, but depends on Neutron-specific role promotion, topmost and z-order machinery absent from this stack. Preserve the existing PBI owner/transient rules; reproduce overlap and nested-dialog behavior first.",
+      "sha256": "3ce2b269b0ff04fe67cf4f398800055469211e8b3cfdc512cdd98443821af432"
+    }
+  ],
+  "external_decisions": [
+    {
+      "area": "DXGI background color",
+      "status": "candidate",
+      "reason": "DXVK 3.1 still returns E_NOTIMPL for Get/SetBackgroundColor. No PBI caller failure reproduced. Upstream check also needs finite/NaN input validation before adoption."
+    },
+    {
+      "area": "D3D11 WinRT interop",
+      "status": "outside-workload",
+      "reason": "Media/capture COM surface wrappers do not implement System.Runtime.WindowsRuntime for CLR. No PBI media/capture failure demonstrated."
+    },
+    {
+      "area": "AMD AMF/VAAPI/Vulkan video encoder",
+      "status": "outside-workload",
+      "reason": "Power BI refresh/rendering is not Premiere/After Effects media export; substantial new driver/API surface without a product scenario."
+    },
+    {
+      "area": "vkd3d-proton/nvcuda D3D12 shared resources",
+      "status": "outside-workload",
+      "reason": "Product ships DXVK D3D11 rather than this D3D12/CUDA media pipeline."
+    }
+  ],
+  "neutron_cli_review": {
+    "head": "3dd137579e0f2d4a0fa82ef1d414986745122128",
+    "url": "https://github.com/Nico-LaFoucate/Neutron",
+    "note": "Reference reviewed separately; the exact 87-commit range belongs to neutron-wine. App-specific Adobe profiles, native-library provisioning and teardown logic are not copied into the Power BI launcher."
+  },
+  "staged_candidates": [
+    {
+      "candidate": "neutron-dwrite-rendering-mode.patch",
+      "sha256": "407291b84ebaaf1cd730d5c5508efd728f639d1ee25ae750551c9a2dae583cfb",
+      "zero_fuzz_application": true,
+      "reverse_dry_run": true,
+      "compiled": false,
+      "native_regression_passed": false,
+      "production_enabled": false
+    },
+    {
+      "candidate": "neutron-win32u-capture-tracking.patch",
+      "sha256": "91ad898da7fd422bd3f4761424b176007a423276c90a42ab908be7c9ca1322c0",
+      "zero_fuzz_application": true,
+      "reverse_dry_run": true,
+      "compiled": false,
+      "native_regression_passed": false,
+      "production_enabled": false
+    },
+    {
+      "candidate": "neutron-server-signed-dpi.patch",
+      "sha256": "63b327d5a12184859119704a15201e65ce1955a49332a95d0c10fd6e6a07ffbc",
+      "zero_fuzz_application": true,
+      "compiled_source_helper": true,
+      "source_regression": {
+        "baseline_failed": 6,
+        "candidate_failed": 0,
+        "checks": 14
+      },
+      "full_runtime_compiled": false,
+      "native_compositor_regression_passed": false,
+      "production_enabled": false
+    }
+  ]
+}

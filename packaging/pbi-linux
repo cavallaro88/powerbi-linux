@@ -1,0 +1,8 @@
+#!/usr/bin/python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+import sys
+from pathlib import Path
+source = Path(__file__).resolve().parents[1] / 'src'
+sys.path.insert(0, str(source) if (source/'pbi_linux').is_dir() else '/usr/share/powerbi-linux/src')
+from pbi_linux.cli import main
+raise SystemExit(main())
