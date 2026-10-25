@@ -4,8 +4,6 @@
 
 ### Unreleased — product repository and upstream review
 
-- Remove the experimental Pop!_OS/DEB packaging path; the Fedora RPM is the only
-  supported package format and other distributions are outside the support target.
 - Test the original AWS Redshift 1.6.3.1008 Windows x64 MSI in the managed prefix:
   silent installation and automatic driver/default-DSN registration passed without
   manual driver registration. Add a generic offline Windows driver/DSN loading
@@ -43,6 +41,8 @@
   non-release inputs.
 - Publish runtime 0.1.5 with its binary archive, corresponding source and
   evidence; the exact-archive two-hour soak remains pending.
+- Remove the experimental Pop!_OS/DEB packaging path; the Fedora RPM is the only
+  supported package format and other distributions are outside the support target.
 
 ### RPM release 17 — local GNOME theme integration, 2026-10-23
 
