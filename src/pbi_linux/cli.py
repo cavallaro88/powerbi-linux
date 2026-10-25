@@ -143,9 +143,9 @@ def parser():
     profile.add_argument('--webview-heap',dest='webview_heap_mb',type=option_type(resources.heap_limit),help='V8 old-space cap: auto (default) or 128–8192 MiB')
     profile.add_argument('--renderer-process-limit',type=option_type(resources.renderer_limit),help='auto (default) or 1–128 renderer processes')
     profile.add_argument('--browser-mode',choices=('standard','economy'),help='standard (default) or opt-in economy browser flags')
-    update = sub.add_parser('update', help='Activate an explicitly supplied runtime release')
-    update.add_argument('--runtime', required=True)
-    update.add_argument('--runtime-sha256', required=True)
+    update = sub.add_parser('update', help='Activate the published runtime, or an explicitly supplied archive')
+    update.add_argument('--runtime', help='Runtime archive (defaults to the published release)')
+    update.add_argument('--runtime-sha256', help='SHA-256 of the runtime archive (required with --runtime)')
     sub.add_parser('rollback', help='Restore the previous installation')
     uninstall = sub.add_parser('uninstall', help='Remove per-user desktop integration; preserve data by default')
     uninstall.add_argument('--purge', action='store_true', help='Delete managed prefixes, runtime, cache and settings')
@@ -177,6 +177,8 @@ def main(argv=None):
                 result = connectors.status(provision.active(paths)['prefix'])
             print(json.dumps(result, indent=2))
         elif args.command in ('repair','update'):
+            if args.command == 'update':
+                onboarding.update_inputs(paths, args)
             provision.maintain(paths, args)
         elif args.command == 'profile':
             changes={key:getattr(args,key) for key in ('memory_max','swap_max','cpu_quota',

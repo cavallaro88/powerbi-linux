@@ -32,6 +32,16 @@
 - Review the 87 neutron-wine commits through `8ecb7fd`, with decisions for all 59 changed patch files and separate external-library scope. Add a repeatable consistency audit to quick QA. No new runtime patch is enabled.
 - Stage mouse capture tracking, rendering-mode glyph caching and signed DPI arithmetic separately. The actual Wine DPI helper fails six of fourteen arithmetic controls before the port and passes all after; server/compositor validation remains pending.
 
+### RPM release 18 — automatic setup and update, 2026-10-25
+
+- Resolve the published runtime 0.1.5, its complete corresponding source and
+  exact-archive evidence for `pbi-linux setup` and `pbi-linux update`; every
+  download is verified against the pinned SHA-256.
+- Keep explicit `--runtime`/`--runtime-sha256` overrides and reject partial or
+  non-release inputs.
+- Publish runtime 0.1.5 with its binary archive, corresponding source and
+  evidence; the exact-archive two-hour soak remains pending.
+
 ### RPM release 17 — local GNOME theme integration, 2026-10-23
 
 - Follow GNOME's color preference at startup and every two seconds while Desktop is open.

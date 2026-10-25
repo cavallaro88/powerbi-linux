@@ -70,7 +70,7 @@ or full runtime release; Power Query and legacy HTML dialogs use other controls.
 
 ## Installation and regression steps
 
-RPM 13 supplies the setup/repair recipe. Updating the RPM alone does not replace
+RPM 13 and later supply the setup/repair recipe. Updating the RPM alone does not replace
 an existing profile's HTML. With Desktop closed, normal maintenance applies the
 recipe; review [maintenance and disk requirements](../user/install.md) first. This host
 already has the bounded local candidate, its original file and guarded rollback;

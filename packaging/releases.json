@@ -703,6 +703,50 @@
           "size": 331346
         }
       ]
+    },
+    {
+      "component": "runtime",
+      "version": "0.1.5",
+      "tag": "runtime-v0.1.5",
+      "source_commit": "431369bf947bbae880814b2f8bc658e97477958a",
+      "original_date": "2026-10-25",
+      "prerelease": true,
+      "source_only": false,
+      "source_origin": {
+        "kind": "clean-source-build",
+        "name": "powerbi-linux-source-runtime-0.1.5.tar.gz",
+        "sha256": "be04c80b7eb9ce66ba88b94a8fb037740a940b5a14841213d5e45e536db1027b"
+      },
+      "ci_metadata_omitted": [],
+      "notes": "docs/releases/runtime-v0.1.5.md",
+      "url": "https://github.com/cavallaro88/powerbi-linux/releases/tag/runtime-v0.1.5",
+      "assets": [
+        {
+          "name": "powerbi-linux-runtime-0.1.5-x86_64.tar.xz",
+          "sha256": "291bb52fca8c27f2446ec4a05aaf982bb43d8c13e6b3787f32a1328ad890f05a",
+          "size": 88215648
+        },
+        {
+          "name": "powerbi-linux-source-runtime-0.1.5.tar.gz",
+          "sha256": "be04c80b7eb9ce66ba88b94a8fb037740a940b5a14841213d5e45e536db1027b",
+          "size": 52256687
+        },
+        {
+          "name": "release-evidence.json",
+          "sha256": "b7a6b6caecb630c988cd514eefcf47a81622a835c43b763e81b6b056a6d40dbc",
+          "size": 2072
+        },
+        {
+          "name": "SOURCE-PROVENANCE.json",
+          "sha256": "330528a977c5d0be20c9ee7bdbce5aea1491f358acb4b6c8fbe659be27132abf",
+          "size": 686
+        },
+        {
+          "name": "SHA256SUMS",
+          "sha256": "af87927caff296df907504cbc5d67ad2aee3f6b0d1159c102652b390c62098e6",
+          "size": 393
+        }
+      ]
     }
   ]
 }

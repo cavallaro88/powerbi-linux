@@ -128,3 +128,24 @@ def prepare(paths, args):
     else:
         args.installer = str(Path(args.installer).expanduser().resolve())
     return args
+
+
+def update_inputs(paths, args):
+    """Resolve the published runtime for an update, or verify an explicit archive."""
+    if bool(args.runtime) != bool(args.runtime_sha256):
+        raise Error('Supply --runtime and --runtime-sha256 together, or omit both for the published runtime')
+    if args.runtime:
+        args.runtime = str(Path(args.runtime).expanduser().resolve())
+        check_digest(Path(args.runtime), args.runtime_sha256)
+        return args
+    manifest, _ = release(provision.resource_root())
+    item = manifest.get('runtime')
+    if manifest.get('status') != 'ready' or not item:
+        raise Error('No published runtime is configured: ' +
+                    manifest.get('reason', 'validated release downloads are pending') +
+                    '. Supply --runtime and --runtime-sha256. Guide: ' + GUIDE)
+    validate_runtime_download(item)
+    print('Downloading project runtime ' + item['version'] + '...', flush=True)
+    args.runtime = str(assets.download(item['url'], item['sha256'], paths.cache / 'downloads'))
+    args.runtime_sha256 = item['sha256']
+    return args

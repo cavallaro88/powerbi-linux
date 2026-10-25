@@ -88,7 +88,7 @@ Before attaching any log to a public issue, remove usernames, document paths, da
   input. Doctor checks `window-frame`; existing profiles need idle maintenance
   unless the local candidate is already active. See [frame diagnosis and scope](../reference/window-frame.md).
 
-- **Font or text-size list opens a detached white window:** RPM 13's recipe keeps
+- **Font or text-size list opens a detached white window:** The published recipe keeps
   the two Quill pickers in WebView's own top layer, preserving their original
   options and formatting callbacks. Check `text-pickers` in doctor. Existing
   profiles need idle maintenance unless the local candidate is already applied.

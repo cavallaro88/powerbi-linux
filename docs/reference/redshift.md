@@ -138,7 +138,7 @@ bundled native connector; it does not change existing project queries or bundled
 driver selection. The native ODBC credential dialog needed a session-only
 focus/size workaround before the user could retry.
 
-The bridge is active only as a local experiment. **RPM 13 does not ship or enable
+The bridge is active only as a local experiment. **Published packages do not ship or enable
 it**, and the current `connector install/status` CLI still manages MySQL only.
 There is no `connector install redshift` command and no additional driver download
 was needed for this test. Manual vendor installation alone would not correct the

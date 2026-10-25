@@ -9,8 +9,8 @@ The runtime is built against glibc 2.39 in an Ubuntu build container to provide 
 - Project runtime archive and its SHA-256, produced together by `runtime/build.py`.
 - Microsoft Power BI Desktop x64 installer matching a registered exact recipe.
   The source-tree default is 2.159.883.0 in `runtime/sources.lock.json`;
-  2.158.1177.0 remains accepted for local inputs and existing profiles. Published
-  RPM 13 accepts only 2.158.1177.0. See the [current installation status](../user/install.md).
+  2.158.1177.0 remains accepted for local inputs and existing profiles. RPM 18
+  accepts both exact installers. See the [current installation status](../user/install.md).
 - Microsoft fixed WebView2 x64 **154.0.4258.62 CAB**, automatically downloaded using the official URL and checksum in the lock. Use `--webview-runtime` to supply the same CAB offline. No Evergreen installer is needed as a project setup input.
 - .NET 4.0 prerequisite and .NET 4.8 installers, optionally passed with `--dotnet40-installer` and `--dotnet-installer`; otherwise downloaded from the official link and checked against the lock.
 
@@ -18,9 +18,9 @@ Download Microsoft installers from Microsoft. Consult their terms before using `
 
 ## Manual setup
 
-Published RPM 13 requires an exact local runtime archive, its matching checksum
-and the official 2.158.1177.0 x64 EXE. The newer source-tree CLI additionally
-accepts the guarded 2.159.883.0 EXE. Installer identities are:
+Published releases before RPM 18 required an exact local runtime archive and its
+matching checksum; RPM 18 resolves the published runtime automatically. The
+manual route remains available and accepts both guarded installers. Installer identities are:
 
 | Power BI | EXE SHA-256 |
 |---|---|
@@ -29,8 +29,8 @@ accepts the guarded 2.159.883.0 EXE. Installer identities are:
 
 Microsoft's [official download page](https://www.microsoft.com/pt-br/download/details.aspx?id=58494)
 may no longer offer the older validated installer. If you do not already have its
-exact official EXE, RPM 13 does not currently provide a complete installation
-path. Do not substitute untrusted mirrors or bypass the recipe guards.
+exact official EXE, use the automatic route or supply the current validated
+installer. Do not substitute untrusted mirrors or bypass the recipe guards.
 
 ```bash
 pbi-linux setup \
@@ -68,7 +68,7 @@ The validated profile occupies approximately 9 GiB, before the runtime, verified
 
 Close all managed windows before maintenance. Setup can resume an interrupted stage using the same inputs. Repair and runtime update create a separate profile generation before activating it; failure leaves the current pointer untouched.
 
-To upgrade the CLI, run `sudo dnf upgrade ./powerbi-linux-0.1.0-13.noarch.rpm`
+To upgrade the CLI, run `sudo dnf upgrade ./powerbi-linux-0.1.0-18.noarch.rpm`
 and `pbi-linux doctor`. If the HTML/email dialog checks report outdated patches,
 close Desktop and run `pbi-linux repair`, then check again. Repair applies the
 new recipe to a new profile while retaining the previous one for rollback.

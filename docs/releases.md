@@ -7,17 +7,16 @@ new GitHub releases:
 - [RPM 16 / DEB 0.1.0-16pop1 — local tooltip correction](releases/v0.1.0-16.md)
 - [RPM 15 / DEB 15pop1 — local Options interaction fixes](releases/v0.1.0-15.md)
 - [RPM 14 — local guided setup and documentation candidate](releases/v0.1.0-14.md)
-- [Runtime 0.1.5 — complete local build candidate](releases/runtime-v0.1.5.md)
 
-The current RPM preview is [0.1.0-13](https://github.com/cavallaro88/powerbi-linux/releases/tag/v0.1.0-13).
+The current RPM preview is [0.1.0-18](https://github.com/cavallaro88/powerbi-linux/releases/tag/v0.1.0-18).
 All entries are **prereleases**, with dated, version-specific changelogs.
 Access follows the GitHub repository visibility. No stable release is certified.
 
 [RPM 14](releases/v0.1.0-14.md) adds the guided setup and documentation work, not a
-published replacement. Automatic installation remains gated on a validated,
-published runtime binary and matching Power BI recipe.
-[Runtime 0.1.5](releases/runtime-v0.1.5.md) has a complete local build; its exact-archive
-acceptance and publication are tracked separately.
+published replacement. Automatic installation uses the published
+[Runtime 0.1.5](releases/runtime-v0.1.5.md) archive, which includes the runtime
+binary, the complete corresponding source and exact-archive evidence; its
+two-hour soak remains pending.
 
 [RPM 15 / DEB 15pop1](releases/v0.1.0-15.md) are local Options interaction fixes.
 Existing installations apply them with `pbi-linux repair`; no new runtime or CI
@@ -30,7 +29,7 @@ a repair.
 
 Published revisions include the original binary RPM, its source RPM, `SHA256SUMS`
 and `SOURCE-PROVENANCE.json`. No Microsoft installers, populated prefixes or reports
-are attached. Use RPM 13 for current testing.
+are attached. Use RPM 18 for current testing.
 
 Older alpha assets were withdrawn from GitHub Releases: RPM 1–11 and runtime
 recipes 0.1.0–0.1.3 no longer host downloads. Their source snapshots remain at
@@ -39,6 +38,7 @@ the corresponding tags, and their artifact digests remain in the
 
 | Revision | Version notes | Downloads |
 |---|---|---|
+| 0.1.0-18 | [Changelog](releases/v0.1.0-18.md) | [Downloads](https://github.com/cavallaro88/powerbi-linux/releases/tag/v0.1.0-18) |
 | 0.1.0-13 | [Changelog](releases/v0.1.0-13.md) | [Downloads](https://github.com/cavallaro88/powerbi-linux/releases/tag/v0.1.0-13) |
 | 0.1.0-12 | [Changelog](releases/v0.1.0-12.md) | [Downloads](https://github.com/cavallaro88/powerbi-linux/releases/tag/v0.1.0-12) |
 | 0.1.0-11 | [Changelog](releases/v0.1.0-11.md) | Withdrawn alpha |
@@ -55,14 +55,17 @@ the corresponding tags, and their artifact digests remain in the
 
 ## Wine/DXVK runtime
 
-Runtime versions have separate tags and changelogs. These entries publish
-**source recipes only**, not compiled runtimes. The recipe tarballs cannot be
-passed to `pbi-linux setup --runtime`. Build the corresponding runtime following
+Runtime versions have separate tags and changelogs. Recipes 0.1.0–0.1.4 publish
+**source recipes only**, not compiled runtimes. Runtime 0.1.5 adds the published
+binary archive used by automatic setup, with its complete corresponding source
+and exact-archive evidence. The recipe tarballs cannot be passed to
+`pbi-linux setup --runtime`. Build the corresponding runtime following
 [the build guide](development/build.md); full release validation and corresponding-source
 publication remain required before distributing runtime binaries.
 
 | Version | Version notes | Source recipe |
 |---|---|---|
+| 0.1.5 | [Changelog](releases/runtime-v0.1.5.md) | [Binary, source and evidence](https://github.com/cavallaro88/powerbi-linux/releases/tag/runtime-v0.1.5) |
 | 0.1.4 | [Changelog](releases/runtime-v0.1.4.md) | [Source](https://github.com/cavallaro88/powerbi-linux/releases/tag/runtime-v0.1.4) |
 | 0.1.3 | [Changelog](releases/runtime-v0.1.3.md) | Withdrawn recipe |
 | 0.1.2 | [Changelog](releases/runtime-v0.1.2.md) | Withdrawn recipe |
@@ -79,10 +82,14 @@ branches were not imported. Historical CI metadata is omitted from runtime snaps
 the active checks live on `main`. RPM 12 uses the published reviewed product commit.
 RPM 13 was built from its tagged product commit; its source and binary payloads
 were compared against that commit and matching source RPM before publication.
+RPM 18 was built from its tagged product commit; its source and binary payloads
+were compared against that commit and matching source RPM before publication.
 
 The published history is a clean reconstruction: one commit per release snapshot,
-plus the current development state. Each release tag reproduces its released
-source byte-for-byte. Commit identifiers quoted inside released snapshots and in
+plus the current development state. Each release tag holds the released project
+sources; documented omissions (such as archived CI metadata) and the attached
+complete corresponding sources are recorded in the catalogue and release assets.
+Commit identifiers quoted inside released snapshots and in
 the published `SOURCE-PROVENANCE.json` assets belong to the earlier development
 history and cannot be resolved here; the [release catalogue](../packaging/releases.json)
 records this repository's tag commits.

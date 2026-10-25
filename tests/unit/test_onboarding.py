@@ -242,3 +242,42 @@ class GuidedSetupTests(unittest.TestCase):
         metadata = common.read_json(self.paths.active)
         self.assertEqual(metadata['powerbi_version'], self.lock['powerbi']['version'])
         self.assertEqual(metadata['recipe_id'], 'powerbi-' + self.lock['powerbi']['version'])
+
+    def update_args(self, *options):
+        return cli.parser().parse_args(['update', *options])
+
+    def test_update_uses_the_published_runtime_by_default(self):
+        with patch.object(onboarding.assets, 'download', return_value=self.payload) as download:
+            resolved = onboarding.update_inputs(self.paths, self.update_args())
+        download.assert_called_once_with(self.manifest['runtime']['url'], self.sha,
+                                         self.paths.cache / 'downloads')
+        self.assertEqual(resolved.runtime, str(self.payload))
+        self.assertEqual(resolved.runtime_sha256, self.sha)
+
+    def test_update_requires_explicit_inputs_without_a_published_runtime(self):
+        self.manifest.update(status='pending', reason='Runtime binary is not published', runtime=None)
+        self.save_manifest()
+        with patch.object(onboarding.assets, 'download') as download:
+            with self.assertRaisesRegex(common.Error, 'Runtime binary is not published'):
+                onboarding.update_inputs(self.paths, self.update_args())
+        download.assert_not_called()
+
+    def test_update_rejects_source_only_or_half_explicit_inputs(self):
+        with patch.object(onboarding.assets, 'download') as download:
+            with self.assertRaisesRegex(common.Error, 'together'):
+                onboarding.update_inputs(self.paths, self.update_args('--runtime', str(self.payload)))
+            with self.assertRaisesRegex(common.Error, 'together'):
+                onboarding.update_inputs(self.paths, self.update_args('--runtime-sha256', self.sha))
+        download.assert_not_called()
+        self.manifest['runtime']['evidence_url'] = 'https://github.com/cavallaro88/powerbi-linux/tree/main'
+        self.save_manifest()
+        with self.assertRaisesRegex(common.Error, 'fixed project release assets'):
+            onboarding.update_inputs(self.paths, self.update_args())
+
+    def test_update_verifies_an_explicit_archive_before_activation(self):
+        resolved = onboarding.update_inputs(self.paths, self.update_args(
+            '--runtime', str(self.payload), '--runtime-sha256', self.sha))
+        self.assertEqual(resolved.runtime, str(self.payload))
+        with self.assertRaisesRegex(common.Error, 'Checksum'):
+            onboarding.update_inputs(self.paths, self.update_args(
+                '--runtime', str(self.payload), '--runtime-sha256', 'a' * 64))

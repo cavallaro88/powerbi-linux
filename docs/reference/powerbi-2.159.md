@@ -2,7 +2,8 @@
 
 **October 20, 2026 — local compatibility candidate.** The guarded recipe has been
 ported and offline checks passed. Native acceptance and release certification are
-tracked separately below. The published RPM 13 still targets 2.158. No existing
+tracked separately below. RPM 18 targets this version; the 2.158 recipe remains
+available for existing profiles. No existing
 user installation was changed during the assessment or candidate preparation.
 
 The [machine-readable assessment](powerbi-2.159-assessment.json) retains the
@@ -132,7 +133,8 @@ the external synthetic PBIX. The temporary QA profiles were then removed, and
 the original production installation manifest remained unchanged.
 
 The **two-hour exact-archive session has not been run**. Earlier runtime sessions
-cannot satisfy that gate. No current-version cloud cycle or public runtime binary
-is claimed. The owner is retaining repository privacy for now; public publication
-and download verification are deferred. Automatic setup remains gated by the
+cannot satisfy that gate. No current-version cloud cycle is claimed. The runtime
+binary is published as a beta candidate (runtime 0.1.5) with its complete
+corresponding source and evidence, and automatic setup uses it; the two-hour
+session remains the open gate in the
 [release contract](../development/setup-release.md).

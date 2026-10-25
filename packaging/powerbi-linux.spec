@@ -1,6 +1,6 @@
 Name:           powerbi-linux
 Version:        0.1.0
-Release:        17%{?dist}
+Release:        18%{?dist}
 Summary:        Community Power BI Desktop compatibility tools for Fedora
 License:        GPL-3.0-or-later AND LGPL-2.1-or-later AND Zlib
 Source0:        %{name}-%{version}.tar.gz
@@ -63,6 +63,8 @@ find %{buildroot} -type d -name __pycache__ -prune -exec rm -rf {} +
 %{_datadir}/icons/hicolor/scalable/apps/powerbi-linux.svg
 
 %changelog
+* Sun Oct 25 2026 Project maintainers - 0.1.0-18
+- Enable automatic setup and update downloads from the published runtime release.
 * Fri Oct 23 2026 Power BI Linux contributors <maintainers@localhost> - 0.1.0-17
 - Follow GNOME light/dark preference for Desktop's System theme selection
 - Keep explicit Light/Dark choices and reuse the installed Wine runtime

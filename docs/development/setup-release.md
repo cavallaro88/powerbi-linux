@@ -23,8 +23,8 @@ rejected before any Microsoft download.
 
 All downloads use fixed HTTPS URLs and SHA-256 checks. Power BI's installer must
 come from `download.microsoft.com`. WebView2, .NET, Gecko and fonts continue using
-the existing pinned prerequisite recipes. The current manifest deliberately has
-no automatic download route; do not substitute an incremental investigation build.
+the existing pinned prerequisite recipes. The current manifest points at the
+published runtime 0.1.5 release; do not substitute an incremental investigation build.
 
 ## Preparing a release
 
@@ -48,8 +48,13 @@ no automatic download route; do not substitute an incremental investigation buil
    interrupted setup, repair and rollback. Publish the paired beta and update the
    recommended release links only after those checks pass.
 
+Runtime 0.1.5 was published with the two-hour soak still pending to enable
+automatic setup; that gap is tracked in its release notes and in
+[known issues](../user/known-issues.md).
+
 An installed RPM pins one download selection. Future Desktop versions require a
-new reviewed recipe and package; `update` remains an explicit runtime operation.
+new reviewed recipe and package; `update` activates the published runtime or an
+explicitly supplied archive.
 Installed metadata records `powerbi_version` and `recipe_id`; older installations
 are identified from their runtime's Power BI source record. The CLI retains exact
 2.158 and 2.159 recipes. Local installers select by their complete SHA-256; repair

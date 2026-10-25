@@ -13,8 +13,9 @@ Opening PBIX/PBIP/PBIR from the desktop; CSV import, visuals and save/reopen; a 
 
 | Feature | Status | Impact and next step |
 |---|---|---|
-| Installing from current published releases | Partial | RPM 13 needs explicit setup inputs. Runtime downloads are source recipes only; a recipe archive cannot be used as a runtime. See [installation](install.md). |
-| New Power BI Desktop versions | Not validated as a release | Published RPM 13 targets 2.158.1177.0. Local candidates from RPM 14 onward add guarded 2.159.883.0 patches; complete native release validation is still pending. Other installer hashes are rejected. Do not bypass checksum checks. |
+| Installing from current published releases | Partial | RPM 18 enables automatic setup: `pbi-linux setup` downloads the published runtime, its matching source and evidence, and the pinned Microsoft installer, verifying every SHA-256. Earlier published previews need explicit local inputs. The published runtime is a beta candidate whose two-hour soak is pending. See [installation](install.md). |
+| Published runtime 0.1.5 | Partial | Clean install, native components, a 158-table refresh, save/reopen and lifecycle checks passed on the exact archive; the two-hour soak remains pending. No stable runtime certification is claimed. |
+| New Power BI Desktop versions | Not validated as a release | RPM 18 targets 2.159.883.0 and also accepts the exact 2.158.1177.0 installer; other installer hashes are rejected. Do not bypass checksum checks. |
 | Embedded Windows authentication broker | Known failure | Use the default system browser for Microsoft sign-in. See [sign-in](sign-in.md). |
 | MySQL with explicit Windows username/password impersonation | Known failure | Wine's placeholder Windows token fails this flow. Database-password authentication passed in a local fixture; real-server TLS remains unvalidated. See [connectors](connectors.md). |
 | General Get Data / OneLake chooser | Not validated | Direct Text/CSV import passed. The general chooser was blocked by sign-in and has not been revalidated after authentication. Use the direct CSV entry for the tested CSV path. |

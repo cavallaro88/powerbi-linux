@@ -37,18 +37,16 @@ These results apply to their recorded versions and test cases. They do not certi
 
 ## Install
 
-Download the recommended **binary RPM** from [Releases](https://github.com/cavallaro88/powerbi-linux/releases/tag/v0.1.0-13), then install it using DNF. The `.src.rpm` is for developers.
+Download the recommended **binary RPM** from [Releases](https://github.com/cavallaro88/powerbi-linux/releases/tag/v0.1.0-18), then install it using DNF. The `.src.rpm` is for developers.
 
 ```bash
-sudo dnf install ./powerbi-linux-0.1.0-13.noarch.rpm
+sudo dnf install ./powerbi-linux-0.1.0-18.noarch.rpm
 ```
 
 > [!IMPORTANT]
-> **The published RPM 13 still requires manual setup inputs.** Published runtime releases contain source recipes, not ready-to-use runtime binaries. Installing the RPM alone does not install Power BI Desktop.
->
-> The setup improvements in this source tree prepare a guided installation with verified automatic downloads. It remains gated on a validated, published runtime and matching Power BI recipe. See the [installation guide](docs/user/install.md) for the currently usable manual route and release readiness.
+> **`pbi-linux setup` installs the rest.** It downloads and verifies the published runtime (with its matching source and evidence), WebView2 and .NET, and the pinned Power BI installer from Microsoft. You accept the terms and wait; installing the RPM alone does not install Power BI Desktop.
 
-Microsoft's [official Power BI Desktop download](https://www.microsoft.com/pt-br/download/details.aspx?id=58494) provides `PBIDesktopSetup_x64.exe`. **Its current version can differ from the release's validated version.** Published RPM 13 accepts **2.158.1177.0**. The local candidates from RPM 14 onward add a guarded **2.159.883.0** recipe; their [native validation and release readiness](docs/reference/powerbi-2.159.md) are tracked separately. WebView2 and .NET are prepared by setup; you do not need to choose or install those components yourself.
+Microsoft's [official Power BI Desktop download](https://www.microsoft.com/pt-br/download/details.aspx?id=58494) provides `PBIDesktopSetup_x64.exe`. **Its current version can differ from the release's validated version.** RPM 18 defaults to **2.159.883.0** and also accepts **2.158.1177.0**; other installer hashes are rejected. [Native validation and release readiness](docs/reference/powerbi-2.159.md) are tracked separately. WebView2 and .NET are prepared by setup; you do not need to choose or install those components yourself.
 
 ### How long does setup take?
 
