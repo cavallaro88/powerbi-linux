@@ -72,19 +72,35 @@ SNAPSHOT = r'''(function(){
         var r=this.getBoundingClientRect();panes.push({width:r.width,height:r.height,textLength:this.innerText.length});
     });
     var e=KoOptionsDialog.getTabControl().panes.element[0],r=e.getBoundingClientRect(),body=document.querySelector('.o-group-body').getBoundingClientRect();
+    var nav=document.querySelector('.o-group-tabs'),nr=nav.getBoundingClientRect(),old=nav.scrollTop,tabs=nav.querySelectorAll('.role-tab');
+    nav.scrollTop=nav.scrollHeight;
+    var last=tabs[tabs.length-1].getBoundingClientRect(),reachable=last.top>=nr.top-1&&last.bottom<=nr.bottom+1;
+    nav.scrollTop=old;
+    var editable=true;
+    $('#modalDialog').find(':text,textarea,[contenteditable=true]').each(function(){
+        if(getComputedStyle(this).getPropertyValue('-moz-user-select')!=='text')editable=false;
+    });
     return {selected:[g.selectedGroupName(),g.selectedIndex()],panes:panes,footer:buttons,
-        scrollPane:{client:e.clientHeight,scroll:e.scrollHeight,overflow:getComputedStyle(e).overflowY,inside:r.bottom<=body.bottom+1},errors:window.__productOptionsAudit.errors};
+        navigation:{client:nav.clientHeight,scroll:nav.scrollHeight,overflow:getComputedStyle(nav).overflowY,
+            inside:nr.top>=body.top&&nr.bottom<=body.bottom+1,lastReachable:reachable,
+            labelSelection:getComputedStyle(tabs[0]).getPropertyValue('-moz-user-select'),editable:editable},
+        scrollPane:{client:e.clientHeight,scroll:e.scrollHeight,overflow:getComputedStyle(e).overflowY,
+            inside:r.bottom<=body.bottom+1&&r.right<=body.right+1},errors:window.__productOptionsAudit.errors};
 })()'''
 
 
 def valid_tab(result, group, index):
     scroll = result['scrollPane']
+    nav = result['navigation']
     return (result['selected'] == [group, index]
             and bool(result['panes']) and all(p['width'] > 0 and p['height'] > 0 for p in result['panes'])
             and {b['text'] for b in result['footer']} == {'OK', 'Cancel'}
             and all(b['inside'] for b in result['footer'])
             and scroll['client'] > 0 and scroll['inside']
             and (scroll['scroll'] <= scroll['client'] or scroll['overflow'] in ('auto', 'scroll'))
+            and nav['client'] > 0 and nav['inside'] and nav['lastReachable']
+            and (nav['scroll'] <= nav['client'] or nav['overflow'] in ('auto', 'scroll'))
+            and nav['labelSelection'] == 'none' and nav['editable']
             and not result['errors'])
 
 
@@ -109,7 +125,7 @@ def audit(bridge, expected_tabs=22):
     finally:
         bridge.request("(function(){var a=window.__productOptionsAudit;KoOptionsDialog.getTabControl().viewModel.onTabClick(a.group,a.index);window.onerror=a.old;delete window.__productOptionsAudit;return true;})()")
     return {'passed': len(results) == expected_tabs and all(r['passed'] for r in results),
-            'tabs_checked': len(results), 'scope': 'Synthetic tab navigation, content/footer/scroll geometry and JS errors',
+            'tabs_checked': len(results), 'scope': 'Synthetic tab navigation, sidebar/content/footer geometry, selection policy and JS errors',
             'settings_submitted': False, 'compositor_pointer_certified': False, 'results': results}
 
 

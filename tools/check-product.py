@@ -33,12 +33,15 @@ def qa_environment(root, original=None):
     original = dict(os.environ if original is None else original)
     production = Paths()
     env = dict(original)
-    for kind, subdir in [('DATA', 'data'), ('CONFIG', 'config'), ('CACHE', 'cache'),
-                         ('STATE', 'state'), ('RUNTIME', 'run')]:
-        env['XDG_' + kind + '_HOME' if kind != 'RUNTIME' else 'XDG_RUNTIME_DIR'] = str(root / subdir)
+    for kind, subdir in [('DATA', 'data'), ('CONFIG', 'config'), ('CACHE', 'cache'), ('STATE', 'state')]:
+        env['XDG_' + kind + '_HOME'] = str(root / subdir)
+    # Preserve the real desktop runtime directory: systemctl also uses its
+    # systemd/private socket. Paths namespaces our own socket by installation.
     display = env.get('WAYLAND_DISPLAY')
     if display and not Path(display).is_absolute():
         env['WAYLAND_DISPLAY'] = str(Path(original.get('XDG_RUNTIME_DIR', '/nonexistent')) / display)
+    if not env.get('DBUS_SESSION_BUS_ADDRESS') and original.get('XDG_RUNTIME_DIR'):
+        env['DBUS_SESSION_BUS_ADDRESS'] = 'unix:path=' + str(Path(original['XDG_RUNTIME_DIR']) / 'bus')
     data = root / 'data/powerbi-linux'
     if data.resolve() == production.data.resolve():
         raise Error('QA installation must differ from the current user installation')
@@ -115,6 +118,7 @@ def main():
         ('unit', [sys.executable, '-m', 'unittest', 'discover', '-s', 'tests/unit', '-v'], 180),
         ('syntax', [sys.executable, '-m', 'compileall', '-q', 'src', 'tools', 'runtime/build.py', 'tests/automation'], 30),
         ('desktop-entry', ['desktop-file-validate', 'packaging/powerbi-linux.desktop'], 15),
+        ('documentation', [sys.executable, 'tools/check-docs.py'], 30),
         ('upstream-review', [sys.executable, 'tools/audit-neutron.py'], 30),
         ('source-export', [sys.executable, 'tools/export-source.py', str(output / 'source-export')], 60),
     ]

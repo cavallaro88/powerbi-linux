@@ -1,6 +1,6 @@
 Name:           powerbi-linux
 Version:        0.1.0
-Release:        13%{?dist}
+Release:        17%{?dist}
 Summary:        Community Power BI Desktop compatibility tools for Fedora
 License:        GPL-3.0-or-later AND LGPL-2.1-or-later AND Zlib
 Source0:        %{name}-%{version}.tar.gz
@@ -63,6 +63,23 @@ find %{buildroot} -type d -name __pycache__ -prune -exec rm -rf {} +
 %{_datadir}/icons/hicolor/scalable/apps/powerbi-linux.svg
 
 %changelog
+* Fri Oct 23 2026 Power BI Linux contributors <maintainers@localhost> - 0.1.0-17
+- Follow GNOME light/dark preference for Desktop's System theme selection
+- Keep explicit Light/Dark choices and reuse the installed Wine runtime
+
+* Fri Oct 23 2026 Power BI Linux contributors <maintainers@localhost> - 0.1.0-16
+- Render browser HTML and SVG title tooltips inside the report viewport
+- Preserve original rich visual tooltip handlers and editable controls
+
+* Wed Oct 21 2026 Project maintainers - 0.1.0-15
+- Restore native resizing and adapt Options navigation/content to the viewport.
+- Prevent label selection while preserving editable fields and original callbacks.
+- Guard both 2.158 and 2.159 resource/native method recipes.
+* Tue Oct 20 2026 Project maintainers - 0.1.0-14
+- Organize user, development and reference guides; add a beta known-issues guide.
+- Add guided setup and a gated pinned download contract with local input support.
+- Show verified-download progress and record installed Power BI recipe metadata.
+- Add exact guarded 2.159/2.158 recipes and isolate independent XDG sessions.
 * Sun Oct 18 2026 Project maintainers - 0.1.0-13
 - Keep Quill font and size pickers in WebView's top layer with original select events.
 - Preserve Escape dismissal before Desktop consumes the key; guard local HTML inputs.
@@ -100,5 +117,5 @@ find %{buildroot} -type d -name __pycache__ -prune -exec rm -rf {} +
 * Wed Oct 14 2026 Project maintainers - 0.1.0-2
 - Default to unrestricted RAM/swap, automatic browser heap and standard browser settings.
 - Add optional CLI resource settings and migrate legacy bundled limits.
-* Sun Oct 11 2026 Project maintainers - 0.1.0-1
+* Tue Oct 13 2026 Project maintainers - 0.1.0-1
 - Initial Fedora packaging; public release remains gated on compatibility tests.

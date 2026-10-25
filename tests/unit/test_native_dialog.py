@@ -47,6 +47,7 @@ class NativeDialogProvisionTests(unittest.TestCase):
         with patch.object(patches.legacy_html, 'patch_ui', return_value=b'html-patch'), \
                 patch.object(patches.signin, 'patch_windows', return_value=b'email-patch'), \
                 patch.object(patches.text_pickers, 'patch_document', return_value=b'picker-patch'), \
+                patch.object(patches.tooltips, 'patch_document', return_value=b'tooltip-patch'), \
                 patch.object(patches, 'run', side_effect=run):
             with self.assertRaises(common.Error):
                 patches.install(self.prefix, self.runtime, self.root / 'log')

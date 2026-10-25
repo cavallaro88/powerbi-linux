@@ -1,6 +1,6 @@
 # Reviewed, inactive runtime candidates
 
-These are follow-up candidates from the [87-commit Neutron review](../../docs/upstream-neutron.md).
+These are follow-up candidates from the [87-commit Neutron review](../../docs/reference/upstream-neutron.md).
 They are **not applied by runtime/build.py**, are absent from the production
 patch registry and are not enabled in runtime 0.1.3. Keep them separate until
 their native/runtime acceptance checks pass.

@@ -94,7 +94,7 @@ def status(prefix):
 def install(paths, *, accept_license=False):
     from .provision import active, idle
     if not accept_license:
-        raise Error('Read docs/connectors.md and the upstream package licenses; supply --accept-license')
+        raise Error('Read docs/user/connectors.md and the upstream package licenses; supply --accept-license')
     selected = recipe()
     if selected.get('schema') != 1 or selected.get('connector') != 'mysql':
         raise Error('Unsupported connector recipe')

@@ -1,15 +1,22 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 import os
+import hashlib
 from pathlib import Path
 import shutil
 from .common import Error, check_digest, digest, run, wine_env
-from . import legacy_html, signin, text_pickers
+from . import legacy_html, signin, text_pickers, tooltips
 
 ORIGINALS = {
     'Microsoft.PowerBI.Client.Shared.dll': '1dc130d913b92f315b81aa5162e8fa74e8a0279742f988561680111d5189ff78',
     'Microsoft.PowerBI.Client.Windows.dll': '5284e48755ca5d0911f8af46650d1aa12a36389f008e6005ac5f188071808cd4',
     'msmdsrv.exe': '7975dcb62edd6e53cc16fe808f66dbf0551cb155069138d68080c4bd32e92a1d',
     'Microsoft.Mashup.Client.UI.dll': legacy_html.UI_ORIGINAL_SHA256,
+}
+CURRENT_ORIGINALS = {
+    'Microsoft.PowerBI.Client.Shared.dll': 'b374f445156cea1caf13eabbfc0b03ee8d2179a75039713f0dfc9cad2535c10a',
+    'Microsoft.PowerBI.Client.Windows.dll': '5c49618814888815ec3649ad2bf7dcf0209de1b3722d30372c126b3ebaf79938',
+    'msmdsrv.exe': '90dd9882dd0ef22c1a49261099021798d1edf4817afff6b336322e7651659495',
+    'Microsoft.Mashup.Client.UI.dll': legacy_html.UI_2159_ORIGINAL_SHA256,
 }
 
 NATIVE_DIALOG = 'PowerBISaveDialog.dll'
@@ -75,6 +82,21 @@ def build_window_frame(helpers, wine, env, log, key):
 
 def self_token(source):
     data = bytearray(source)
+    if hashlib.sha256(source).hexdigest() == CURRENT_ORIGINALS['msmdsrv.exe']:
+        offset = 1161876
+        expected = bytes.fromhex('ff 15 6e 5f 2b 02 48 8b c8 ff 15 4d 6b 2b 02')
+        name_offset = 48001650
+        if data[offset:offset + len(expected)] != expected:
+            raise Error('Unexpected 2.159 impersonation call site')
+        name = b'ImpersonateAnonymousToken\0'
+        if data[name_offset:name_offset + len(name)] != name:
+            raise Error('Unexpected 2.159 impersonation import')
+        data[offset:offset + 9] = bytes.fromhex('b9 02 00 00 00 90 90 90 90')
+        data[name_offset:name_offset + len(name)] = b'ImpersonateSelf\0'.ljust(len(name), b'\0')
+        result = bytes(data)
+        if hashlib.sha256(result).hexdigest() != '1ef50a9a52da6693ebeaa439da01ca7b2142247b340e90c4eaea579243621d35':
+            raise Error('Unexpected 2.159 impersonation patch output')
+        return result
     if data[0x16f0c4:0x16f0cd] != bytes.fromhex('ff 15 3e 69 2f 02 48 8b c8'):
         raise Error('Unexpected impersonation call site')
     if data[0x16f0cd:0x16f0d3] != bytes.fromhex('ff 15 0d 75 2f 02'):
@@ -93,8 +115,13 @@ def install(prefix, runtime, log):
     env['WINEDLLOVERRIDES'] = 'winemenubuilder.exe=d;msxml3,msxml6,msxml6r=b'
     backups = prefix / 'powerbi-linux-originals'
     backups.mkdir(exist_ok=True)
+    desktop_source = backups / 'Microsoft.PowerBI.Client.Windows.dll'
+    if not desktop_source.exists():
+        desktop_source = bin_dir / desktop_source.name
+    current = digest(desktop_source) == CURRENT_ORIGINALS[desktop_source.name]
+    originals = CURRENT_ORIGINALS if current else ORIGINALS
     # Validate every input before replacing any file.
-    for name, expected in ORIGINALS.items():
+    for name, expected in originals.items():
         backup = backups / name
         check_digest(backup if backup.exists() else bin_dir / name, expected)
     # Resolve the guarded resource recipe before replacing any application file.
@@ -108,13 +135,14 @@ def install(prefix, runtime, log):
     windows_source = backups / windows_name
     if not windows_source.exists():
         windows_source = bin_dir / windows_name
-    patched_windows = signin.patch_windows(windows_source.read_bytes())
+    patched_windows = (signin.patch_windows(windows_source.read_bytes(), CURRENT_ORIGINALS[windows_name])
+                       if current else signin.patch_windows(windows_source.read_bytes()))
     picker_name = text_pickers.DOCUMENT
     picker_source = backups / picker_name
     if not picker_source.exists():
         picker_source = bin_dir / picker_name
-    patched_picker = text_pickers.patch_document(picker_source.read_bytes())
-    for name in (*ORIGINALS, picker_name):
+    patched_picker = tooltips.patch_document(text_pickers.patch_document(picker_source.read_bytes()))
+    for name in (*originals, picker_name):
         backup = backups / name
         if not backup.exists():
             backup.parent.mkdir(parents=True, exist_ok=True)
@@ -191,5 +219,5 @@ def install(prefix, runtime, log):
     finally:
         key.unlink(missing_ok=True)
         windows_input.unlink(missing_ok=True)
-    return {name: digest(bin_dir/name) for name in (*ORIGINALS, 'WinRTStubs.dll',
+    return {name: digest(bin_dir/name) for name in (*originals, 'WinRTStubs.dll',
                                                    'PowerBIDiagnostics.dll', 'PowerBICompositionManager.dll', NATIVE_DIALOG, CACHE_COMPAT, WINDOW_FRAME, picker_name)}

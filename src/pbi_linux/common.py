@@ -49,6 +49,12 @@ def atomic_json(path, value):
         Path(name).unlink(missing_ok=True)
 
 
+def installation_token(data):
+    data = Path(data).resolve()
+    default = (Path.home() / '.local/share/powerbi-linux').resolve()
+    return '' if data == default else hashlib.sha256(str(data).encode()).hexdigest()[:16]
+
+
 class Paths:
     def __init__(self):
         home = Path.home()
@@ -56,7 +62,9 @@ class Paths:
         self.config = Path(os.environ.get('XDG_CONFIG_HOME', home / '.config')) / 'powerbi-linux'
         self.cache = Path(os.environ.get('XDG_CACHE_HOME', home / '.cache')) / 'powerbi-linux'
         self.state = Path(os.environ.get('XDG_STATE_HOME', home / '.local/state')) / 'powerbi-linux'
-        self.session = Path(os.environ.get('XDG_RUNTIME_DIR', self.state / 'session')) / 'powerbi-linux'
+        token = installation_token(self.data)
+        session_name = 'powerbi-linux' + ('-' + token if token else '')
+        self.session = Path(os.environ.get('XDG_RUNTIME_DIR', self.state / 'session')) / session_name
         for base in (self.data, self.config, self.cache, self.state, self.session):
             if not base.is_absolute():
                 raise Error('XDG directories must be absolute')

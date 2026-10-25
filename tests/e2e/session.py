@@ -30,6 +30,10 @@ def main():
     p.add_argument('--probes',type=Path,required=True)
     p.add_argument('--output',type=Path,required=True)
     a=p.parse_args()
+    a.probes=a.probes.resolve()
+    missing=[name for name in ('ui-probe.exe','adomd-probe.exe','refresh-probe.exe') if not (a.probes/name).is_file()]
+    if missing:
+        p.error('Compile the required native probes before starting a session: '+', '.join(missing))
     if not 90<=a.seconds<=10800:
         p.error('seconds must be 90..10800')
     from websocket import create_connection
@@ -41,9 +45,16 @@ def main():
     for var in ('APPDOMAIN_MANAGER_ASM','APPDOMAIN_MANAGER_TYPE'):
         env.pop(var,None)
     def probe(name,*args,label=None):
-        r=subprocess.run([runtime/'bin/wine',a.probes/(name+'.exe'),*map(str,args)],env=env,
-                         text=True,capture_output=True,timeout=60)
-        (a.output/((label or name)+'.log')).write_text(r.stdout+'\n'+r.stderr)
+        log=a.output/((label or name)+'.log')
+        try:
+            r=subprocess.run([runtime/'bin/wine',a.probes/(name+'.exe'),*map(str,args)],env=env,
+                             text=True,capture_output=True,timeout=60)
+        except subprocess.TimeoutExpired as exc:
+            def text(value):
+                return value.decode(errors='replace') if isinstance(value,bytes) else value or ''
+            log.write_text(text(exc.stdout)+'\n'+text(exc.stderr))
+            raise Error(name+' timed out; inspect its log, no success inferred') from exc
+        log.write_text(r.stdout+'\n'+r.stderr)
         if r.returncode:
             raise Error(name+' failed; no success inferred')
         return r.stdout
@@ -138,6 +149,7 @@ def main():
                     answer=cdp(page,'Runtime.evaluate',{'expression':expression,'returnByValue':True})
                     result['ui_refresh_requested']=answer.get('result',{}).get('value')=='requested'
                     if result['ui_refresh_requested']:
+                        # Time from launch until the UI request, not refresh duration.
                         result['ui_refresh_seconds']=round(time.time()-started_wall,2)
                 except Exception as exc:
                     result.setdefault('ui_refresh_retries',[]).append(str(exc))

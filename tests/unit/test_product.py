@@ -173,6 +173,9 @@ class ProductTests(unittest.TestCase):
             if 'env' in kwargs:
                 self.assertIn('winemenubuilder.exe=d',kwargs['env']['WINEDLLOVERRIDES'])
             commands.append([str(x) for x in command])
+            if any(commands[-1][1].endswith('/' + name) for name in ('dotnet40.exe', 'dotnet48.exe', 'powerbi.exe')):
+                self.assertIn('may take several minutes without output', output.call_args.args[0])
+                self.assertTrue(output.call_args.kwargs.get('flush'))
             if 'wineboot.exe' in commands[-1]:
                 self.assertTrue((Path(kwargs['env']['WINEPREFIX'])/'drive_c/powerbi-linux-inputs').is_dir())
             if interrupted and commands[-1][1].endswith('/dotnet40.exe'):
@@ -185,7 +188,7 @@ class ProductTests(unittest.TestCase):
              patch.object(provision,'run',side_effect=stage), patch.object(provision,'stop_server'), \
              patch.object(provision,'configure',return_value={}), \
              patch.object(provision,'verified_webview',return_value=edge), patch.object(pe_cache,'prepare'), \
-             patch.object(desktop,'integrate') as integration:
+             patch.object(desktop,'integrate') as integration, patch('builtins.print') as output:
             with self.assertRaises(common.Error):
                 provision.setup(self.paths,args)
             self.assertFalse(self.paths.active.exists())
@@ -358,13 +361,14 @@ class ProductTests(unittest.TestCase):
             read_text = Path.read_text
             def platform_text(file, *args, **kwargs):
                 return 'ID=fedora\n' if file == Path('/etc/os-release') else read_text(file, *args, **kwargs)
-            with patch.dict(os.environ,{'WAYLAND_DISPLAY':str(display)}), patch.object(launch.shutil,'which',return_value='/usr/bin/tool'), \
+            with patch.dict(os.environ,{'WAYLAND_DISPLAY':str(display), 'XDG_CURRENT_DESKTOP':'GNOME'}), patch.object(launch.shutil,'which',return_value='/usr/bin/tool'), \
                  patch.object(launch,'run',side_effect=run), patch.object(launch,'request',return_value={'ok':True}), \
                  patch.object(Path,'read_text',platform_text):
                 launch.open_file(self.paths,None)
         cmd=commands[0]
         self.assertEqual(cmd[-3:],['-m','pbi_linux','_session'])
         self.assertTrue(any(x.startswith('--setenv=PYTHONPATH=') for x in cmd))
+        self.assertIn('--setenv=XDG_CURRENT_DESKTOP=GNOME',cmd)
         self.assertIn('MemoryMax=infinity',cmd)
         self.assertIn('MemorySwapMax=infinity',cmd)
         self.assertFalse(any(x.startswith('CPUQuota=') for x in cmd))

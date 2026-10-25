@@ -3,10 +3,13 @@
 import os
 import re
 from pathlib import Path, PurePosixPath
-import shutil
+import http.client
 import tarfile
 import tempfile
+import sys
+import time
 import urllib.request
+import urllib.error
 from .common import Error, check_digest, read_json, digest
 
 
@@ -25,9 +28,25 @@ def download(url, expected, cache):
         with os.fdopen(fd, 'wb') as out, urllib.request.urlopen(url, timeout=60) as response:
             if not response.url.startswith('https://'):
                 raise Error('Download redirected to an insecure URL')
-            shutil.copyfileobj(response, out)
+            size = response.headers.get('Content-Length', '')
+            total = int(size) if size.isdigit() else None
+            received, last = 0, time.monotonic()
+            while block := response.read(1024 * 1024):
+                out.write(block)
+                received += len(block)
+                now = time.monotonic()
+                if now - last >= 2:
+                    detail = f'{received / 1024**2:.0f} MiB'
+                    if total:
+                        detail += f' / {total / 1024**2:.0f} MiB'
+                    print('Downloading: ' + detail, file=sys.stderr, flush=True)
+                    last = now
+            if total is not None and received != total:
+                raise Error('Incomplete download; rerun setup to retry')
         check_digest(name, expected)
         os.replace(name, target)
+    except (urllib.error.URLError, TimeoutError, ConnectionError, http.client.HTTPException) as exc:
+        raise Error('Download failed; check your connection and rerun setup. Verified downloads are reused') from exc
     finally:
         Path(name).unlink(missing_ok=True)
     return target

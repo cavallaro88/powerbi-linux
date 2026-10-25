@@ -8,7 +8,7 @@ import subprocess
 import time
 import uuid
 import zipfile
-from . import assets, patches, pe_cache, webview, resources
+from . import assets, patches, pe_cache, webview, resources, recipes
 from .common import Error, atomic_json, busy, check_digest, digest, read_json, run, wine_env
 
 BIN = 'drive_c/Program Files/Microsoft Power BI Desktop/bin'
@@ -113,8 +113,11 @@ def configure(prefix, runtime, paths, log):
              'PBIDesktop.exe', 'REG_SZ', resources.browser_flags(settings(paths)), log)
     browser=webview_config(runtime)
     if browser.get('distribution')=='fixed':
-        payload=assets.download(browser['url'],browser['sha256'],paths.cache/'downloads')
-        source=webview.install(prefix,payload,browser,log)
+        try:
+            source=webview.verify(webview.folder(prefix,browser),browser)
+        except (Error, OSError):
+            payload=assets.download(browser['url'],browser['sha256'],paths.cache/'downloads')
+            source=webview.install(prefix,payload,browser,log)
         fixed_path='C:\\powerbi-linux-webview\\'+source.parent.name
         registry(wine,env,r'HKLM\Software\Policies\Microsoft\Edge\WebView2\BrowserExecutableFolder',
                  '*','REG_SZ',fixed_path,log)
@@ -145,19 +148,34 @@ def configure(prefix, runtime, paths, log):
     return patches.install(prefix, runtime, log)
 
 
-def activate(paths, prefix, runtime, hashes, runtime_sha):
+def activate(paths, prefix, runtime, hashes, runtime_sha, powerbi_version=None):
+    manifest = read_json(Path(runtime) / 'runtime.json')
+    version = powerbi_version or manifest.get('sources', {}).get('powerbi', {}).get('version', '2.158.1177.0')
     if paths.active.exists():
         atomic_json(paths.previous, active(paths))
     atomic_json(paths.active, {'schema':1, 'prefix':str(prefix), 'runtime':str(runtime),
                               'runtime_sha256':runtime_sha, 'patches':hashes,
-                              'installed_at':time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())})
+                              'installed_at':time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()),
+                              'powerbi_version':version, 'recipe_id':'powerbi-' + version})
     atomic_json(paths.settings, settings(paths))
+
+
+def require_recipe(metadata, runtime):
+    """Refuse a foreign Desktop recipe before copying or changing a profile."""
+    manifest = read_json(Path(runtime) / 'runtime.json')
+    recorded = metadata.get('powerbi_version', manifest.get('sources', {}).get('powerbi', {}).get('version', '2.158.1177.0'))
+    recipes.powerbi(recorded)
+    if metadata.get('recipe_id', 'powerbi-' + recorded) != 'powerbi-' + recorded:
+        raise Error('Unsupported installation recipe; use the matching project release')
 
 
 def setup(paths, args):
     if not args.accept_license:
-        raise Error('Read docs/legal.md and Microsoft installer terms; then supply --accept-license')
+        raise Error('Read docs/reference/legal.md and Microsoft installer terms; then supply --accept-license')
     config = read_json(resource_root()/'runtime/sources.lock.json')
+    selected_version = getattr(args, 'powerbi_version', config['powerbi']['version'])
+    if selected_version != config['powerbi']['version']:
+        config['powerbi'] = recipes.powerbi(selected_version)
     # Validate user-supplied files BEFORE creating an installation or running Wine.
     check_digest(args.installer, config['powerbi']['sha256'])
     browser=config['webview2']
@@ -177,6 +195,7 @@ def setup(paths, args):
         if paths.active.exists():
             raise Error('Already installed; use update or repair')
         runtime = install_runtime(paths, args.runtime, args.runtime_sha256)
+        require_recipe({}, runtime)
         if webview_config(runtime)!=browser:
             raise Error('Runtime and CLI WebView2 recipes differ; use matching release inputs')
         # A stable pending prefix makes interrupted setup resumable at stage boundaries.
@@ -212,11 +231,17 @@ def setup(paths, args):
                   ('gecko-x86_64', [wine,'msiexec.exe','/i','Z:'+str(gecko['x86_64']).replace('/','\\'),'/qn'], env),
                   ('powerbi', [wine, inputs/'powerbi.exe', '-quiet', '-norestart', 'ACCEPT_EULA=1',
                                'DISABLE_UPDATE_NOTIFICATION=1'], env)]
+        messages = {'wineboot':'Preparing your private installation...',
+                    'dotnet40':'Installing Microsoft .NET prerequisites (may take several minutes without output; please wait)...',
+                    'dotnet48':'Installing Microsoft .NET Framework 4.8 (may take several minutes without output; please wait)...',
+                    'gecko-x86':'Preparing embedded HTML support...',
+                    'powerbi':'Installing Microsoft Power BI Desktop (may take several minutes without output; please wait)...'}
         try:
             for name, command, stage_env in stages:
                 if name in state['stages']:
                     continue
-                print('Installing ' + name + '...', flush=True)
+                if name in messages:
+                    print(messages[name], flush=True)
                 # Windows ERROR_SUCCESS_REBOOT_REQUIRED (3010) arrives through
                 # Wine's Unix exit status as 194. Only installers may return it.
                 codes=(0,194) if name in ('dotnet40','dotnet48','powerbi') else (0,)
@@ -231,19 +256,24 @@ def setup(paths, args):
             cached=downloads/browser['sha256']
             if not cached.exists():
                 run(['cp','--reflink=auto',payload,cached],timeout=120)
+            print('Preparing WebView2, fonts and compatibility fixes...', flush=True)
             hashes = configure(prefix, runtime, paths, log)
             stop_server(runtime, env, log)
             source = verified_webview(prefix,runtime)
+            print('Finishing installation...', flush=True)
             pe_cache.prepare(source, paths.cache/'pe'/generation)
             # Completed setup can retain verified downloads outside the prefix;
             # installer copies are unnecessary in every future repair snapshot.
             shutil.rmtree(inputs)
-            activate(paths, prefix, runtime, hashes, args.runtime_sha256)
+            activate(paths, prefix, runtime, hashes, args.runtime_sha256, config['powerbi']['version'])
         finally:
             stop_server(runtime, env, log)
         from .desktop import integrate
         integrate(paths, args.make_default)
-    print('Power BI installed. Run pbi-linux open or use the desktop menu.')
+    print('Power BI installed. Open Power BI Desktop (Wine) from the application menu,\n'
+          'or run pbi-linux open. For reports, use Open With in your file manager.\n'
+          'Keep backups; review known issues before using important reports.\n'
+          'For diagnostics, run pbi-linux doctor.')
 
 
 def maintain(paths, args):
@@ -251,9 +281,11 @@ def maintain(paths, args):
         idle(paths)
         old = active(paths)
         runtime = Path(old['runtime'])
+        require_recipe(old, runtime)
         runtime_sha = old['runtime_sha256']
         if args.command == 'update':
             runtime = install_runtime(paths, args.runtime, args.runtime_sha256)
+            require_recipe(old, runtime)
             runtime_sha = args.runtime_sha256
         prefix = paths.data/'profiles'/('snapshot-' + uuid.uuid4().hex[:16])
         snapshot(Path(old['prefix']), prefix)
@@ -264,7 +296,9 @@ def maintain(paths, args):
             hashes = configure(prefix, runtime, paths, log)
             stop_server(runtime, env, log)
             pe_cache.prepare(verified_webview(prefix,runtime), paths.cache/'pe'/prefix.name)
-            activate(paths, prefix, runtime, hashes, runtime_sha)
+            old_manifest = read_json(Path(old['runtime']) / 'runtime.json')
+            version = old.get('powerbi_version', old_manifest.get('sources', {}).get('powerbi', {}).get('version', '2.158.1177.0'))
+            activate(paths, prefix, runtime, hashes, runtime_sha, version)
         finally:
             stop_server(runtime, env, log)
         from .desktop import integrate

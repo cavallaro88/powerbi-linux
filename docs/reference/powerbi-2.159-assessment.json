@@ -1,0 +1,152 @@
+{
+  "powerbi_version": "2.159.883.0",
+  "installer_sha256": "5412131d1f5d535e42358cb6d496703c3c0cdf9267779ac9220171f58ce20cdd",
+  "source": "https://download.microsoft.com/download/8/8/0/880bca75-79dd-466a-927d-1abf1f5454b0/PBIDesktopSetup_x64.exe",
+  "scope": "Guarded recipe port and scoped synthetic native tests; not release certification",
+  "files": {
+    "Microsoft.PowerBI.Client.Shared.dll": {
+      "sha256": "b374f445156cea1caf13eabbfc0b03ee8d2179a75039713f0dfc9cad2535c10a",
+      "expected_legacy_sha256": "1dc130d913b92f315b81aa5162e8fa74e8a0279742f988561680111d5189ff78",
+      "matches_legacy": false
+    },
+    "Microsoft.PowerBI.Client.Windows.dll": {
+      "sha256": "5c49618814888815ec3649ad2bf7dcf0209de1b3722d30372c126b3ebaf79938",
+      "expected_legacy_sha256": "5284e48755ca5d0911f8af46650d1aa12a36389f008e6005ac5f188071808cd4",
+      "matches_legacy": false,
+      "recipe_result": "Unsupported Desktop assembly for email dialog patch"
+    },
+    "Microsoft.Mashup.Client.UI.dll": {
+      "sha256": "15a88f90544f1a2c7f002f0de05c6aed65dcfcda1074a0ab847f3623e55ecb3d",
+      "expected_legacy_sha256": "28829058269cd42b5f731db43f94bcf34baf50d1cdf1ad624c0696468e3fadb7",
+      "matches_legacy": false,
+      "recipe_result": "Unsupported legacy HTML assembly; no patch produced"
+    }
+  },
+  "date": "2026-10-20",
+  "status": "ported-scoped-native-acceptance-passed-release-pending",
+  "runtime_certified": false,
+  "application_ui_tested": true,
+  "port": {
+    "html_patched_sha256": "a2c3db990ed08e371356aec9055d9d46026978413472512873385593917e6c94",
+    "identical_html_resources": 5,
+    "resource_offset_shift": 256,
+    "email_resource_unchanged": true,
+    "text_picker_document_unchanged": true,
+    "offline_recipe_check": {
+      "schema": 1,
+      "date": "2026-10-19T23:17:32.079571+00:00",
+      "powerbi_version": "2.159.883.0",
+      "scope": "Offline original-file/resource guards only; not native UI or release certification",
+      "status": "passed",
+      "files": {
+        "Microsoft.Mashup.Client.UI.dll": {
+          "original_sha256": "15a88f90544f1a2c7f002f0de05c6aed65dcfcda1074a0ab847f3623e55ecb3d",
+          "patched_sha256": "a2c3db990ed08e371356aec9055d9d46026978413472512873385593917e6c94",
+          "length_preserved": true
+        },
+        "Microsoft.PowerBI.Client.Windows.dll": {
+          "original_sha256": "5c49618814888815ec3649ad2bf7dcf0209de1b3722d30372c126b3ebaf79938",
+          "patched_sha256": "78934b6bbf0be50bee1ee32144c70c3625910b8ae1a561db81bf153c2780115a",
+          "length_preserved": true
+        },
+        "msmdsrv.exe": {
+          "original_sha256": "90dd9882dd0ef22c1a49261099021798d1edf4817afff6b336322e7651659495",
+          "patched_sha256": "1ef50a9a52da6693ebeaa439da01ca7b2142247b340e90c4eaea579243621d35",
+          "length_preserved": true
+        },
+        "WebView2Resources/minerva/reportView.html": {
+          "original_sha256": "0a03d24a6967d3026e8e910399cddd51ef668efd8f9b700a874f55f63059c41a",
+          "patched_sha256": "1d45d1ed9faf3253e1013941dc3be9bc51ff5415f8994e77e9e873c9671ae708"
+        }
+      }
+    },
+    "offline_native_patcher_pipeline": "passed",
+    "legacy_2158_offline_regression": "passed",
+    "isolated_2159_install": "passed",
+    "isolated_2159_doctor": "passed",
+    "native_ui_observation": "Synthetic table rendered 120, 100, 80 and total 300; native frame captures agreed before and after Save",
+    "full_runtime_build": "passed; complete archive packaged",
+    "runtime_release_certification": "pending"
+  },
+  "native_preliminary": {
+    "runtime_sha256": "5c1b78221ca28234e2e6dacf63c20c6d7ec7940a09470371b8378714b05a4bb0",
+    "installation": "Sanitized copy-on-write upgrade over a read-only existing profile; not clean installation",
+    "model_tables": 3,
+    "expected_sum": 300,
+    "dax_total_verified": true,
+    "fact_rows_verified": true,
+    "relationship_filter_verified": true,
+    "ui_refresh_seconds": 26.8,
+    "saved_cache_observed": true,
+    "native_frames_reviewed": true,
+    "normal_gio_reopen": true,
+    "spaces_and_accents_in_project_path": true,
+    "normal_mode_without_diagnostics": true,
+    "normal_reopen_memory_peak_bytes": 7048622080,
+    "runtime_015_certified": false,
+    "csv_import_sum_verified": true,
+    "csv_visual_reviewed": true,
+    "csv_pbix_save": true,
+    "normal_gio_pbix_reopen": true,
+    "normal_gio_pbir_open": true,
+    "two_documents_coexist": true,
+    "component_checks": "9 native checks passed: doctor, frame, cursor, Store, cache, legacy HTML, int64, sign-in settings, save dialog",
+    "ui_refresh_metric": "Seconds from launch until request, not refresh duration"
+  },
+  "runtime_015_build": {
+    "status": "full-source-build-packaged",
+    "version": "0.1.5",
+    "runtime_sha256": "291bb52fca8c27f2446ec4a05aaf982bb43d8c13e6b3787f32a1328ad890f05a",
+    "builder_image_id": "sha256:d50ed5eb8eb25584011520b0bfb00ecd7dc0cd54fe4ede65f62728e698ca9ed5",
+    "build_input_sha256": "16217551d31fb7bd962b567d827dc58bf61961e199d8ff03b343dfe16a106854",
+    "active_installation_modified": false,
+    "certified": false
+  },
+  "native_clean_install": {
+    "runtime_sha256": "291bb52fca8c27f2446ec4a05aaf982bb43d8c13e6b3787f32a1328ad890f05a",
+    "empty_installation_at_start": true,
+    "official_installer": true,
+    "private_download_cache_reused": true,
+    "interrupt_sent": true,
+    "interrupted_exit": -2,
+    "active_after_interrupt": false,
+    "first_attempt_seconds": 34.09,
+    "saved_stages_after_interrupt": [
+      [
+        "wineboot",
+        "wayland",
+        "win7"
+      ]
+    ],
+    "resumed_exit": 0,
+    "total_seconds": 375.97,
+    "active_after_resume": true,
+    "scope": "Runtime 0.1.5, empty managed prefix, official installers and reused verified prerequisite cache; no existing profile copied"
+  },
+  "native_runtime_015": {
+    "runtime_sha256": "291bb52fca8c27f2446ec4a05aaf982bb43d8c13e6b3787f32a1328ad890f05a",
+    "elapsed_seconds": 192.24,
+    "model_listing": "DB 5ab611d8-9d73-46e6-907b-2d3e0e91dc49 | 5ab611d8-9d73-46e6-907b-2d3e0e91dc49 | tables=158",
+    "model_total_verified": true,
+    "fact_rows_verified": true,
+    "relationship_filter_verified": true,
+    "save_observed": true,
+    "ui_refresh_requested": true,
+    "ui_refresh_seconds": 21.95,
+    "gpu_restart_events": [],
+    "doctor_passed": true,
+    "native_frames_reviewed": true,
+    "csv_import_visual_save": true,
+    "normal_gio_pbix_reopen": true,
+    "normal_gio_pbir_open": true,
+    "normal_gio_pbip_reopen": true,
+    "spaces_and_accents_in_project_path": true,
+    "normal_mode_without_diagnostics": true,
+    "soak_2h": "not run; required before release certification",
+    "ui_refresh_metric": "Seconds from launch until request, not refresh duration",
+    "component_checks": "all 9 native checks passed",
+    "repair_runtime_update_rollback": "passed: 0.1.5 to 0.1.3 to 0.1.5; Power BI 2.159 preserved",
+    "uninstall_associations": "passed; default removal preserves profile, purge removes managed data and preserves external synthetic PBIX",
+    "original_installation_modified": false
+  }
+}

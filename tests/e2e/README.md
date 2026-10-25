@@ -6,7 +6,7 @@ Use a separate Fedora user or isolated XDG directories with a disposable install
 window, checking HTML loading, JavaScript and a native callback. It does not
 submit credentials or change Desktop. Full credential dialog validation must
 also check first-show sizing, visible inputs and native Cancel with a disposable
-source. See `docs/legacy-html.md` for the registration and JavaScript recipe.
+source. See `docs/reference/legacy-html.md` for the registration and JavaScript recipe.
 
 `refresh-probe.cs` and `adomd-probe.cs` retain the corrected timeout, XMLA error propagation, DAX and partition-commit checks from the investigation. External TMSL processing remains a diagnostic test, not supported Desktop integration. `mysql-probe.cs` is optional and takes credentials through environment, not a committed `.env`.
 
@@ -41,7 +41,7 @@ This direct entry passed in the clean prefix with the current runtime. In the ea
 Optional provider checks are available through `python3 tools/test-mysql-provider.py`.
 It compiles `mysql-provider-probe.cs`, loads the original registered factory and
 all 12 dependency assemblies, and normally makes no network request. Its optional
-loopback mode uses only the fixed synthetic fixture in `docs/connectors.md`.
+loopback mode uses only the fixed synthetic fixture in `docs/user/connectors.md`.
 Desktop UI refresh/source enumeration and production-mode save/reopen are separate
 checks. The recorded MySQL scenario used a disposable local MariaDB server, not
 customer connection settings or credentials. The source list regression must
@@ -51,5 +51,5 @@ layout failure. The general OneLake chooser has not been revalidated after the
 later Microsoft browser sign-in correction.
 
 The repeatable check runner and reusable 22-tab Options audit are described in
-[proactive QA](../../docs/automated-qa.md). Native suites require a distinct QA
+[proactive QA](../../docs/development/automated-qa.md). Native suites require a distinct QA
 installation; missing environments are blocked rather than passed.

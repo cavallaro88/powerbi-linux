@@ -7,7 +7,7 @@ from pathlib import Path
 import shutil
 import subprocess
 import sys
-from . import __version__, assets, launch, provision, desktop, resources, legacy_html, signin, connectors, patches, text_pickers
+from . import __version__, assets, launch, provision, desktop, resources, legacy_html, signin, connectors, patches, text_pickers, tooltips, onboarding, platforms
 from .common import Error, Paths, busy, read_json, check_digest, atomic_json, digest
 
 
@@ -16,8 +16,7 @@ def doctor(paths):
     components = {}
     def add(name, ok, detail):
         checks.append({'name':name, 'ok':bool(ok), 'detail':detail})
-    release = Path('/etc/os-release').read_text()
-    add('fedora', '\nID=fedora\n' in '\n'+release, 'Fedora 44 is the tested target; other Fedora releases are experimental')
+    add('distribution', *platforms.status())
     add('architecture', os.uname().machine == 'x86_64', os.uname().machine)
     display = os.environ.get('WAYLAND_DISPLAY', '')
     socket = Path(display) if display.startswith('/') else Path(os.environ.get('XDG_RUNTIME_DIR', '/nonexistent'))/display
@@ -29,7 +28,7 @@ def doctor(paths):
             ctypes.CDLL(library)
             add(library,True,'Host library is available')
         except OSError:
-            add(library,False,'Install RPM dependencies with DNF')
+            add(library,False,'Install the project package with DNF or APT to resolve dependencies')
     bus = subprocess.run(['systemctl','--user','show-environment'], capture_output=True, timeout=5)
     add('user-service-manager', bus.returncode == 0, 'A working systemd user session is required')
     add('installation', paths.active.exists(), 'Run setup to create a managed installation')
@@ -37,7 +36,9 @@ def doctor(paths):
         try:
             installed = provision.active(paths)
             manifest = assets.verify_runtime(installed['runtime'])
-            components = {'runtime':manifest.get('version','unknown'), 'powerbi':'2.158.1177.0'}
+            components = {'runtime': manifest.get('version', 'unknown'),
+                          'powerbi': installed.get('powerbi_version', manifest.get('sources', {}).get('powerbi', {}).get('version', 'unknown'))}
+            provision.require_recipe(installed, installed['runtime'])
             for name in ('wine','dxvk'):
                 components[name] = manifest.get('sources',{}).get(name,{})
             components['memory'] = provision.settings(paths)
@@ -58,11 +59,11 @@ def doctor(paths):
                 issues = []
                 if missing:
                     issues.append('Missing registry entries: ' + ', '.join(missing))
-                if installed['patches'].get('Microsoft.Mashup.Client.UI.dll') != legacy_html.UI_PATCHED_SHA256:
+                if installed['patches'].get('Microsoft.Mashup.Client.UI.dll') != legacy_html.patched_hash(components['powerbi']):
                     issues.append('Legacy HTML assembly patch is missing or outdated')
                 add('legacy-html', not issues,
                     '; '.join(issues) + '; close Desktop and run pbi-linux repair' if issues else
-                    'Wine HTML registrations, credential dialog, source list, permissions serializer and Options layout patches are present')
+                    'Wine HTML registrations, credential dialog, source list, permissions serializer and Options layout/selection/native resize patches are present')
             except (Error, OSError, ValueError) as exc:
                 add('legacy-html', False, str(exc))
             try:
@@ -82,14 +83,18 @@ def doctor(paths):
             except (Error, OSError, ValueError) as exc:
                 add('sign-in-dialog', False, str(exc))
             try:
-                picker_patched = (installed['patches'].get(text_pickers.DOCUMENT) == text_pickers.PATCHED_SHA256
+                picker_patched = (installed['patches'].get(text_pickers.DOCUMENT) == tooltips.PATCHED_SHA256
                                   and digest(Path(installed['prefix']) / provision.BIN / text_pickers.DOCUMENT)
-                                  == text_pickers.PATCHED_SHA256)
+                                  == tooltips.PATCHED_SHA256)
                 add('text-pickers', picker_patched,
                     'In-page font and size selectors are present' if picker_patched else
                     'Text picker correction is missing; close Desktop and run repair')
+                add('tooltips', picker_patched,
+                    'In-page HTML/SVG title tooltips are present; rich data tooltips retain original handlers' if picker_patched else
+                    'Tooltip correction is missing; close Desktop and run repair')
             except (Error, OSError, ValueError) as exc:
                 add('text-pickers', False, str(exc))
+                add('tooltips', False, str(exc))
         except (Error, OSError, KeyError) as exc:
             add('integrity', False, str(exc))
     return {'schema':1, 'version':__version__, 'ok':all(c['ok'] for c in checks), 'checks':checks, 'components':components,
@@ -99,12 +104,14 @@ def doctor(paths):
 
 
 def parser():
-    p = argparse.ArgumentParser(prog='pbi-linux', description='Community Power BI compatibility tools for Fedora')
+    p = argparse.ArgumentParser(prog='pbi-linux', description='Community Power BI compatibility tools for Linux')
     p.add_argument('--version', action='version', version=__version__)
     sub = p.add_subparsers(dest='command', required=True)
-    setup = sub.add_parser('setup', help='Create a per-user installation from verified inputs')
+    setup = sub.add_parser('setup', help='Guide installation using validated release downloads or local files')
     for name in ('installer','runtime','runtime-sha256'):
-        setup.add_argument('--'+name, required=True)
+        setup.add_argument('--'+name, help={'installer':'Optional official Power BI x64 EXE matching the validated version',
+                           'runtime':'Optional local project runtime archive (requires --runtime-sha256)',
+                           'runtime-sha256':'SHA-256 of the supplied runtime archive'}[name])
     setup.add_argument('--webview-runtime',help='Optional offline fixed-version CAB matching the release lock')
     setup.add_argument('--dotnet-installer')
     setup.add_argument('--dotnet40-installer')
@@ -152,7 +159,7 @@ def main(argv=None):
     paths = Paths()
     try:
         if args.command == 'setup':
-            provision.setup(paths, args)
+            provision.setup(paths, onboarding.prepare(paths, args))
         elif args.command == 'open':
             launch.open_file(paths, args.file, diagnostics=args.diagnostics)
         elif args.command == 'doctor':
@@ -201,6 +208,10 @@ def main(argv=None):
             print('Desktop integration removed.' + (' Managed data deleted.' if args.purge else ' Managed data preserved.'))
         elif args.command == '_session':
             launch.broker(paths, diagnostics=args.diagnostics)
+    except KeyboardInterrupt:
+        message = 'Setup interrupted. Run setup again with the same inputs to resume completed stages.' if args.command == 'setup' else 'Operation interrupted.'
+        print('pbi-linux: ' + message, file=sys.stderr)
+        return 130
     except (Error, OSError, ValueError, KeyError, subprocess.SubprocessError) as exc:
         message = str(exc)
         print('pbi-linux: ' + message, file=sys.stderr)

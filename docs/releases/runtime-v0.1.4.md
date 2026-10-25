@@ -6,9 +6,9 @@ project changelog; it does not claim an original GitHub publication on that date
 ## Changelog
 
 - Accept normal Wayland compositor size hints for resizable windows after initial configure. PaperWM resizes without maximized/resizing/tiled flags were previously discarded.
-- Native baseline/candidate tests confirm actual client resizing and preserve the fixed-size control. Empty Desktop on the normal launcher follows column height, increase-width actions and compositor Super+minus. The user subsequently confirmed PaperWM resizing works perfectly; automated Super+plus injection remains separate coverage. See [scope and pending checks](https://github.com/cavallaro88/powerbi-linux/blob/main/docs/paperwm.md).
+- Native baseline/candidate tests confirm actual client resizing and preserve the fixed-size control. Empty Desktop on the normal launcher follows column height, increase-width actions and compositor Super+minus. PaperWM resizing was subsequently confirmed working after activation; automated Super+plus injection remains separate coverage. See [scope and pending checks](https://github.com/cavallaro88/powerbi-linux/blob/main/docs/reference/paperwm.md).
 - Activate a private incremental single-driver candidate locally, retaining runtime 0.1.3 and the existing profile/settings. Add the reviewed patch to the 0.1.4 source recipe; full rebuild and broader release gates remain pending.
-- Record the separate acceptance plan for the three still-inactive Neutron candidates in [runtime testing](https://github.com/cavallaro88/powerbi-linux/blob/main/docs/runtime-testing.md).
+- Record the separate acceptance plan for the three still-inactive Neutron candidates in [runtime testing](https://github.com/cavallaro88/powerbi-linux/blob/main/docs/development/runtime-testing.md).
 - Diagnose the visible white frame as 4-pixel non-client left/right/bottom insets, with content filling the client area. Record the remaining cosmetic compatibility work without changing window styles or deploying an untested frame correction.
 
 The subsequent RPM 12 frame correction handles the visible side/bottom gutters independently.

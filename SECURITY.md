@@ -1,6 +1,6 @@
 # Security
 
-Do not report credentials, private datasets or exploitable issues in a public issue. Until the repository owner has configured a private security advisory channel, contact the owner privately through an established channel.
+Do not report credentials, private datasets or exploitable issues in a public issue. Report security issues privately through this repository's security advisory channel.
 
 Use verified release checksums and authorized Microsoft installers. A checksum supplied by the user checks integrity, not publisher authenticity. Wine runs with the user's filesystem permissions and is not a sandbox. Production launch disables the project's diagnostic interpreter and remote-debugging flags.
 

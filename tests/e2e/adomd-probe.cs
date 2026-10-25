@@ -22,10 +22,16 @@ class AdomdProbe
     {
         try
         {
+            var clientAssembly = typeof(Microsoft.AnalysisServices.AdomdClient.AdomdConnection).Assembly;
+            Console.WriteLine("ADOMD CLIENT: " + clientAssembly.FullName);
+            Console.WriteLine("ADOMD FROM APP DIRECTORY: " + String.Equals(
+                Path.GetDirectoryName(clientAssembly.Location),
+                @"C:\Program Files\Microsoft Power BI Desktop\bin", StringComparison.OrdinalIgnoreCase));
             using (var conn = new Microsoft.AnalysisServices.AdomdClient.AdomdConnection(
                 "Data Source=localhost:" + args[0] + ";Connect Timeout=10;" +
                 (args.Length > 2 ? "Catalog=" + args[2] + ";" : "")))
             {
+                Console.WriteLine("ADOMD OPEN");
                 conn.Open();
                 Console.WriteLine("ADOMD CONNECTED: " + conn.ServerVersion);
                 using (var cmd = conn.CreateCommand())

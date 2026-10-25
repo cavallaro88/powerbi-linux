@@ -215,13 +215,16 @@ def main():
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('--prepare-only',action='store_true')
     p.add_argument('--package-only',action='store_true',help='Package an already completed runtime build')
-    p.add_argument('--runtime-version', default='0.1.4', help='Version recorded in the manifest and archive filename')
+    p.add_argument('--runtime-version', default='0.1.5', help='Version recorded in the manifest and archive filename')
     p.add_argument('--bundled-sources',action='store_true',help='Build from the corresponding patched source archives in an exported project')
     p.add_argument('--wine-source')
     p.add_argument('--dxvk-source')
     p.add_argument('--dnlib-source')
     p.add_argument('--engine',choices=['docker','podman'],default='docker')
+    p.add_argument('--jobs',type=int,default=2,help='Parallel compiler jobs (default: 2)')
     args=p.parse_args()
+    if args.jobs < 1:
+        p.error('--jobs must be at least 1')
     if args.package_only:
         package(args.engine, args.runtime_version)
         return
@@ -240,6 +243,7 @@ def main():
     if (ROOT/'dist/runtime').exists():
         shutil.rmtree(ROOT/'dist/runtime')
     run(args.engine,'run','--rm','--user',str(os.getuid())+':'+str(os.getgid()),'-e','HOME=/tmp/pbi-build-home',
+        '-e','PBI_BUILD_JOBS='+str(args.jobs),
         '-v',str(ROOT)+':/work:z','-w','/work',builder['Id'],'bash','runtime/build-inside.sh')
     build_provenance.record_success(ROOT, started)
     package(args.engine, args.runtime_version)

@@ -41,6 +41,20 @@ class AutomationTests(unittest.TestCase):
             with patch.dict(os.environ, env):
                 with self.assertRaises(suite.Error):suite.qa_environment(qa)
 
+    def test_native_preflight_keeps_the_real_desktop_runtime_directory(self):
+        with tempfile.TemporaryDirectory() as d:
+            base = Path(d)
+            qa = base / 'qa'
+            managed = qa / 'data/powerbi-linux'
+            prefix = managed / 'profiles/test'
+            prefix.mkdir(parents=True)
+            (managed / 'active.json').write_text(json.dumps({'prefix': str(prefix)}))
+            original = {'XDG_RUNTIME_DIR': str(base / 'desktop-run'), 'WAYLAND_DISPLAY': 'wayland-1'}
+            env, _ = suite.qa_environment(qa, original)
+            self.assertEqual(env['XDG_RUNTIME_DIR'], original['XDG_RUNTIME_DIR'])
+            self.assertEqual(env['XDG_DATA_HOME'], str(qa / 'data'))
+            self.assertEqual(env['WAYLAND_DISPLAY'], str(base / 'desktop-run/wayland-1'))
+
     def test_expired_check_is_a_failure(self):
         with tempfile.TemporaryDirectory() as d:
             r = suite.execute('slow', [sys.executable,'-c','import time;time.sleep(30)'], Path(d), os.environ.copy(), .05)
@@ -50,6 +64,8 @@ class AutomationTests(unittest.TestCase):
     def test_an_incomplete_footer_or_clipped_pane_fails_options(self):
         value = {'selected':['GLOBAL',0], 'panes':[{'width':700,'height':980}],
                  'footer':[{'text':'OK','inside':True},{'text':'Cancel','inside':True}],
+                 'navigation':{'client':658,'scroll':669,'overflow':'auto','inside':True,
+                               'lastReachable':True,'labelSelection':'none','editable':True},
                  'scrollPane':{'client':658,'scroll':1000,'overflow':'auto','inside':True}, 'errors':[]}
         self.assertTrue(options.valid_tab(value,'GLOBAL',0))
         value['scrollPane']['inside'] = False
@@ -57,6 +73,19 @@ class AutomationTests(unittest.TestCase):
         value['scrollPane']['inside'] = True
         value['footer'].pop()
         self.assertFalse(options.valid_tab(value,'GLOBAL',0))
+
+    def test_unreachable_navigation_or_blocked_editable_fields_fail_options(self):
+        import copy
+        value = {'selected':['GLOBAL',0], 'panes':[{'width':700,'height':300}],
+                 'footer':[{'text':'OK','inside':True},{'text':'Cancel','inside':True}],
+                 'scrollPane':{'client':300,'scroll':1000,'overflow':'auto','inside':True},
+                 'navigation':{'client':300,'scroll':669,'overflow':'auto','inside':True,
+                               'lastReachable':True,'labelSelection':'none','editable':True}, 'errors':[]}
+        self.assertTrue(options.valid_tab(value,'GLOBAL',0))
+        for key, bad in [('lastReachable',False),('editable',False),('labelSelection','auto'),('overflow','hidden')]:
+            case = copy.deepcopy(value)
+            case['navigation'][key] = bad
+            self.assertFalse(options.valid_tab(case,'GLOBAL',0),key)
 
     def test_stale_or_foreign_bridge_output_never_passes(self):
         with tempfile.TemporaryDirectory() as d:

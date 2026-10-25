@@ -37,7 +37,11 @@ make -j"${PBI_BUILD_JOBS:-2}" dlls/ntdll/ntdll.so
 rm -rf /work/build/stage
 make install DESTDIR=/work/build/stage
 cd /work
-cp -a build/stage/opt/powerbi-linux/. dist/runtime/
+# The full-build entry point starts with an empty runtime tree. Move the install
+# staging directory on the same filesystem instead of retaining two complete
+# unstripped Wine trees before the stripping pass.
+rmdir dist/runtime/helpers dist/runtime
+mv build/stage/opt/powerbi-linux dist/runtime
 python3 - <<'STRIP'
 from pathlib import Path
 import subprocess
@@ -68,7 +72,7 @@ if [ -f build/dxvk/build.ninja ]; then MESON_ARGS+=(--reconfigure); fi
 meson setup "${MESON_ARGS[@]}" build/dxvk sources/dxvk --cross-file sources/dxvk/build-win64.txt --buildtype release \
     -Denable_d3d8=false -Denable_d3d9=false -Denable_d3d10=false -Denable_d3d11=true
 ninja -C build/dxvk -j"${PBI_BUILD_JOBS:-2}"
-mkdir -p dist/runtime/dxvk
+mkdir -p dist/runtime/dxvk dist/runtime/helpers
 cp build/dxvk/src/dxgi/dxgi.dll build/dxvk/src/d3d11/d3d11.dll dist/runtime/dxvk/
 cp sources/dnlib/lib/net45/dnlib.dll dist/runtime/helpers/
 cp /work/src/helpers/WinRTStubs.cs dist/runtime/helpers/

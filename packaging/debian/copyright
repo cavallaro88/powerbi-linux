@@ -1,0 +1,16 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: Power BI Linux
+Source: https://github.com/cavallaro88/powerbi-linux
+
+Files: *
+Copyright: Power BI Linux contributors and the respective upstream authors
+License: GPL-3.0-or-later and LGPL-2.1-or-later and Zlib and other-permissive
+ This package includes project sources and compatibility recipes. Components
+ retain their original notices. See /usr/share/powerbi-linux/LICENSE and the
+ individual notices in /usr/share/powerbi-linux/LICENSES/ for their full terms
+ and attribution. Common GPL and LGPL license texts are also available in
+ /usr/share/common-licenses/.
+ .
+ Microsoft installers and a populated Wine prefix are not distributed here.
+ The separately supplied Wine/DXVK runtime includes its own notices and has
+ corresponding source supplied alongside the experimental distribution.

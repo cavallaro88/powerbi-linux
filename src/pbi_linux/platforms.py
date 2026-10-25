@@ -1,0 +1,41 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+"""Explicit desktop targets; distribution ancestry does not imply compatibility."""
+from pathlib import Path
+import shlex
+
+
+def release(text=None):
+    if text is None:
+        text = Path('/etc/os-release').read_text()
+    result = {}
+    for line in text.splitlines():
+        key, separator, value = line.partition('=')
+        if separator and key in ('ID', 'VERSION_ID', 'PRETTY_NAME'):
+            try:
+                words = shlex.split(value, comments=True)
+            except ValueError:
+                continue
+            if len(words) == 1:
+                result[key] = words[0]
+    return result
+
+
+def status(info=None):
+    info = release() if info is None else info
+    name, version = info.get('ID', ''), info.get('VERSION_ID', '')
+    if name == 'fedora':
+        return True, 'Fedora 44 is the tested target; other Fedora releases are experimental'
+    if name in ('pop', 'ubuntu') and version == '24.04':
+        label = 'Pop!_OS' if name == 'pop' else 'Ubuntu'
+        return True, label + ' 24.04 is experimental; graphical compatibility is not certified'
+    detected = info.get('PRETTY_NAME') or (name + ' ' + version).strip() or 'unknown distribution'
+    return False, ('Detected ' + detected + '. Targets: Fedora (44 tested), '
+                   'Pop!_OS 24.04 and Ubuntu 24.04 (experimental)')
+
+
+TARGETS = 'Fedora 44 (tested); Pop!_OS / Ubuntu 24.04 (experimental), x86_64 / Wayland'
+
+
+def ntlm_help():
+    package = 'winbind' if release().get('ID') in ('pop', 'ubuntu') else 'samba-winbind-clients'
+    return 'Install ' + package + ' before opening Power BI'

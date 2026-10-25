@@ -64,13 +64,18 @@ class PatchWindowFrame
                 var type = module.GetTypes().Single(t => t.FullName == TypeName);
                 var method = type.Methods.Single(m => m.Name == "WndProc");
                 var load = type.Methods.Single(m => m.Name == "OnLoad");
-                if (Fingerprint(method) != "3a8cfcf238b5a80777b353795cd0f734e3a6226f76678b9cc288203c076cd66d" ||
-                    Fingerprint(load) != "ac90e85db8ba75c2a470cad0daa3da4fa6077c0ecf1f410ec9b67f650c1cd09d")
+                var wndHash = Fingerprint(method);
+                var loadHash = Fingerprint(load);
+                bool legacy = wndHash == "3a8cfcf238b5a80777b353795cd0f734e3a6226f76678b9cc288203c076cd66d" &&
+                    loadHash == "ac90e85db8ba75c2a470cad0daa3da4fa6077c0ecf1f410ec9b67f650c1cd09d";
+                bool current = wndHash == "bc39f3ee1dd6d7640d5966a2800918d022a2b365de75e089c821c1ba414b0e58" &&
+                    loadHash == "26e795542efb14caeff52c5fc84f2f56287fa9141f5ef2a4fe077af2f60eec31";
+                if (!legacy && !current)
                     throw new InvalidDataException("Unsupported custom-caption method contents");
                 var field = type.Fields.Single(f => f.Name == "clientRect");
                 var body = method.Body.Instructions;
                 if (method.MethodSig.Params.Count != 1 || method.MethodSig.Params[0].FullName != "System.Windows.Forms.Message&" ||
-                    method.IsStatic || body.Count != 119 || method.Body.Variables.Count != 5 ||
+                    method.IsStatic || body.Count != (legacy ? 119 : 125) || method.Body.Variables.Count != 5 ||
                     load.Body.Instructions.Count != 10 || method.Body.ExceptionHandlers.Count != 0)
                     throw new InvalidDataException("Unsupported custom-caption method layout: " + body.Count + "/" + load.Body.Instructions.Count);
                 var target = body.Single(i => i.Offset == 0xe6);

@@ -1,125 +1,93 @@
-# Power BI Desktop on Fedora
+<p align="center">
+  <img src="packaging/powerbi-linux.svg" alt="Power BI Linux project icon" width="112">
+</p>
 
-Community tools to install and run Power BI Desktop on Fedora using a patched
-Wine/DXVK runtime and native Wayland. Open PBIX, PBIP and PBIR files from the
-Linux desktop, with a managed per-user installation and the original Power BI
-icon extracted locally from the installed application.
+# Power BI Linux
 
-**Development preview 0.1.0: Fedora 44, x86_64, native Wayland.** Other Fedora
-versions are experimental. A systemd user session and a Vulkan-capable GPU/driver
-are required. The project is independent of Microsoft and has no official
-Microsoft support. See [compatibility and limits](docs/compatibility.md).
+[![Product checks](https://github.com/cavallaro88/powerbi-linux/actions/workflows/checks.yml/badge.svg?branch=main)](https://github.com/cavallaro88/powerbi-linux/actions/workflows/checks.yml)
+[![License: GPL-3.0-or-later](https://img.shields.io/badge/license-GPL--3.0--or--later-blue)](LICENSE)
+[![Platform: Fedora 44](https://img.shields.io/badge/platform-Fedora%2044-51a2da)](docs/user/install.md)
+![Architecture: x86_64](https://img.shields.io/badge/arch-x86__64-informational)
+![Display: Wayland](https://img.shields.io/badge/display-Wayland-yellow)
+[![Status: beta](https://img.shields.io/badge/status-beta-orange)](docs/user/known-issues.md)
+
+Run Microsoft Power BI Desktop on Fedora, with Linux desktop integration and a managed installation.
+
+> [!WARNING]
+> **Beta software.** Features can fail, and compatibility depends on the exact Power BI and runtime versions. Keep a private backup of your complete project and work on copies first. Read [known issues and unsupported features](docs/user/known-issues.md) before installing.
+>
+> Tested target: **Fedora 44, x86_64, native Wayland**, a systemd user session and a Vulkan-capable GPU/driver. This is an independent community project, with no Microsoft affiliation, endorsement or official support.
+
+## What is Power BI Linux?
+
+Power BI Linux prepares and runs the Windows edition of Power BI Desktop on Linux. It manages a dedicated per-user installation, a patched Wine/DXVK compatibility runtime, and the Microsoft components Desktop needs. Your reports remain Power BI reports, and Microsoft account and service requirements still apply.
+
+The project combines installation and recovery tools with targeted compatibility fixes for Desktop's windows, dialogs, embedded browser and model handling. The runtime builds on **Wine**, **DXVK** and reviewed components from [Neutron's Wine runtime](https://github.com/Nico-LaFoucate/neutron-wine). See the [technical patch inventory](docs/reference/patches.md) for attribution and scope.
+
+## What you can do
+
+- **Open reports from your desktop:** launch PBIX, PBIP and PBIR files through the file manager or application menu.
+- **Import and edit data:** CSV import, report visuals, save/reopen and a synthetic 158-table refresh have passed recorded tests.
+- **Use repaired dialogs and controls:** compatibility work covers save confirmation, Options, credentials, permissions, and font/size selectors.
+- **Keep your installation recoverable:** interrupted setup can resume; repair and runtime updates use separate profile generations with rollback.
+- **Sign in through your browser:** authentication and persistence have passed on the test host; a real publication was confirmed in a test workspace.
+- **Add optional providers:** MySQL has a managed installation recipe. Other connector scenarios have separate experimental status.
+
+These results apply to their recorded versions and test cases. They do not certify every report, connector or newer release. The [short compatibility guide](docs/user/known-issues.md) explains the practical limits.
 
 ## Install
 
-Install the CLI and desktop integration through DNF:
+Download the recommended **binary RPM** from [Releases](https://github.com/cavallaro88/powerbi-linux/releases/tag/v0.1.0-13), then install it using DNF. The `.src.rpm` is for developers.
 
 ```bash
-sudo dnf install ./powerbi-linux-0.1.0-12.noarch.rpm
-# Upgrade an existing installation:
-sudo dnf upgrade ./powerbi-linux-0.1.0-12.noarch.rpm
-pbi-linux doctor
+sudo dnf install ./powerbi-linux-0.1.0-13.noarch.rpm
 ```
 
-The RPM contains the project's tools and recipes. Power BI, Microsoft runtimes,
-credentials and populated Wine prefixes are obtained or created separately for
-each user. Provision using a project runtime archive and the official Power BI
-installer:
+> [!IMPORTANT]
+> **The published RPM 13 still requires manual setup inputs.** Published runtime releases contain source recipes, not ready-to-use runtime binaries. Installing the RPM alone does not install Power BI Desktop.
+>
+> The setup improvements in this source tree prepare a guided installation with verified automatic downloads. It remains gated on a validated, published runtime and matching Power BI recipe. See the [installation guide](docs/user/install.md) for the currently usable manual route and release readiness.
 
-```bash
-pbi-linux setup \
-  --runtime powerbi-linux-runtime-0.1.3-x86_64.tar.xz \
-  --runtime-sha256 '<runtime checksum>' \
-  --installer PBIDesktopSetup_x64.exe \
-  --accept-license
-pbi-linux open
-pbi-linux open '/path/to/report.pbix'
-```
+Microsoft's [official Power BI Desktop download](https://www.microsoft.com/pt-br/download/details.aspx?id=58494) provides `PBIDesktopSetup_x64.exe`. **Its current version can differ from the release's validated version.** Published RPM 13 accepts **2.158.1177.0**. The local candidates from RPM 14 onward add a guarded **2.159.883.0** recipe; their [native validation and release readiness](docs/reference/powerbi-2.159.md) are tracked separately. WebView2 and .NET are prepared by setup; you do not need to choose or install those components yourself.
 
-The current recipe targets Power BI **2.158.1177.0** and fixed WebView2
-**154.0.4258.62**. Setup obtains checksum-verified prerequisites from their official
-sources. Review the [installation guide](docs/install.md),
-[guia em português](docs/install.pt-BR.md) and [licensing notes](docs/legal.md).
-Versioned RPM prereleases and their changelogs are in [GitHub Releases](https://github.com/cavallaro88/powerbi-linux/releases).
-The current preview is [RPM 12](https://github.com/cavallaro88/powerbi-linux/releases/tag/v0.1.0-12).
-Runtime entries currently provide source recipes only; see the [release index](docs/releases.md)
-and [build guide](docs/build.md) before provisioning.
+### How long does setup take?
 
-Add `--make-default` during setup to associate files by default; otherwise use
-**Open With → Power BI Desktop (Wine)**. Preferences and credentials persist
-across launches. Opening a file does not rebuild or re-patch the application.
+Allow **several minutes, plus download time**. One complete local setup of Power BI
+2.159.883.0 with runtime 0.1.5 took about **6 minutes 16 seconds** (375.97 seconds
+recorded) with prerequisite
+downloads already cached. This is a reference measurement, not a time limit;
+slower hardware, storage or network connections can take longer.
+
+**The .NET and Power BI installers run silently and can spend several minutes
+without printing anything in the terminal.** Silence alone does not mean setup
+has frozen. The CLI warns before these stages; wait for completion or an explicit
+error rather than closing the terminal just because no new lines appear.
 
 ## Everyday use
 
-Resource limits are optional. Defaults impose no project RAM/swap cap or CPU
-quota; WebView2 heap and renderer counts remain automatic.
+After completing setup, open **Power BI Desktop (Wine)** from the application menu, or use **Open With** in your file manager.
 
 ```bash
-pbi-linux profile
-pbi-linux profile unlimited
-pbi-linux doctor --json
+pbi-linux open
+pbi-linux open '/path/to/report.pbix'
+pbi-linux doctor
 ```
 
-Read [resource settings](docs/resources.md) for optional limits. Close all Desktop
-windows and reopen to apply a resource change. For optional MySQL Connector/NET,
-read the [connector guide and licenses](docs/connectors.md), then install with
-`pbi-linux connector install mysql --accept-license` while Desktop is closed.
+Preferences and credentials persist between launches. Default file associations are optional. Resource limits are also optional; see [resource settings](docs/user/resources.md).
 
-RPM upgrades update CLI and recipes. Existing profiles receive assembly/runtime
-changes through the documented maintenance procedure, rather than during an
-active session. See [lifecycle](docs/install.md) and [update policy](docs/updates.md).
-A populated profile occupies about 9 GiB; repairs may need another full copy.
+For failures, start with [troubleshooting](docs/user/troubleshooting.md). Report reproducible problems through [Issues](https://github.com/cavallaro88/powerbi-linux/issues/new/choose), with sanitized `pbi-linux doctor --json` output and a synthetic example. Keep customer reports, credentials and populated installations private.
 
-## Compatibility status
+## Documentation and contributing
 
-Validated scenarios include official-installer provisioning, desktop file
-opening, CSV import/save/reopen, a synthetic 158-table relational refresh and a
-two-hour session. Browser sign-in and persistence passed on the Fedora host;
-a real publication was confirmed by the user in a homologation Service workspace.
-RPM 11 additionally passed cached-model Save and fresh normal reopen in a private
-158-table copy, preserving counts/states and a genuine metadata change. One
-preexisting query-error state persisted; every cell and source refresh were not
-revalidated. This is scoped evidence rather than universal enterprise support.
+- [User guides](docs/user/README.md): installation, known issues, troubleshooting and optional settings.
+- [Development](docs/development/README.md): builds, architecture, testing and roadmap.
+- [Technical reference](docs/reference/README.md): investigations, compatibility evidence and patch details.
+- [Release history](docs/releases.md) and [changelog](CHANGELOG.md).
 
-Current workarounds and regression evidence cover [legacy dialogs](docs/legacy-html.md),
-[permissions](docs/permissions-wayland.md), [Options](docs/options-dialog.md),
-[cursors](docs/cursor.md), [PaperWM resizing](docs/paperwm.md), [post-publish Store prompts](docs/publishing.md) and
-[model caches](docs/model-cache.md). Keep a private backup of the complete project,
-including `.pbi/cache.abf`; a normal Git checkout excludes imported cached data.
-See the [documentation index](docs/README.md), [roadmap](docs/roadmap.md) and
-[87-commit Neutron review](docs/upstream-neutron.md).
+Contributions follow [CONTRIBUTING](CONTRIBUTING.md), the [code of conduct](CODE_OF_CONDUCT.md) and [security policy](SECURITY.md). The CI badge covers automated product checks; graphical compatibility requires separate native validation.
 
-## Develop and contribute
+## License and credits
 
-```bash
-python3 tools/check-product.py
-python3 runtime/build.py
-python3 tools/build-rpm.py
-```
+Independent project tools are **GPL-3.0-or-later**. Wine/Neutron-derived components retain **LGPL-2.1-or-later**; DXVK and other dependencies retain their own licenses. See [LICENSE](LICENSE), [third-party notices](LICENSES/) and [licensing details](docs/reference/legal.md).
 
-Builds use Docker by default, with Podman also supported. See [build instructions](docs/build.md)
-and [automated QA](docs/automated-qa.md). The regular suite uses synthetic inputs;
-native UI tests require a dedicated graphical QA installation.
-
-| Directory | Contents |
-|---|---|
-| `src/` | CLI and locally compiled compatibility helpers |
-| `runtime/` | Pinned dependencies, patches, provenance and build recipe |
-| `connectors/` | Optional provider recipes and verified package metadata |
-| `tests/` | Unit checks, native probes, fixtures and UI automation |
-| `packaging/` | RPM, desktop entry, fallback icon and MIME definitions |
-| `tools/` | Build, export, release validation and component checks |
-| `docs/` | Installation, compatibility, recovery and developer guides |
-
-Build outputs, downloaded sources, private evidence and model caches are ignored.
-They are not part of the source repository or public export. Full corresponding
-Wine/DXVK sources must accompany distributed runtime binaries.
-
-Report reproducible bugs with sanitized doctor output and a synthetic example;
-follow [CONTRIBUTING](CONTRIBUTING.md) and [SECURITY](SECURITY.md). Do not attach
-customer reports, credentials or populated prefixes.
-
-Independent tools are **GPL-3.0-or-later**. Wine/Neutron-derived components retain
-**LGPL-2.1-or-later** and their notices; DXVK and other dependencies retain their
-own terms. See [LICENSE](LICENSE), [LICENSES](LICENSES/) and [provenance](docs/legal.md).
-Microsoft artwork is extracted only for local use and is not bundled in the RPM.
+Power BI and Microsoft product names and artwork belong to Microsoft. Microsoft software is downloaded separately from its official sources. The original application icon is extracted only for your local installation; the repository uses the project's own fallback icon.

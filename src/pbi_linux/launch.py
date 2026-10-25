@@ -9,11 +9,17 @@ import socket
 import subprocess
 import sys
 import time
-from .common import Error, check_digest, read_json, run
+from .common import Error, Paths, busy, installation_token, check_digest, read_json, run
 from .provision import active, BIN, settings, verified_webview
-from . import pe_cache, resources
+from .theme import ThemeSync
+from . import pe_cache, resources, platforms
 
-UNIT = 'pbi-linux-session.service'
+def session_unit(data):
+    token = installation_token(data)
+    return 'pbi-linux-session' + ('-' + token if token else '') + '.service'
+
+
+UNIT = session_unit(Paths().data)
 
 
 def file_argument(value):
@@ -77,6 +83,7 @@ def request(paths, filename, diagnostics=False):
 
 def open_file(paths, value, diagnostics=False):
     filename = file_argument(value)
+    unit = session_unit(paths.data)
     with paths.lock('maintenance'):
         if not paths.active.is_file():
             raise Error('Power BI is not set up for this user. Run pbi-linux setup --help to prepare the installation.')
@@ -88,9 +95,11 @@ def open_file(paths, value, diagnostics=False):
                 return request(paths, filename, diagnostics)
             except (ConnectionRefusedError, FileNotFoundError):
                 paths.socket.unlink(missing_ok=True)
-        check = Path('/etc/os-release').read_text()
-        if '\nID=fedora\n' not in '\n'+check:
-            raise Error('Only Fedora is supported by this release')
+        if busy(paths):
+            raise Error('This installation already has Wine processes without a reachable session. Close its Power BI windows before reopening')
+        supported, detail = platforms.status()
+        if not supported:
+            raise Error(detail)
         if os.uname().machine != 'x86_64':
             raise Error('Only x86_64 is supported')
         display = os.environ.get('WAYLAND_DISPLAY', '')
@@ -98,15 +107,15 @@ def open_file(paths, value, diagnostics=False):
         if not display or not socket_path.is_socket():
             raise Error('A native Wayland desktop session is required')
         if not shutil.which('ntlm_auth'):
-            raise Error('Install samba-winbind-clients before opening Power BI')
+            raise Error(platforms.ntlm_help())
         config = settings(paths)
         # Forward only graphical session variables to the service; its process does not
         # inherit arbitrary WINEPREFIX, debugging or diagnostic overrides.
-        command = ['systemd-run', '--user', '--unit='+UNIT, '--collect',
+        command = ['systemd-run', '--user', '--unit='+unit, '--collect',
                    '-p', 'Type=exec', '-p', 'KillMode=mixed', '-p', 'TimeoutStopSec=10s', '-p', 'TimeoutAbortSec=1s', '-p', 'LimitCORE=0']
         for prop in resources.service_properties(config):
             command += ['-p', prop]
-        for name in ('PATH','WAYLAND_DISPLAY','XDG_RUNTIME_DIR','XDG_DATA_HOME','XDG_CONFIG_HOME','XDG_STATE_HOME','XDG_CACHE_HOME','PBI_LINUX_RESOURCE_DIR'):
+        for name in ('PATH','WAYLAND_DISPLAY','DBUS_SESSION_BUS_ADDRESS','XDG_RUNTIME_DIR','XDG_DATA_HOME','XDG_CONFIG_HOME','XDG_STATE_HOME','XDG_CACHE_HOME','XDG_CURRENT_DESKTOP','PBI_LINUX_RESOURCE_DIR'):
             if name in os.environ:
                 command.append('--setenv='+name+'='+os.environ[name])
         command.append('--setenv=PYTHONPATH='+str(Path(__file__).resolve().parent.parent))
@@ -122,7 +131,7 @@ def open_file(paths, value, diagnostics=False):
                 except (ConnectionRefusedError, FileNotFoundError):
                     pass
             time.sleep(.1)
-        raise Error('Session could not start; see journalctl --user -u '+UNIT)
+        raise Error('Session could not start; see journalctl --user -u '+unit)
 
 
 def broker(paths, diagnostics=False):
@@ -147,6 +156,7 @@ def broker(paths, diagnostics=False):
          '/v', 'PBIDesktop.exe', '/t', 'REG_SZ', '/d', flags, '/f'], env=env, log=paths.state/'session.log')
     children = []
     started = False
+    theme_sync = ThemeSync(paths, runtime, env)
     with socket.socket(socket.AF_UNIX) as server:
         server.bind(str(paths.socket))
         os.chmod(paths.socket, 0o600)
@@ -156,6 +166,7 @@ def broker(paths, diagnostics=False):
             raise SystemExit(0)
         previous_term = signal.signal(signal.SIGTERM, terminate)
         try:
+            theme_sync.start()
             idle_since = time.monotonic()
             while True:
                 children = [c for c in children if c.poll() is None]
@@ -196,6 +207,7 @@ def broker(paths, diagnostics=False):
                         answer = {'ok':False, 'error':str(exc)}
                     client.sendall(json.dumps(answer).encode()+b'\n')
         finally:
+            theme_sync.close()
             paths.socket.unlink(missing_ok=True)
             # Stop this prefix's server before systemd escalates to SIGKILL.
             # A normal Desktop exit and `systemctl stop` follow the same path.

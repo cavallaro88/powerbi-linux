@@ -2,63 +2,135 @@
 
 ## 0.1.0 — development
 
+### Unreleased — product repository and upstream review
+
+- Test the original AWS Redshift 1.6.3.1008 Windows x64 MSI in the managed prefix:
+  silent installation and automatic driver/default-DSN registration passed without
+  manual driver registration. Add a generic offline Windows driver/DSN loading
+  probe. Native generic ODBC authentication, metadata Import, independent one-row
+  DAX and Save/normal reopen passed. A subsequent full interactive
+  wizard completed in a fresh Wine-only prefix installed the same 19 vendor files and passed
+  driver/DSN/handle checks; managed maintenance cancellation preserved the real
+  installation. The temporary QA prefix was removed, reclaiming 565.6 MiB.
+  The separate credential modal required a session-only workaround; no permanent
+  patch is planned for this test. DSN connection and shared-dependency repair/uninstall remain pending. No generic
+  installer command or new RPM is released; see [vendor installer evidence](docs/reference/vendor-installers.md).
+- Document source/driver/authentication/operation compatibility and the shared
+  inventory/ODBC roadmap. Isolate the app-private ODBC manager ENV failure and
+  record a local experimental forwarding correction. Real Redshift password login,
+  schema metadata, one derived Import row, independent DAX and Save/normal reopen
+  passed. Add reproducible forwarding sources and a no-network Engine regression
+  probe. Another real-dataset test and refresh cancellation
+  subsequently passed; data, server-side cancellation and post-cancel state were not
+  independently audited. Document the proposed generic vendor-MSI installation
+  flow; it is not implemented. Managed installation, typed data checks, TLS policy and other
+  authentication routes remain pending; RPM 13 is unchanged.
+- Publish version-specific GitHub development prereleases with original RPM/source assets, checksums and provenance. Reconstruct historical tags from sanitized original sources; keep runtime releases source-only until binary distribution gates pass. Index all versions in [the release guide](docs/releases.md).
+
+- Promote the standalone product to the repository root, with normal GitHub discovery, a shorter README, documentation index and explicit roadmap. Keep working investigation material outside the product history.
+- Guard runtime packaging against unreviewed patch files, failed/stale builds, changed sources/payload and accidental artifact overwrite. Record the successful build and exact builder/input identity; retain unchanged runtime 0.1.3 artifacts.
+- Review the 87 neutron-wine commits through `8ecb7fd`, with decisions for all 59 changed patch files and separate external-library scope. Add a repeatable consistency audit to quick QA. No new runtime patch is enabled.
+- Stage mouse capture tracking, rendering-mode glyph caching and signed DPI arithmetic separately. The actual Wine DPI helper fails six of fourteen arithmetic controls before the port and passes all after; server/compositor validation remains pending.
+
+### RPM release 17 — local GNOME theme integration, 2026-10-23
+
+- Follow GNOME's color preference at startup and every two seconds while Desktop is open.
+- Preserve explicit Light/Dark selections; update only the prefix's Windows preference.
+- Reuse the existing runtime and profile without repair; restart Desktop after updating the RPM.
+- Cover the bridge with unit tests and 13 native assertions using synthetic settings.
+
+### RPM release 16 / DEB 0.1.0-16pop1 — local tooltip correction, 2026-10-23
+
+- Show browser HTML/SVG title tooltips inside WebView instead of detached native windows.
+- Preserve original rich data tooltip handlers, dynamic title updates and keyboard dismissal.
+- Add guarded setup/repair recipe and tooltip integrity check; no runtime replacement.
+
+### RPM release 15 / DEB 15pop1 — Options interaction, 2026-10-21
+
+- Add guarded native resizing for the Options dialog in both supported Desktop recipes.
+- Fit sidebar/content to the viewport and preserve the footer and sidebar scroll access.
+- Disable selection of UI labels while preserving editable fields and original callbacks.
+- Apply the correction through normal per-user repair, using the existing runtime.
+
+### RPM release 14 — guided setup and documentation candidate, 2026-10-20
+
+- Explain the product, own features and upstream credits; reuse the project icon
+  and add CI, license, platform and beta badges.
+- Separate user guides, development and technical reference. Preserve technical
+  investigations, remove the duplicate Portuguese guide and add a concise
+  [known-issues guide](docs/user/known-issues.md).
+- Add interactive terms acceptance and pinned automatic-download selection while
+  retaining local setup arguments. Keep automatic setup gated until the runtime
+  binary, corresponding source and exact-artifact evidence are published.
+- Show download progress and actionable connection/version errors; record the
+  installed Power BI version and recipe and guard maintenance compatibility.
+- Port the current 2.159.883.0 EXE using exact original hashes, unchanged embedded
+  resource contents and guarded native methods. Preserve its new DPI-layout
+  handling and keep the 2.158 recipe available for existing installations. Local
+  installers select their exact registered recipe; runtime updates preserve the
+  installed Desktop version. Native validation remains separate from offline
+  patch checks. See the [assessment](docs/reference/powerbi-2.159.md).
+- Give isolated XDG installations separate session services, preserving the
+  standard user's service name. Require matching Power BI/WebView2 versions in
+  runtime release evidence, in addition to the existing exact-archive gates.
+
+### Runtime 0.1.5 — complete local build candidate, 2026-10-20
+
+- Build the full reviewed Wine/DXVK recipe with a successful-build receipt,
+  toolchain provenance and Power BI 2.159 pin; avoid duplicate unstripped staging.
+- Pass clean setup with interruption/resume, native components, 158-table refresh,
+  CSV/visual/Save, normal document reopening, runtime migration and recovery.
+- Keep the exact-archive two-hour gate pending. Runtime-binary
+  publication remains pending; automatic setup remains disabled.
+  See [local runtime notes](docs/releases/runtime-v0.1.5.md).
+
 ### RPM release 13 — text picker development candidate, 2026-10-18
 
 - Render only Quill font/size selectors in WebView2's in-page top layer using `appearance: base-select`. The detached Chromium popup reproduced as an empty white window despite populated options.
 - Keep the original select controls, options and change handlers. Let the browser dismiss an open picker with Escape before Desktop consumes that key; unrelated shortcuts retain their handlers.
 - Apply only a hash-guarded local report-view HTML change during setup/repair, with original backup and a `text-pickers` doctor check. No Wine rebuild, diagnostic interpreter or report-content patch is introduced.
-- Fresh Desktop diagnostics passed eight keyboard assertions, compositor pointer selection and actual formatted-text verification. Doctor passed 18 checks. Other selectors, display scales and a full compatibility matrix remain separate. See [text picker evidence](docs/text-pickers.md).
+- Fresh Desktop diagnostics passed eight keyboard assertions, compositor pointer selection and actual formatted-text verification. Doctor passed 18 checks. Other selectors, display scales and a full compatibility matrix remain separate. See [text picker evidence](docs/reference/text-pickers.md).
 
 ### RPM release 12 — window frame development candidate, 2026-10-18
 
 - Extend the normal resizable/unowned Desktop client to its complete frame. Replace the visible 4-pixel side/bottom gutters with transparent native resize input zones, preserving styles and fixed/owned/native-maximized calculations.
 - Guard the two patched methods by exact contents and sign the helper locally. Setup/repair records its checksum; doctor checks the frame patch. Modified Microsoft binaries stay local.
-- Native and actual-base-class fixtures passed frame, hit-target and owned/fixed controls. A managed compositor drag passed; normal Desktop measured zero insets, and the user confirmed the visual fix with working mouse/shortcuts. Actual compositor maximize-state divergence also reproduces on baseline and remains separate coverage, as do other display scales and broader modal workloads. See [evidence](docs/window-frame.md).
+- Native and actual-base-class fixtures passed frame, hit-target and owned/fixed controls. A managed compositor drag passed; normal Desktop measured zero insets, and the user confirmed the visual fix with working mouse/shortcuts. Actual compositor maximize-state divergence also reproduces on baseline and remains separate coverage, as do other display scales and broader modal workloads. See [evidence](docs/reference/window-frame.md).
 - Apply the candidate locally without cloning the profile or changing the runtime/resource policy; retain the old DLL/manifest for rollback.
 
 ### Runtime 0.1.4 — PaperWM development candidate, 2026-10-18
 
 - Accept normal Wayland compositor size hints for resizable windows after initial configure. PaperWM resizes without maximized/resizing/tiled flags were previously discarded.
-- Native baseline/candidate tests confirm actual client resizing and preserve the fixed-size control. Empty Desktop on the normal launcher follows column height, increase-width actions and compositor Super+minus. The user subsequently confirmed PaperWM resizing works perfectly; automated Super+plus injection remains separate coverage. See [scope and pending checks](docs/paperwm.md).
+- Native baseline/candidate tests confirm actual client resizing and preserve the fixed-size control. Empty Desktop on the normal launcher follows column height, increase-width actions and compositor Super+minus. PaperWM resizing was subsequently confirmed working after activation; automated Super+plus injection remains separate coverage. See [scope and pending checks](docs/reference/paperwm.md).
 - Activate a private incremental single-driver candidate locally, retaining runtime 0.1.3 and the existing profile/settings. Add the reviewed patch to the 0.1.4 source recipe; full rebuild and broader release gates remain pending.
-- Record the separate acceptance plan for the three still-inactive Neutron candidates in [runtime testing](docs/runtime-testing.md).
+- Record the separate acceptance plan for the three still-inactive Neutron candidates in [runtime testing](docs/development/runtime-testing.md).
 - Diagnose the visible white frame as 4-pixel non-client left/right/bottom insets, with content filling the client area. Record the remaining cosmetic compatibility work without changing window styles or deploying an untested frame correction.
-
-### Unreleased — product repository and upstream review
-
-- Publish version-specific GitHub development prereleases with original RPM/source assets, checksums and provenance. Reconstruct historical tags from sanitized original sources; keep runtime releases source-only until binary distribution gates pass. Index all versions in [the release guide](docs/releases.md).
-
-- Promote the standalone product to the repository root, with normal GitHub discovery, a shorter README, documentation index and explicit roadmap. Preserve private investigation/history outside the public product history.
-- Guard runtime packaging against unreviewed patch files, failed/stale builds, changed sources/payload and accidental artifact overwrite. Record the successful build and exact builder/input identity; retain unchanged runtime 0.1.3 artifacts.
-- Review the 87 neutron-wine commits through `8ecb7fd`, with decisions for all 59 changed patch files and separate external-library scope. Add a repeatable consistency audit to quick QA. No new runtime patch is enabled.
-- Stage mouse capture tracking, rendering-mode glyph caching and signed DPI arithmetic separately. The actual Wine DPI helper fails six of fourteen arithmetic controls before the port and passes all after; server/compositor validation remains pending.
-
 
 ### RPM release 11 — cached models and original app icon, 2026-10-18
 
 - Compact valid linguistic JSON in memory before the existing model-copy/update path. The original ABF restores successfully; reapplying extensive multiline linguistic metadata caused a separate Analysis Services failure. Preserve all JSON values, escapes and number tokens; apply genuine source metadata changes normally. No report file or cache is automatically deleted or rewritten by the correction.
 - A private 158-table copy passed Desktop Save, graceful close and fresh normal reopen without refresh. All table row counts/states matched, including one existing query-error state. A new source-defined measure returned 73 before and after reopening. This is scoped evidence, not certification for every model or data value.
 - Extract the original PNG icon from the installed Power BI executable during user integration and refresh it on launch after upgrades. Retain the packaged fallback before provisioning; no Microsoft artwork is redistributed.
-- Setup/repair compiles and signs the guarded cache helper locally; runtime 0.1.3 and unlimited resource defaults remain unchanged. See [cache validation](docs/model-cache.md).
+- Setup/repair compiles and signs the guarded cache helper locally; runtime 0.1.3 and unlimited resource defaults remain unchanged. See [cache validation](docs/reference/model-cache.md).
 
 ### RPM release 10 — post-publish Store rating, 2026-10-18
 
 - Disable only the Windows Store rating entrypoint on Fedora, returning a completed Task. Its WinRT awaiter caused a missing `System.Runtime.WindowsRuntime` error after a successful publication, even before its UWP gate ran.
 - A real publication was confirmed by the user in the homologation Service workspace. Offline baseline reproduced the exception; the candidate and public regression completed with null dependencies and no publication request. One method among 29,697 changed, with embedded resources preserved. A new cloud publication using the correction remains separate.
-- Setup/repair compiles the guarded patcher from project sources; runtime 0.1.3 and resource defaults are unchanged. See [publishing](docs/publishing.md).
+- Setup/repair compiles the guarded patcher from project sources; runtime 0.1.3 and resource defaults are unchanged. See [publishing](docs/user/publishing.md).
 
 ### Runtime 0.1.3 — cursor development candidate, 2026-10-16
 
 - Resolve foreign shared standard user32 cursor resources through bounded internal Wine IPC and load them locally. This lets the existing Wayland path update a stale resize cursor when an embedded browser selects an arrow.
 - Preserve unsupported/custom foreign behavior and local cursor handling. Incremental payload replaces only Unix win32u from runtime 0.1.2; RPM 9 remains compatible.
-- Twelve x64 component checks and a compositor-motion resize/arrow reproducer passed. After activation, live Power BI sidebar/canvas hover alternated horizontal resize/arrow resources twice with verified pointer targets (2026-10-18). Doctor passed 15 checks; 452 monitored project files were unchanged. Original data-grid, custom cursor and broader workload coverage remain separate. Add public component and visible-fixture sources; see [cursor evidence](docs/cursor.md).
+- Twelve x64 component checks and a compositor-motion resize/arrow reproducer passed. After activation, live Power BI sidebar/canvas hover alternated horizontal resize/arrow resources twice with verified pointer targets (2026-10-18). Doctor passed 15 checks; 452 monitored project files were unchanged. Original data-grid, custom cursor and broader workload coverage remain separate. Add public component and visible-fixture sources; see [cursor evidence](docs/reference/cursor.md).
 
 ### RPM release 9 / runtime 0.1.2 — development candidate, 2026-10-16
 
 - Convert signed Automation Int64 values to JavaScript numbers in Wine's HTML ES5+ engine. This prevents the Options cache-description binding from interrupting initialization; legacy standalone variant handling stays behind its original path.
 - Bound the existing Options scroll pane after asynchronous loading and on resize, preserving original controls and callbacks.
 - Seven isolated numeric cases and all 22 synthetic Options tabs passed; a compositor click scrolled the pane, and the original Cancel callback closed it. No settings were submitted. Broader resize/input and historical large-model gates remain separate.
-- Add a public offline numeric regression tool. Incremental runtime payload changes are limited to x64/x86 JScript DLLs; RPM upgrades still require separate per-user runtime/recipe maintenance. See [Options evidence](docs/options-dialog.md).
+- Add a public offline numeric regression tool. Incremental runtime payload changes are limited to x64/x86 JScript DLLs; RPM upgrades still require separate per-user runtime/recipe maintenance. See [Options evidence](docs/reference/options-dialog.md).
 
 ### RPM release 8 / runtime 0.1.1 — development candidate, 2026-10-16
 

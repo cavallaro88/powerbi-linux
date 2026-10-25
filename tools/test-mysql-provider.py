@@ -16,7 +16,7 @@ from pbi_linux import connectors
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--loopback-port', type=int, help='Only the disposable database from docs/connectors.md')
+    parser.add_argument('--loopback-port', type=int, help='Only the disposable database from docs/user/connectors.md')
     args = parser.parse_args()
     if args.loopback_port is not None and not 1 <= args.loopback_port <= 65535:
         parser.error('Port must be 1–65535')

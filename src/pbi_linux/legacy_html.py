@@ -4,6 +4,7 @@ from pathlib import Path
 import hashlib
 import re
 from .common import Error, run, wine_env
+from . import options_layout
 
 
 REGISTRATIONS = {
@@ -13,7 +14,19 @@ REGISTRATIONS = {
 }
 
 UI_ORIGINAL_SHA256 = '28829058269cd42b5f731db43f94bcf34baf50d1cdf1ad624c0696468e3fadb7'
-UI_PATCHED_SHA256 = 'a700f3e4b37e586d5529518176573ad62c88c79fe76525a46d0a437b23d0a855'
+_UI_BASE_SHA256 = 'a700f3e4b37e586d5529518176573ad62c88c79fe76525a46d0a437b23d0a855'
+UI_2159_ORIGINAL_SHA256 = '15a88f90544f1a2c7f002f0de05c6aed65dcfcda1074a0ab847f3623e55ecb3d'
+_UI_2159_BASE_SHA256 = 'a2c3db990ed08e371356aec9055d9d46026978413472512873385593917e6c94'
+UI_PATCHED_SHA256 = options_layout.PATCHED['2.158.1177.0']
+UI_2159_PATCHED_SHA256 = options_layout.PATCHED['2.159.883.0']
+
+
+def patched_hash(version):
+    if version == '2.159.883.0':
+        return UI_2159_PATCHED_SHA256
+    if version == '2.158.1177.0':
+        return UI_PATCHED_SHA256
+    raise Error('Unsupported Power BI HTML recipe version')
 _PERMISSIONS_ASSEMBLY_SHA256 = '8aee5abdd62ef384f49e08cb9931093dab7a1b8df1ddb885af9d0b1ea4358c62'
 _LIST_PATCHED_SHA256 = 'd7090533813cfce872e79b5bfe7d968af5461c6ee8b7a3ba6110e9358abd586e'
 _CREDENTIALS_PATCHED_SHA256 = '16dcd45c8a7111ce39e3967cbc36d80116d87c0b4e2945b3af39840c9504841c'
@@ -83,10 +96,10 @@ _OPTIONS_HOOK = (
 )
 
 
-def patch_options(source):
+def _patch_options_base(source):
     """Keep the existing Options scroll pane inside the visible dialog body."""
     sha = hashlib.sha256(source).hexdigest()
-    if sha == UI_PATCHED_SHA256:
+    if sha == _UI_BASE_SHA256:
         return source
     if sha != _PERMISSIONS_ASSEMBLY_SHA256:
         raise Error('Unsupported HTML assembly for Options layout patch')
@@ -101,18 +114,18 @@ def patch_options(source):
     if hashlib.sha256(updated).hexdigest() != _OPTIONS_PATCHED:
         raise Error('Unexpected Options layout resource output')
     output = source[:_OPTIONS_OFFSET] + updated + source[_OPTIONS_OFFSET + _OPTIONS_SIZE:]
-    if hashlib.sha256(output).hexdigest() != UI_PATCHED_SHA256:
+    if hashlib.sha256(output).hexdigest() != _UI_BASE_SHA256:
         raise Error('Unexpected Options layout assembly output')
     return output
 
 
-def patch_permissions(source):
+def _patch_permissions_base(source):
     """Upgrade the verified source-list recipe without altering permission handlers."""
     sha = hashlib.sha256(source).hexdigest()
-    if sha == UI_PATCHED_SHA256:
+    if sha == _UI_BASE_SHA256:
         return source
     if sha == _PERMISSIONS_ASSEMBLY_SHA256:
-        return patch_options(source)
+        return _patch_options_base(source)
     if sha != _LIST_PATCHED_SHA256:
         raise Error('Unsupported HTML assembly for permissions serializer patch')
     resource = source[_PERMISSIONS_OFFSET:_PERMISSIONS_OFFSET + _PERMISSIONS_SIZE]
@@ -130,18 +143,18 @@ def patch_permissions(source):
     output = source[:_PERMISSIONS_OFFSET] + updated + source[_PERMISSIONS_OFFSET + _PERMISSIONS_SIZE:]
     if hashlib.sha256(output).hexdigest() != _PERMISSIONS_ASSEMBLY_SHA256:
         raise Error('Unexpected permissions assembly output')
-    return patch_options(output)
+    return _patch_options_base(output)
 
 
-def patch_source_list(source):
+def _patch_source_list_base(source):
     """Bounded upgrade from the previous supported HTML recipe, also used locally."""
     sha = hashlib.sha256(source).hexdigest()
-    if sha == UI_PATCHED_SHA256:
+    if sha == _UI_BASE_SHA256:
         return source
     if sha == _PERMISSIONS_ASSEMBLY_SHA256:
-        return patch_options(source)
+        return _patch_options_base(source)
     if sha == _LIST_PATCHED_SHA256:
-        return patch_permissions(source)
+        return _patch_permissions_base(source)
     if sha != _CREDENTIALS_PATCHED_SHA256:
         raise Error('Unsupported HTML assembly for data source list patch')
     resource = source[_SOURCES_OFFSET:_SOURCES_OFFSET + _SOURCES_SIZE]
@@ -159,11 +172,13 @@ def patch_source_list(source):
     output = source[:_SOURCES_OFFSET] + updated + source[_SOURCES_OFFSET + _SOURCES_SIZE:]
     if hashlib.sha256(output).hexdigest() != _LIST_PATCHED_SHA256:
         raise Error('Unexpected data source list assembly output')
-    return patch_permissions(output)
+    return _patch_permissions_base(output)
 
 
-def patch_ui(source):
+def _patch_ui_base(source):
     """Change two supported embedded JS resources, retaining PE/IL layout."""
+    if hashlib.sha256(source).hexdigest() == UI_2159_ORIGINAL_SHA256:
+        return _patch_ui_2159_base(source)
     if hashlib.sha256(source).hexdigest() != UI_ORIGINAL_SHA256:
         raise Error('Unsupported legacy HTML assembly; no patch produced')
     resource = source[_RESOURCE_OFFSET:_RESOURCE_OFFSET + _RESOURCE_SIZE]
@@ -192,7 +207,89 @@ def patch_ui(source):
               output[_DIALOG_OFFSET + _DIALOG_SIZE:])
     if len(output) != len(source) or hashlib.sha256(output).hexdigest() != _CREDENTIALS_PATCHED_SHA256:
         raise Error('Unexpected legacy HTML patch result; no patch produced')
-    return patch_source_list(output)
+    return _patch_source_list_base(output)
+
+
+def _patch_ui_2159_base(source):
+    """Port unchanged, hash-verified resources to their exact 2.159 locations."""
+    if hashlib.sha256(source).hexdigest() != UI_2159_ORIGINAL_SHA256:
+        raise Error('Unsupported 2.159 legacy HTML assembly; no patch produced')
+    # All five original resources are byte-identical to 2.158. The PE layout
+    # shifts them by 256 bytes. Check original and patched resource contents,
+    # retain their lengths, and verify the complete resulting assembly.
+    output = bytearray(source)
+    def replace(offset, size, original, patched, transform):
+        start = offset + 256
+        resource = source[start:start + size]
+        if hashlib.sha256(resource).hexdigest() != original:
+            raise Error('Unexpected 2.159 legacy HTML resource')
+        updated = transform(resource)
+        if len(updated) > size:
+            raise Error('2.159 legacy HTML hook exceeds its resource')
+        updated = updated.ljust(size, b' ')
+        if hashlib.sha256(updated).hexdigest() != patched:
+            raise Error('Unexpected 2.159 legacy HTML resource output')
+        output[start:start + size] = updated
+
+    def dialog(resource):
+        result = resource.replace(_SHOW, _SHOW + _DIALOG_HOOK)
+        for comment in _DIALOG_COMMENTS:
+            result = result.replace(comment, b'')
+        return result
+
+    def sources(resource):
+        result = resource.replace(_SOURCES_SHOW, _SOURCES_SHOW + _SOURCES_HOOK)
+        for comment in _SOURCES_COMMENTS:
+            result = result.replace(comment, b'')
+        return result
+
+    replace(_RESOURCE_OFFSET, _RESOURCE_SIZE,
+            'deedba82f5ce4561bb40063cf2219e38f3f9f96303da91362552108c3939b168',
+            '6c05b21b9adc132ed6d7eee0c368e9c43b6e1795f4ebdddf772ad78f2dd124b5',
+            lambda r: r.replace(_ANCHOR, _HOOK).replace(_REMOVED_COMMENT, b''))
+    replace(_DIALOG_OFFSET, _DIALOG_SIZE,
+            '56a955a27fe1e4e6a4d6efe1d1c0cee76da50dd699bdf0daac1b4a79b22cbcce',
+            '2614976e4a4aca69ac1dade2ea8988978b5cf3234668e32088bc49607434adc2', dialog)
+    replace(_SOURCES_OFFSET, _SOURCES_SIZE, _SOURCES_ORIGINAL, _SOURCES_PATCHED, sources)
+    replace(_PERMISSIONS_OFFSET, _PERMISSIONS_SIZE, _PERMISSIONS_ORIGINAL, _PERMISSIONS_PATCHED,
+            lambda r: re.sub(rb'(?m)^ +', b'', r.replace(_PERMISSIONS_ANCHOR, _PERMISSIONS_HOOK + _PERMISSIONS_ANCHOR)))
+    replace(_OPTIONS_OFFSET, _OPTIONS_SIZE, _OPTIONS_ORIGINAL, _OPTIONS_PATCHED,
+            lambda r: re.sub(rb'(?m)^ +', b'', r.replace(_OPTIONS_ANCHOR, _OPTIONS_HOOK)))
+    result = bytes(output)
+    if len(result) != len(source) or hashlib.sha256(result).hexdigest() != _UI_2159_BASE_SHA256:
+        raise Error('Unexpected 2.159 legacy HTML assembly output')
+    return result
+
+
+
+def _complete(source, recipe):
+    sha = hashlib.sha256(source).hexdigest()
+    if sha in options_layout.BASELINES or sha in options_layout.PATCHED.values():
+        return options_layout.patch(source)
+    return options_layout.patch(recipe(source))
+
+
+def patch_ui(source):
+    return _complete(source, _patch_ui_base)
+
+
+def patch_ui_2159(source):
+    if hashlib.sha256(source).hexdigest() not in (
+            UI_2159_ORIGINAL_SHA256, _UI_2159_BASE_SHA256, UI_2159_PATCHED_SHA256):
+        raise Error('Unsupported 2.159 legacy HTML assembly; no patch produced')
+    return _complete(source, _patch_ui_2159_base)
+
+
+def patch_options(source):
+    return _complete(source, _patch_options_base)
+
+
+def patch_permissions(source):
+    return _complete(source, _patch_permissions_base)
+
+
+def patch_source_list(source):
+    return _complete(source, _patch_source_list_base)
 
 
 def register(prefix, runtime, log):

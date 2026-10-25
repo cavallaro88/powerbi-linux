@@ -32,9 +32,9 @@ def main():
     remap_required = 'PowerBISaveDialog.dll' in active['patches']
     if remap_required:
         sys.path.insert(0, str(root / 'src'))
-        from pbi_linux.patches import ORIGINALS
+        from pbi_linux.patches import ORIGINALS, CURRENT_ORIGINALS
         preview_input = prefix / 'powerbi-linux-originals' / desktop.name
-        if digest(preview_input) != ORIGINALS[desktop.name]:
+        if digest(preview_input) not in (ORIGINALS[desktop.name], CURRENT_ORIGINALS[desktop.name]):
             raise RuntimeError('Preserved original Desktop differs from the supported input')
     out = root / '.local/save-dialog' / datetime.datetime.now().strftime('test-%Y%m%d-%H%M%S-%f')
     out.mkdir(parents=True, mode=0o700)

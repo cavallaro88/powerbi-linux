@@ -1,0 +1,18 @@
+Package: powerbi-linux
+Version: @VERSION@
+Architecture: amd64
+Maintainer: Power BI Linux contributors <noreply@github.com>
+Section: utils
+Priority: optional
+Homepage: https://github.com/cavallaro88/powerbi-linux
+Installed-Size: @INSTALLED_SIZE@
+Depends: python3 (>= 3.12), ca-certificates, libc6 (>= 2.39), systemd (>= 250), dbus-user-session, winbind, desktop-file-utils, shared-mime-info, xdg-utils, zenity, cabextract, hicolor-icon-theme, fontconfig, libfreetype6, libfontconfig1, libvulkan1, libxkbcommon0, libxkbregistry0, libgnutls30t64, libunwind8, libegl1, libgl1, libodbc2, libwayland-client0, libwayland-egl1, libpulse0, libudev1, libasound2t64, libpcap0.8t64, libgstreamer1.0-0, libgstreamer-plugins-base1.0-0, libdbus-1-3, libsdl2-2.0-0
+Recommends: mesa-vulkan-drivers, vulkan-tools
+Description: Experimental Power BI Desktop compatibility tools for Pop!_OS 24.04
+ Community installer, launcher and diagnostics for x86_64 Wayland desktops.
+ Pop!_OS 24.04 and Ubuntu 24.04 are experimental targets; graphical operation
+ on COSMIC has not been certified. Fedora 44 remains the tested platform.
+ .
+ Microsoft components and the project Wine/DXVK runtime are installed per user
+ by setup, never by root package scripts. No Microsoft installer, populated
+ Wine prefix or report is included in this package.
