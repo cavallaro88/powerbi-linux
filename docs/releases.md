@@ -28,25 +28,30 @@ a repair.
 
 ## CLI and Fedora RPM
 
-Each revision has the original binary RPM, its source RPM, `SHA256SUMS` and
-`SOURCE-PROVENANCE.json`. No Microsoft installers, populated prefixes or reports
-are attached. Old revisions are retained for reproduction; use RPM 13 for current testing.
+Published revisions include the original binary RPM, its source RPM, `SHA256SUMS`
+and `SOURCE-PROVENANCE.json`. No Microsoft installers, populated prefixes or reports
+are attached. Use RPM 13 for current testing.
 
-| Revision | Version notes | GitHub release |
+Older alpha assets were withdrawn from GitHub Releases: RPM 1–11 and runtime
+recipes 0.1.0–0.1.3 no longer host downloads. Their source snapshots remain at
+the corresponding tags, and their artifact digests remain in the
+[release catalogue](../packaging/releases.json).
+
+| Revision | Version notes | Downloads |
 |---|---|---|
 | 0.1.0-13 | [Changelog](releases/v0.1.0-13.md) | [Downloads](https://github.com/cavallaro88/powerbi-linux/releases/tag/v0.1.0-13) |
 | 0.1.0-12 | [Changelog](releases/v0.1.0-12.md) | [Downloads](https://github.com/cavallaro88/powerbi-linux/releases/tag/v0.1.0-12) |
-| 0.1.0-11 | [Changelog](releases/v0.1.0-11.md) | [Downloads](https://github.com/cavallaro88/powerbi-linux/releases/tag/v0.1.0-11) |
-| 0.1.0-10 | [Changelog](releases/v0.1.0-10.md) | [Downloads](https://github.com/cavallaro88/powerbi-linux/releases/tag/v0.1.0-10) |
-| 0.1.0-9 | [Changelog](releases/v0.1.0-9.md) | [Downloads](https://github.com/cavallaro88/powerbi-linux/releases/tag/v0.1.0-9) |
-| 0.1.0-8 | [Changelog](releases/v0.1.0-8.md) | [Downloads](https://github.com/cavallaro88/powerbi-linux/releases/tag/v0.1.0-8) |
-| 0.1.0-7 | [Changelog](releases/v0.1.0-7.md) | [Downloads](https://github.com/cavallaro88/powerbi-linux/releases/tag/v0.1.0-7) |
-| 0.1.0-6 | [Changelog](releases/v0.1.0-6.md) | [Downloads](https://github.com/cavallaro88/powerbi-linux/releases/tag/v0.1.0-6) |
-| 0.1.0-5 | [Changelog](releases/v0.1.0-5.md) | [Downloads](https://github.com/cavallaro88/powerbi-linux/releases/tag/v0.1.0-5) |
-| 0.1.0-4 | [Changelog](releases/v0.1.0-4.md) | [Downloads](https://github.com/cavallaro88/powerbi-linux/releases/tag/v0.1.0-4) |
-| 0.1.0-3 | [Changelog](releases/v0.1.0-3.md) | [Downloads](https://github.com/cavallaro88/powerbi-linux/releases/tag/v0.1.0-3) |
-| 0.1.0-2 | [Changelog](releases/v0.1.0-2.md) | [Downloads](https://github.com/cavallaro88/powerbi-linux/releases/tag/v0.1.0-2) |
-| 0.1.0-1 | [Changelog](releases/v0.1.0-1.md) | [Downloads](https://github.com/cavallaro88/powerbi-linux/releases/tag/v0.1.0-1) |
+| 0.1.0-11 | [Changelog](releases/v0.1.0-11.md) | Withdrawn alpha |
+| 0.1.0-10 | [Changelog](releases/v0.1.0-10.md) | Withdrawn alpha |
+| 0.1.0-9 | [Changelog](releases/v0.1.0-9.md) | Withdrawn alpha |
+| 0.1.0-8 | [Changelog](releases/v0.1.0-8.md) | Withdrawn alpha |
+| 0.1.0-7 | [Changelog](releases/v0.1.0-7.md) | Withdrawn alpha |
+| 0.1.0-6 | [Changelog](releases/v0.1.0-6.md) | Withdrawn alpha |
+| 0.1.0-5 | [Changelog](releases/v0.1.0-5.md) | Withdrawn alpha |
+| 0.1.0-4 | [Changelog](releases/v0.1.0-4.md) | Withdrawn alpha |
+| 0.1.0-3 | [Changelog](releases/v0.1.0-3.md) | Withdrawn alpha |
+| 0.1.0-2 | [Changelog](releases/v0.1.0-2.md) | Withdrawn alpha |
+| 0.1.0-1 | [Changelog](releases/v0.1.0-1.md) | Withdrawn alpha |
 
 ## Wine/DXVK runtime
 
@@ -59,10 +64,10 @@ publication remain required before distributing runtime binaries.
 | Version | Version notes | Source recipe |
 |---|---|---|
 | 0.1.4 | [Changelog](releases/runtime-v0.1.4.md) | [Source](https://github.com/cavallaro88/powerbi-linux/releases/tag/runtime-v0.1.4) |
-| 0.1.3 | [Changelog](releases/runtime-v0.1.3.md) | [Source](https://github.com/cavallaro88/powerbi-linux/releases/tag/runtime-v0.1.3) |
-| 0.1.2 | [Changelog](releases/runtime-v0.1.2.md) | [Source](https://github.com/cavallaro88/powerbi-linux/releases/tag/runtime-v0.1.2) |
-| 0.1.1 | [Changelog](releases/runtime-v0.1.1.md) | [Source](https://github.com/cavallaro88/powerbi-linux/releases/tag/runtime-v0.1.1) |
-| 0.1.0 | [Changelog](releases/runtime-v0.1.0.md) | [Source](https://github.com/cavallaro88/powerbi-linux/releases/tag/runtime-v0.1.0) |
+| 0.1.3 | [Changelog](releases/runtime-v0.1.3.md) | Withdrawn recipe |
+| 0.1.2 | [Changelog](releases/runtime-v0.1.2.md) | Withdrawn recipe |
+| 0.1.1 | [Changelog](releases/runtime-v0.1.1.md) | Withdrawn recipe |
+| 0.1.0 | [Changelog](releases/runtime-v0.1.0.md) | Withdrawn recipe |
 
 ## Source history and verification
 

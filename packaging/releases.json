@@ -2,7 +2,7 @@
   "schema": 1,
   "repository": "https://github.com/cavallaro88/powerbi-linux",
   "recommended_preview": "v0.1.0-13",
-  "historical_sources": "Reconstructed from original source RPMs/source exports. No private Git history was imported. Archived CI metadata omitted from historical runtime snapshots; RPM 12 points at the reviewed published product commit. Each release's source_commit is this repository's tag commit. Commit identifiers recorded before publication, inside released snapshots and in the published provenance assets, belong to the earlier development history and cannot be resolved here.",
+  "historical_sources": "Reconstructed from original source RPMs/source exports. No private Git history was imported. Archived CI metadata omitted from historical runtime snapshots; RPM 12 points at the reviewed published product commit. Each release's source_commit is this repository's tag commit. Commit identifiers recorded before publication, inside released snapshots and in the published provenance assets, belong to the earlier development history and cannot be resolved here. Alpha releases 1-11 and runtime recipes 0.1.0-0.1.3 were withdrawn from GitHub Releases after publication; their digests are preserved here as the record of the published artifacts.",
   "releases": [
     {
       "component": "rpm",
@@ -41,7 +41,8 @@
           "sha256": "c2739009fdef8f98c554f525aeb013de0059ca699bd9882f74436a84776e8216",
           "size": 284
         }
-      ]
+      ],
+      "withdrawn": true
     },
     {
       "component": "rpm",
@@ -80,7 +81,8 @@
           "sha256": "5af1fd27c1b2f6c6f1866c7b7e9be08d3e394932e628659e4f3b55097c9f3840",
           "size": 284
         }
-      ]
+      ],
+      "withdrawn": true
     },
     {
       "component": "rpm",
@@ -119,7 +121,8 @@
           "sha256": "ca9af507d5cf4117c4784c2332f4507bccb426be22ac4eb59ae422ff868b9454",
           "size": 284
         }
-      ]
+      ],
+      "withdrawn": true
     },
     {
       "component": "rpm",
@@ -158,7 +161,8 @@
           "sha256": "1b17b39c70d0b9cc7f3adb9f1e49bcd1cfabaa93a7cad2d749844ee54720ad70",
           "size": 284
         }
-      ]
+      ],
+      "withdrawn": true
     },
     {
       "component": "rpm",
@@ -197,7 +201,8 @@
           "sha256": "b8eeeb95850c51e14d314f9870a5227ef35cd9668f248c6d5d47993c9436af9b",
           "size": 284
         }
-      ]
+      ],
+      "withdrawn": true
     },
     {
       "component": "rpm",
@@ -236,7 +241,8 @@
           "sha256": "e16d1022d4bf06d73d94febcb91e7c72626eab95dc25f8e4db8b45f6aab8de23",
           "size": 284
         }
-      ]
+      ],
+      "withdrawn": true
     },
     {
       "component": "rpm",
@@ -275,7 +281,8 @@
           "sha256": "9f13fc311a053f7a6cbb1078f27ac6cf89a19b8630e80414be40ca5d6dca6969",
           "size": 284
         }
-      ]
+      ],
+      "withdrawn": true
     },
     {
       "component": "rpm",
@@ -314,7 +321,8 @@
           "sha256": "562e37041b08ff10ad0b1ac6a38ea2a4333887081622cc9848674042e142e5ac",
           "size": 284
         }
-      ]
+      ],
+      "withdrawn": true
     },
     {
       "component": "rpm",
@@ -353,7 +361,8 @@
           "sha256": "9cc06840cbcf076af2e6c6136fbf351425c619c66981eca27f2057356555db63",
           "size": 284
         }
-      ]
+      ],
+      "withdrawn": true
     },
     {
       "component": "rpm",
@@ -392,7 +401,8 @@
           "sha256": "48d771270dce87d91bb169f2b72c63e4dd0aef61793c00ea9e8e919badf02261",
           "size": 286
         }
-      ]
+      ],
+      "withdrawn": true
     },
     {
       "component": "rpm",
@@ -431,7 +441,8 @@
           "sha256": "eb5c1df956728a2805baea2e7084a9484463538d21d9946c7e759b5451ff6fe8",
           "size": 286
         }
-      ]
+      ],
+      "withdrawn": true
     },
     {
       "component": "runtime",
@@ -467,7 +478,8 @@
           "sha256": "f745a66ad8893f5b3ebc1e58c3c51486fe4802ee93a4cfd8cacf076a3888345f",
           "size": 197
         }
-      ]
+      ],
+      "withdrawn": true
     },
     {
       "component": "runtime",
@@ -503,7 +515,8 @@
           "sha256": "0bdbadd462893598b0ba012161d5735681959920394f505da765e46d53ffd0f2",
           "size": 197
         }
-      ]
+      ],
+      "withdrawn": true
     },
     {
       "component": "runtime",
@@ -539,7 +552,8 @@
           "sha256": "c386c63a77040be5c0630a2ab1d0d7cb13f5cb0c7093d2a26b07cc67bad69024",
           "size": 197
         }
-      ]
+      ],
+      "withdrawn": true
     },
     {
       "component": "runtime",
@@ -575,7 +589,8 @@
           "sha256": "dd9279ebcc0bd0dbf028f5d25dd768dff5a637d2ace62916c60b35f6d1e788f0",
           "size": 197
         }
-      ]
+      ],
+      "withdrawn": true
     },
     {
       "component": "runtime",

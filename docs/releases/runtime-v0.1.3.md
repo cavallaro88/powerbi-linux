@@ -1,4 +1,6 @@
 **Source recipe only — development candidate. No runtime binary is published in this release.**
+> **Recipe withdrawn.** The published recipe assets were removed from GitHub Releases; the source snapshot remains at the [tag](https://github.com/cavallaro88/powerbi-linux/tree/runtime-v0.1.3) and the artifact digests remain in the [release catalogue](../../packaging/releases.json).
+
 
 Original version date: **2026-10-16**. This GitHub entry was migrated from the existing
 project changelog; it does not claim an original GitHub publication on that date.
@@ -11,7 +13,7 @@ project changelog; it does not claim an original GitHub publication on that date
 
 ## Source and validation scope
 
-The attached recipe archive and GitHub source downloads contain project sources,
+The published recipe archive and GitHub source downloads contain project sources,
 pins, patch series and build instructions. Wine/DXVK source dependencies are
 obtained by the pinned recipe. No compiled runtime is attached: the full build,
 matching corresponding-source publication and compatibility release gates remain
