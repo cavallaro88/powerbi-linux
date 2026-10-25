@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "repository": "https://github.com/cavallaro88/powerbi-linux",
-  "recommended_preview": "v0.1.0-13",
+  "recommended_preview": "v0.1.0-18",
   "historical_sources": "Reconstructed from original source RPMs/source exports. No private Git history was imported. Archived CI metadata omitted from historical runtime snapshots; RPM 12 points at the reviewed published product commit. Each release's source_commit is this repository's tag commit. Commit identifiers recorded before publication, inside released snapshots and in the published provenance assets, belong to the earlier development history and cannot be resolved here. Alpha releases 1-11 and runtime recipes 0.1.0-0.1.3 were withdrawn from GitHub Releases after publication; their digests are preserved here as the record of the published artifacts.",
   "releases": [
     {
@@ -745,6 +745,44 @@
           "name": "SHA256SUMS",
           "sha256": "af87927caff296df907504cbc5d67ad2aee3f6b0d1159c102652b390c62098e6",
           "size": 393
+        }
+      ]
+    },
+    {
+      "component": "rpm",
+      "version": "0.1.0-18",
+      "tag": "v0.1.0-18",
+      "source_commit": "41693fb2d05b1493d45b56cf6c6e2f4bd0f1fd33",
+      "original_date": "2026-10-25",
+      "prerelease": true,
+      "source_only": false,
+      "source_origin": {
+        "kind": "reviewed-product-commit",
+        "commit": "41693fb2d05b1493d45b56cf6c6e2f4bd0f1fd33"
+      },
+      "ci_metadata_omitted": [],
+      "notes": "docs/releases/v0.1.0-18.md",
+      "url": "https://github.com/cavallaro88/powerbi-linux/releases/tag/v0.1.0-18",
+      "assets": [
+        {
+          "name": "powerbi-linux-0.1.0-18.noarch.rpm",
+          "sha256": "773b32a5bc9dfd5eb30d8f588d5a07b597e117b33b5b809cfab8aa9bea852763",
+          "size": 442771
+        },
+        {
+          "name": "powerbi-linux-0.1.0-18.src.rpm",
+          "sha256": "3b2cb6bfa002216c4eb31b889e2054083a0311555fc44a3ae1519a7353a30828",
+          "size": 412699
+        },
+        {
+          "name": "SOURCE-PROVENANCE.json",
+          "sha256": "e986446423430beed66065fcfaf1d16b8a4649e73144ce406c953cf7a41b0f8e",
+          "size": 500
+        },
+        {
+          "name": "SHA256SUMS",
+          "sha256": "b0fc3c54de72745f1148dfcb385830149a6939f0e2bef91e224d1431d9ba3e5e",
+          "size": 286
         }
       ]
     }
