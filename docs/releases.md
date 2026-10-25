@@ -4,8 +4,8 @@ Local candidates are prepared in the source tree and have not been published as
 new GitHub releases:
 
 - [RPM 17 — local GNOME theme integration](releases/v0.1.0-17.md)
-- [RPM 16 / DEB 0.1.0-16pop1 — local tooltip correction](releases/v0.1.0-16.md)
-- [RPM 15 / DEB 15pop1 — local Options interaction fixes](releases/v0.1.0-15.md)
+- [RPM 16 — local tooltip correction](releases/v0.1.0-16.md)
+- [RPM 15 — local Options interaction fixes](releases/v0.1.0-15.md)
 - [RPM 14 — local guided setup and documentation candidate](releases/v0.1.0-14.md)
 
 The current RPM preview is [0.1.0-18](https://github.com/cavallaro88/powerbi-linux/releases/tag/v0.1.0-18).
@@ -18,10 +18,10 @@ published replacement. Automatic installation uses the published
 binary, the complete corresponding source and exact-archive evidence; its
 two-hour soak remains pending.
 
-[RPM 15 / DEB 15pop1](releases/v0.1.0-15.md) are local Options interaction fixes.
+[RPM 15](releases/v0.1.0-15.md) is a local Options interaction fix.
 Existing installations apply them with `pbi-linux repair`; no new runtime or CI
-run is required. [RPM 16 / DEB 0.1.0-16pop1](releases/v0.1.0-16.md) are local
-tooltip fixes applied the same way, with Desktop closed. [RPM 17](releases/v0.1.0-17.md)
+run is required. [RPM 16](releases/v0.1.0-16.md) is a local
+tooltip fix applied the same way, with Desktop closed. [RPM 17](releases/v0.1.0-17.md)
 is a local GNOME theme integration: update the RPM and restart Desktop, without
 a repair.
 

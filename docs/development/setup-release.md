@@ -16,8 +16,8 @@ The source/evidence links must identify release assets, not a source-only recipe
 
 With an explicit local `--runtime` and matching `--runtime-sha256`, setup can
 download the pinned official Power BI installer after license acceptance even
-while the public runtime manifest is pending. This supports the private Pop!_OS
-test bundle. It does not select an automatic project runtime, mark the manifest
+while the public runtime manifest is pending. This supports fully local,
+offline-prepared installs. It does not select an automatic project runtime, mark the manifest
 ready or certify the provided archive. Incorrect local runtime checksums are
 rejected before any Microsoft download.
 

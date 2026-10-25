@@ -5,7 +5,6 @@
 | Task | Guide |
 |---|---|
 | Install and open Power BI | [Installation](install.md) |
-| Test the local Pop!_OS 24.04 DEB | [Pop!_OS experiment](popos.md) |
 | Check what works and what may fail | [Known issues](known-issues.md) |
 | Diagnose a problem | [Troubleshooting](troubleshooting.md) |
 | Sign in | [Microsoft account sign-in](sign-in.md) |

@@ -4,6 +4,8 @@
 
 ### Unreleased — product repository and upstream review
 
+- Remove the experimental Pop!_OS/DEB packaging path; the Fedora RPM is the only
+  supported package format and other distributions are outside the support target.
 - Test the original AWS Redshift 1.6.3.1008 Windows x64 MSI in the managed prefix:
   silent installation and automatic driver/default-DSN registration passed without
   manual driver registration. Add a generic offline Windows driver/DSN loading
@@ -49,13 +51,13 @@
 - Reuse the existing runtime and profile without repair; restart Desktop after updating the RPM.
 - Cover the bridge with unit tests and 13 native assertions using synthetic settings.
 
-### RPM release 16 / DEB 0.1.0-16pop1 — local tooltip correction, 2026-10-23
+### RPM release 16 — local tooltip correction, 2026-10-23
 
 - Show browser HTML/SVG title tooltips inside WebView instead of detached native windows.
 - Preserve original rich data tooltip handlers, dynamic title updates and keyboard dismissal.
 - Add guarded setup/repair recipe and tooltip integrity check; no runtime replacement.
 
-### RPM release 15 / DEB 15pop1 — Options interaction, 2026-10-21
+### RPM release 15 — Options interaction, 2026-10-21
 
 - Add guarded native resizing for the Options dialog in both supported Desktop recipes.
 - Fit sidebar/content to the viewport and preserve the footer and sidebar scroll access.

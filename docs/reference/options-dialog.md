@@ -2,12 +2,12 @@
 
 ## October 21: Options resizing and selection
 
-RPM 15 / DEB `0.1.0-15pop1` add a guarded correction for both Desktop 2.158.1177.0
+RPM 15 adds a guarded correction for both Desktop 2.158.1177.0
 and 2.159.883.0. No runtime replacement is required. Close Desktop, install the
 updated project package and run `pbi-linux repair`; upgrading the package alone
 does not replace the per-user application assembly.
 
-The reported Pop!_OS monitor is **3440×1440 at 100%**. The native Fedora test
+The reported monitor is **3440×1440 at 100%**. The native Fedora test
 monitor is 1920×1080 at 125%; a 3440×1440 browser viewport is simulated separately.
 That viewport test is not certification of a physical ultrawide/COSMIC session.
 

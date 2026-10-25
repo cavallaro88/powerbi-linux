@@ -21,7 +21,7 @@ An earlier [font-picker popup issue](text-pickers.md) had a similar appearance,
 but its correction applies only to the font and size selectors. It is not
 evidence that this new report has the same cause.
 
-## Local correction in RPM 16 / DEB 0.1.0-16pop1
+## Local correction in RPM 16
 
 The guarded `tooltips.py` recipe adds authored JavaScript to the locally installed
 report-view HTML, after the existing font-picker recipe. Both the complete input

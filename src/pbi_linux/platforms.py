@@ -25,17 +25,12 @@ def status(info=None):
     name, version = info.get('ID', ''), info.get('VERSION_ID', '')
     if name == 'fedora':
         return True, 'Fedora 44 is the tested target; other Fedora releases are experimental'
-    if name in ('pop', 'ubuntu') and version == '24.04':
-        label = 'Pop!_OS' if name == 'pop' else 'Ubuntu'
-        return True, label + ' 24.04 is experimental; graphical compatibility is not certified'
     detected = info.get('PRETTY_NAME') or (name + ' ' + version).strip() or 'unknown distribution'
-    return False, ('Detected ' + detected + '. Targets: Fedora (44 tested), '
-                   'Pop!_OS 24.04 and Ubuntu 24.04 (experimental)')
+    return False, 'Detected ' + detected + '. Target: Fedora 44, x86_64 and Wayland'
 
 
-TARGETS = 'Fedora 44 (tested); Pop!_OS / Ubuntu 24.04 (experimental), x86_64 / Wayland'
+TARGETS = 'Fedora 44, x86_64 / Wayland'
 
 
 def ntlm_help():
-    package = 'winbind' if release().get('ID') in ('pop', 'ubuntu') else 'samba-winbind-clients'
-    return 'Install ' + package + ' before opening Power BI'
+    return 'Install samba-winbind-clients before opening Power BI'

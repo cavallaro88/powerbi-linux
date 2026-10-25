@@ -90,19 +90,6 @@ without connecting. Optional `--dsn` checks the manager's matching DSN entry. Se
 [the AWS vendor-MSI evidence](../reference/vendor-installers.md); the tool does not install a
 driver or turn offline loading into connectivity certification.
 
-## Experimental Pop!_OS DEB
-
-`python3 tools/build-deb.py` builds `0.1.0-16pop1` for `amd64`, using a local
-Ubuntu 24.04 container's `dpkg-deb`. `--local` uses the installed `dpkg-deb`.
-It does not invoke CI, push code, run Wine or download Microsoft software.
-The result is in `dist/popos-24.04/`. Debian metadata and root cache-maintenance
-scripts are under `packaging/debian/`; bundle instructions and the local-runtime
-setup script are in `packaging/popos/`.
-
-Dependency/install checks in Ubuntu's base do not certify Pop!_OS's COSMIC UI.
-See [experimental use](../user/popos.md). Source changes for this experiment do
-not change the already built runtime 0.1.5 binary or its pending release gates.
-
 ## Corresponding source
 
 When distributing a runtime, publish the exact corresponding patched source and build recipe, Wine/Neutron notices, DXVK/submodule licenses, dnlib notice, builder image digest and package inventory. The runtime binary alone is not a complete release. Use the source export tooling to create a sanitized project source tree; the full Wine/DXVK source bundle is generated from the prepared sources.
