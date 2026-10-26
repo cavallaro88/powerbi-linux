@@ -74,13 +74,3 @@ reports. User-created menu entries from setup may remain; before removing the
 package, `pbi-linux uninstall` removes that user integration while preserving
 managed data. The separate `pbi-linux uninstall --purge` is destructive and is
 not run by package hooks.
-
-## Evidence and limits
-
-Container tests cover package dependency resolution, CLI/menu/MIME metadata,
-installation, reinstall, package upgrade, removal and purge. They do not cover a
-Wayland session or Power BI UI. The Ubuntu 26.04 GNOME VM completed setup with
-runtime 0.1.5 / Power BI 2.159.883.0; the user reported XLSX import into
-`teste.pbix`, save and reopen. That report was not independently audited, used a
-manually prepared QA installation, and does not certify the final DEB or Debian UI.
-No real user report or account is included in package tests.

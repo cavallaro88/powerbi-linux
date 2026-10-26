@@ -16,7 +16,7 @@ Run Microsoft Power BI Desktop on Fedora, with Linux desktop integration and a m
 > [!WARNING]
 > **Beta software.** Features can fail, and compatibility depends on the exact Power BI and runtime versions. Keep a private backup of your complete project and work on copies first. Read [known issues and unsupported features](docs/user/known-issues.md) before installing.
 >
-> Tested target: **Fedora 44, x86_64, native Wayland**, a systemd user session and a Vulkan-capable GPU/driver. This is an independent community project, with no Microsoft affiliation, endorsement or official support.
+> This is an independent community project, with no Microsoft affiliation, endorsement or official support.
 
 ## What is Power BI Linux?
 
