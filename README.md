@@ -11,12 +11,12 @@
 ![Display: Wayland](https://img.shields.io/badge/display-Wayland-yellow)
 [![Status: beta](https://img.shields.io/badge/status-beta-orange)](docs/user/known-issues.md)
 
-Run Microsoft Power BI Desktop on Fedora, with Linux desktop integration and a managed installation.
+Run Microsoft Power BI Desktop on Fedora, with Linux desktop integration and a managed installation. Experimental DEB packaging is available for [Ubuntu and Debian](docs/user/debian-ubuntu.md).
 
 > [!WARNING]
 > **Beta software.** Features can fail, and compatibility depends on the exact Power BI and runtime versions. Keep a private backup of your complete project and work on copies first. Read [known issues and unsupported features](docs/user/known-issues.md) before installing.
 >
-> Tested target: **Fedora 44, x86_64, native Wayland**, a systemd user session and a Vulkan-capable GPU/driver. This is an independent community project, with no Microsoft affiliation, endorsement or official support.
+> This is an independent community project, with no Microsoft affiliation, endorsement or official support.
 
 ## What is Power BI Linux?
 
@@ -29,13 +29,17 @@ The project combines installation and recovery tools with targeted compatibility
 - **Open reports from your desktop:** launch PBIX, PBIP and PBIR files through the file manager or application menu.
 - **Import and edit data:** CSV import, report visuals, save/reopen and a synthetic 158-table refresh have passed recorded tests.
 - **Use repaired dialogs and controls:** compatibility work covers save confirmation, Options, credentials, permissions, and font/size selectors.
-- **Keep your installation recoverable:** interrupted setup can resume; repair and runtime updates use separate profile generations with rollback.
+- **Maintain the existing installation:** interrupted setup can resume; repair and runtime updates work in place without snapshots or automatic rollback. Back up important files yourself before maintenance.
 - **Sign in through your browser:** authentication and persistence have passed on the test host; a real publication was confirmed in a test workspace.
 - **Add optional providers:** MySQL has a managed installation recipe. Other connector scenarios have separate experimental status.
 
 These results apply to their recorded versions and test cases. They do not certify every report, connector or newer release. The [short compatibility guide](docs/user/known-issues.md) explains the practical limits.
 
 ## Install
+
+**Ubuntu / Debian (experimental):** use the [DEB installation guide](docs/user/debian-ubuntu.md).
+This does not expand Fedora's validation claims to other distributions or apply
+any resource preset. The instructions below are for the published Fedora RPM.
 
 Download the recommended **binary RPM** from [Releases](https://github.com/cavallaro88/powerbi-linux/releases/tag/v0.1.0-18), then install it using DNF. The `.src.rpm` is for developers.
 

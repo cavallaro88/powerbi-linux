@@ -9,7 +9,7 @@ import tarfile
 
 REQUIRED = ('clean_install', 'desktop_pbix', 'pbip_relative_paths', 'pbir_relative_paths',
             'csv_visual', 'large_ui_refresh_and_visuals', 'save_reopen', 'soak_2h',
-            'interrupted_setup', 'update_repair_rollback', 'uninstall_associations')
+            'interrupted_setup', 'update_repair_in_place', 'uninstall_associations')
 
 
 def validate(runtime, evidence):

@@ -67,11 +67,11 @@ permissions or remove project caches.
 The RPM carries the HTML recipe and doctor checks; the runtime archive carries
 the driver. Upgrading only the RPM does not activate these changes in an existing
 profile. With Desktop closed and the new recipe available, verify checksums and
-use `pbi-linux update --runtime ARCHIVE --runtime-sha256 SHA256`. It snapshots the
-prefix and applies the HTML recipe as well as selecting the runtime. Check disk
-space first: this host's prefix was about 9.1 GiB and reflink was unavailable.
-Keep the previous profile for rollback. No Microsoft installer update is involved;
-resource defaults remain unlimited.
+use `pbi-linux update --runtime ARCHIVE --runtime-sha256 SHA256`. The current CLI
+applies the HTML recipe and selects the runtime in the existing prefix, without
+snapshot copies or rollback. Read the [maintenance warning](installation-lifecycle.md#maintenance)
+and check space for downloads/extraction first. No Microsoft installer update is
+involved; resource defaults remain unlimited.
 
 A full source build uses `python3 runtime/build.py --runtime-version 0.1.1` and
 is not claimed to produce a byte-identical incremental archive. For the incremental

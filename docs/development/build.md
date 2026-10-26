@@ -47,6 +47,9 @@ The container base is pinned by digest. Package repository versions are recorded
 
 ## RPM
 
+Package creation belongs to the [post-merge pipeline](ci-cd.md), not feature-branch
+or pull-request checks. The commands below document post-merge/manual reproduction.
+
 ```bash
 python3 tools/build-rpm.py
 # Also compile/sign helpers against dnlib in prepared sources/
@@ -89,6 +92,48 @@ an existing registration, actual manager discovery, DLL loading and ODBC 3 handl
 without connecting. Optional `--dsn` checks the manager's matching DSN entry. See
 [the AWS vendor-MSI evidence](../reference/vendor-installers.md); the tool does not install a
 driver or turn offline loading into connectivity certification.
+
+## Experimental DEB
+
+Only create archives after merge, through the [post-merge pipeline](ci-cd.md) or
+manual reproduction of its tested main revision. During branch review use the
+staging-only command below instead.
+
+The package targets Ubuntu 24.04/26.04 and Debian 13 x86_64 as **experimental**.
+It reuses the CLI, launcher and desktop resources; it contains no runtime binary,
+Microsoft installers, prefix or per-user resource configuration. The RPM recipe
+and runtime/download checksums are unchanged.
+
+```bash
+# Default: rootless Podman with a digest-pinned Debian dpkg-deb image
+python3 tools/build-deb.py
+# Docker instead:
+python3 tools/build-deb.py --engine docker
+# Native Debian/Ubuntu with Python 3.12+ and dpkg-deb installed:
+python3 tools/build-deb.py --local
+# Inspect staging only, without building a package:
+python3 tools/build-deb.py --stage-only /path/to/new-staging-directory
+```
+
+Outputs are `build/deb/powerbi-linux_0.1.0-18~experimental2_amd64.deb` and its
+`.deb.sha256`. Existing artifacts are not overwritten: change the version in
+`packaging/debian/control` or use a fresh `--output` directory. The builder does
+not claim byte-identical reproducibility. It runs no tests implicitly; run the
+unit suite, documentation checks and the disposable lifecycle test before release.
+The native archive unit test requires `PBI_PACKAGE_BUILD_TESTS=1` and is enabled
+only in the post-merge workflow, not ordinary branch/PR checks.
+
+The lifecycle test must run only in a throwaway Debian/Ubuntu container as root:
+set `PBI_DEB_DISPOSABLE=1`, then run
+`python3 tests/packaging/deb-lifecycle.py /absolute/path/to/package.deb --output /path/to/result.json`
+after refreshing APT indexes. It installs dependencies and exercises install,
+reinstall, a generated package-version upgrade, remove and purge, preserving
+synthetic user files and checking that resource defaults stay unchanged. It
+never provisions Wine or Microsoft software. See the CI matrix for usage.
+
+Distribute the checksum and matching [source export](#corresponding-source) with
+the DEB; signing and repository publication remain separate release operations.
+See [experimental installation and scope](../user/debian-ubuntu.md).
 
 ## Corresponding source
 

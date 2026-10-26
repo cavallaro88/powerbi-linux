@@ -14,7 +14,7 @@ from unittest.mock import patch
 from types import SimpleNamespace
 import sys
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]/'src'))
-from pbi_linux import assets, common, launch, provision, pe_cache, desktop, webview
+from pbi_linux import assets, common, launch, provision, pe_cache, desktop, webview, cli
 
 
 class ProductTests(unittest.TestCase):
@@ -36,6 +36,24 @@ class ProductTests(unittest.TestCase):
         self.assertTrue(self.paths.active.is_relative_to(self.root))
         self.assertEqual(self.paths.active.stat().st_mode & 0o777, 0o600)
         self.assertEqual(common.read_json(self.paths.active), {'sample':'value'})
+
+    def test_incomplete_maintenance_blocks_launch_before_starting_a_service(self):
+        runtime=self.runtime()
+        prefix=self.paths.data/'profiles/fixture';prefix.mkdir(parents=True)
+        common.atomic_json(self.paths.active,{'prefix':str(prefix),'runtime':str(runtime),'patches':{}})
+        common.atomic_json(self.paths.state/'maintenance.json',{'status':'running'})
+        with patch.object(launch,'busy',return_value=False), patch.object(launch,'run') as run:
+            with self.assertRaisesRegex(common.Error,'maintenance'):
+                launch.open_file(self.paths,None)
+        run.assert_not_called()
+
+    def test_doctor_reports_incomplete_maintenance(self):
+        common.atomic_json(self.paths.state/'maintenance.json',{'status':'failed'})
+        with patch.object(cli.subprocess,'run',return_value=SimpleNamespace(returncode=0)):
+            result=cli.doctor(self.paths)
+        checks=[c for c in result['checks'] if c['name']=='maintenance']
+        self.assertEqual(len(checks),1)
+        self.assertFalse(checks[0]['ok'])
 
     def test_wine_installer_reboot_status_requires_explicit_opt_in(self):
         result=subprocess.CompletedProcess(['wine','installer.exe'],194,stdout='',stderr='')
@@ -148,19 +166,93 @@ class ProductTests(unittest.TestCase):
         self.assertEqual(common.read_json(self.paths.active),initial)
         self.assertFalse(self.paths.previous.exists())
 
-    def test_failed_snapshot_removes_only_its_partial_copy(self):
-        source=self.root/'source-profile'
-        source.mkdir(); (source/'document.txt').write_text('preserve')
-        target=self.root/'pending-snapshot'
-        def partial(command, **kwargs):
-            (target/'incomplete.txt').write_text('partial copy')
-            raise common.Error('Disk full')
-        with patch.object(provision,'run',side_effect=partial):
-            with self.assertRaises(common.Error):provision.snapshot(source,target)
-        self.assertFalse(target.exists())
-        self.assertEqual((source/'document.txt').read_text(),'preserve')
+    def test_repair_reuses_the_active_prefix_without_snapshot_or_retention(self):
+        runtime=self.runtime()
+        prefix=self.paths.data/'profiles/snapshot-active-fixture'
+        prefix.mkdir(parents=True)
+        report=prefix/'synthetic.pbix';report.write_bytes(b'preserve synthetic report')
+        legacy=self.paths.data/'profiles/legacy-snapshot'
+        legacy.mkdir();(legacy/'sentinel').write_text('do not delete existing data')
+        initial={'schema':1,'prefix':str(prefix),'runtime':str(runtime),'patches':{},
+                 'runtime_sha256':'a'*64,'powerbi_version':'2.159.883.0'}
+        common.atomic_json(self.paths.active,initial)
+        common.atomic_json(self.paths.previous,{**initial,'prefix':str(legacy)})
+        before=set((self.paths.data/'profiles').iterdir())
+        with patch.object(provision,'idle'), patch.object(provision,'run') as run, \
+             patch.object(provision,'configure',return_value={'new.dll':'b'*64}) as configure, \
+             patch.object(provision,'stop_server'), patch.object(pe_cache,'prepare'), \
+             patch.object(provision,'verified_webview',return_value=self.root/'msedge.dll'), \
+             patch.object(desktop,'integrate'):
+            provision.maintain(self.paths,SimpleNamespace(command='repair'))
+        self.assertEqual(configure.call_args.args[0],prefix)
+        self.assertEqual(set((self.paths.data/'profiles').iterdir()),before)
+        self.assertEqual(common.read_json(self.paths.active)['prefix'],str(prefix))
+        self.assertFalse(self.paths.previous.exists())
+        self.assertEqual(report.read_bytes(),b'preserve synthetic report')
+        self.assertEqual((legacy/'sentinel').read_text(),'do not delete existing data')
+        self.assertFalse(any(str(call.args[0][0])=='cp' for call in run.call_args_list))
+
+    def test_failed_in_place_update_is_marked_and_can_be_retried_without_copy(self):
+        runtime=self.runtime()
+        newer=self.paths.data/'runtimes/newer'
+        shutil.copytree(runtime,newer)
+        prefix=self.paths.data/'profiles/existing'
+        prefix.mkdir(parents=True)
+        report=prefix/'synthetic.pbix';report.write_text('preserve')
+        initial={'schema':1,'prefix':str(prefix),'runtime':str(runtime),'patches':{},
+                 'runtime_sha256':'a'*64,'powerbi_version':'2.159.883.0'}
+        common.atomic_json(self.paths.active,initial)
+        marker=self.paths.state/'maintenance.json'
+        args=SimpleNamespace(command='update',runtime='synthetic-archive',runtime_sha256='b'*64)
+        def interrupted(target, *unused):
+            (target/'partial-change').write_text('in-place change')
+            raise common.Error('Synthetic configure failure')
+        with patch.object(provision,'idle'), patch.object(provision,'run'), \
+             patch.object(provision,'install_runtime',return_value=newer), \
+             patch.object(provision,'stop_server'), patch.object(pe_cache,'prepare'), \
+             patch.object(provision,'verified_webview',return_value=self.root/'msedge.dll'), \
+             patch.object(desktop,'integrate'), patch.object(provision,'configure',side_effect=interrupted):
+            with self.assertRaises(common.Error):
+                provision.maintain(self.paths,args)
+        self.assertTrue(marker.is_file(), 'Interrupted in-place maintenance must be recorded')
+        self.assertEqual(common.read_json(marker)['status'],'failed')
+        self.assertEqual(common.read_json(self.paths.active),initial)
+        self.assertTrue((prefix/'partial-change').is_file())
+        self.assertEqual(list((self.paths.data/'profiles').iterdir()),[prefix])
+        with patch.object(provision,'idle'), patch.object(provision,'run'), \
+             patch.object(provision,'install_runtime',return_value=newer), \
+             patch.object(provision,'stop_server'), patch.object(pe_cache,'prepare'), \
+             patch.object(provision,'verified_webview',return_value=self.root/'msedge.dll'), \
+             patch.object(desktop,'integrate'), patch.object(provision,'configure',return_value={}):
+            provision.maintain(self.paths,args)
+        self.assertFalse(marker.exists())
+        self.assertEqual(common.read_json(self.paths.active)['runtime'],str(newer))
+        self.assertEqual(common.read_json(self.paths.active)['prefix'],str(prefix))
+        self.assertFalse(self.paths.previous.exists())
+        self.assertEqual(report.read_text(),'preserve')
+
+    def test_interrupted_maintenance_warns_before_mutation_and_records_failure(self):
+        runtime=self.runtime()
+        prefix=self.paths.data/'profiles/fixture';prefix.mkdir(parents=True)
+        initial={'prefix':str(prefix),'runtime':str(runtime),'patches':{},'runtime_sha256':'a'*64}
+        common.atomic_json(self.paths.active,initial)
+        with patch.object(provision,'idle'), patch('builtins.print') as output, \
+             patch.object(provision,'stop_server') as stopped:
+            def interrupt(command, **kwargs):
+                self.assertIn('in place',output.call_args.args[0])
+                self.assertIn('no snapshot or automatic rollback',output.call_args.args[0])
+                self.assertTrue(output.call_args.kwargs['flush'])
+                raise KeyboardInterrupt()
+            with patch.object(provision,'run',side_effect=interrupt):
+                with self.assertRaises(KeyboardInterrupt):
+                    provision.maintain(self.paths,SimpleNamespace(command='repair'))
+        stopped.assert_called_once()
+        self.assertEqual(common.read_json(self.paths.maintenance)['status'],'failed')
+        self.assertEqual(common.read_json(self.paths.active),initial)
 
     def test_interrupted_setup_resumes_completed_stages_before_activation(self):
+        # A successful reinstall must also clear stale maintenance state.
+        common.atomic_json(self.paths.maintenance,{'status':'failed'})
         source=self.root/'installer.exe'
         source.write_bytes(b'synthetic installer')
         runtime=self.runtime()
@@ -199,6 +291,7 @@ class ProductTests(unittest.TestCase):
             integration.assert_called_once()
         self.assertEqual(sum('wineboot.exe' in c for c in commands),1)
         self.assertTrue(self.paths.active.exists())
+        self.assertFalse(self.paths.maintenance.exists())
 
     def test_uninstall_clears_only_our_empty_previous_association(self):
         # GIO can auto-select a newly registered sole handler before an explicit
@@ -216,7 +309,7 @@ class ProductTests(unittest.TestCase):
         self.assertIn('reader.desktop;',content)
         self.assertIn('editor.desktop;',content)
 
-    def test_rollback_swaps_snapshots(self):
+    def test_legacy_rollback_is_rejected_without_changing_existing_profiles(self):
         runtime=self.runtime()
         first=self.paths.data/'profiles/first'
         second=self.paths.data/'profiles/second'
@@ -227,9 +320,12 @@ class ProductTests(unittest.TestCase):
         common.atomic_json(self.paths.active,two)
         common.atomic_json(self.paths.previous,one)
         with patch.object(provision,'idle'):
-            provision.rollback(self.paths)
-        self.assertEqual(common.read_json(self.paths.active),one)
-        self.assertEqual(common.read_json(self.paths.previous),two)
+            with self.assertRaisesRegex(common.Error,'no longer'):
+                provision.rollback(self.paths)
+        self.assertEqual(common.read_json(self.paths.active),two)
+        self.assertEqual(common.read_json(self.paths.previous),one)
+        self.assertTrue(first.is_dir())
+        self.assertTrue(second.is_dir())
 
     def test_legacy_wine_cleanup_preserves_foreign_prefixes_and_shared_mime(self):
         apps=self.paths.data.parent/'applications';apps.mkdir(parents=True)

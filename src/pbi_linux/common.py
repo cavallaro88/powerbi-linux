@@ -71,6 +71,7 @@ class Paths:
         self.settings = self.config / 'settings.json'
         self.active = self.data / 'active.json'
         self.previous = self.data / 'previous.json'
+        self.maintenance = self.state / 'maintenance.json'
         self.socket = self.session / 'session.sock'
 
     def create(self):

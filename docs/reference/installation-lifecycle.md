@@ -1,8 +1,8 @@
 # Installation and lifecycle
 
-The only supported target is Fedora 44 x86_64 on native Wayland. Install the RPM with DNF so dependencies are resolved. `samba-winbind-clients` supplies the local SSPI/NTLM helper; a Winbind daemon is not needed. Install the appropriate Vulkan driver for your GPU separately.
+The tested target is Fedora 44 x86_64 on native Wayland; [Ubuntu/Debian DEBs](../user/debian-ubuntu.md) are experimental. Install the RPM with DNF or the DEB with APT so dependencies are resolved. `samba-winbind-clients` on Fedora and `winbind` on Debian/Ubuntu supply the local SSPI/NTLM helper; a Winbind daemon is not needed. Install the appropriate Vulkan driver for your GPU separately.
 
-The runtime is built against glibc 2.39 in an Ubuntu build container to provide a conservative ABI baseline. This is a build environment choice, not a supported Ubuntu installation target.
+The runtime is built against glibc 2.39 in an Ubuntu build container to provide a conservative ABI baseline. This build choice alone does not certify Ubuntu compatibility.
 
 ## Required inputs
 
@@ -49,10 +49,10 @@ components still need network access or a complete verified download cache.
 
 | Location | Contents |
 |---|---|
-| `$XDG_DATA_HOME/powerbi-linux` | Runtime generations, profile generations and active/previous pointers |
+| `$XDG_DATA_HOME/powerbi-linux` | Versioned runtimes, managed profile and active metadata; legacy directories may remain |
 | `$XDG_CONFIG_HOME/powerbi-linux` | Settings and previous desktop associations |
 | `$XDG_CACHE_HOME/powerbi-linux` | Verified downloads and derived PE backing |
-| `$XDG_STATE_HOME/powerbi-linux` | Setup, maintenance and session logs |
+| `$XDG_STATE_HOME/powerbi-linux` | Setup, maintenance and session logs; incomplete-maintenance marker |
 | `$XDG_RUNTIME_DIR/powerbi-linux` | Session socket and maintenance lock |
 
 Defaults follow the standard `~/.local/share`, `~/.config`, `~/.cache` and `~/.local/state` locations. State directories and socket are private to the user. Power BI is not a sandbox: Wine can access files available to the user.
@@ -62,16 +62,24 @@ directory above. Separate XDG data directories use an installation-derived suffi
 for their service, socket and locks. Native QA keeps the actual desktop
 `XDG_RUNTIME_DIR` so Wayland and systemd IPC remain reachable.
 
-The validated profile occupies approximately 9 GiB, before the runtime, verified downloads, derived cache and your reports. On a filesystem without reflinks, repair/update needs space for another complete profile and its cache; the original is retained for rollback. Check the filesystem containing your XDG directories before maintenance. A small RPM download does not represent the size of the installed Microsoft application.
+The validated profile occupies approximately 9 GiB, before the runtime, verified downloads, derived cache and your reports. Repair/update does not copy the complete prefix or retain a previous generation. Downloads, new versioned runtimes and ordinary extraction/cache still need free space. Check the filesystem containing your XDG directories before maintenance. A small package download does not represent the size of the installed Microsoft application.
 
 ## Maintenance
 
-Close all managed windows before maintenance. Setup can resume an interrupted stage using the same inputs. Repair and runtime update create a separate profile generation before activating it; failure leaves the current pointer untouched.
+Close all managed windows before maintenance. Setup can resume an interrupted stage using the same inputs. Repair and runtime update modify the active prefix **in place**, without temporary full-prefix copies, retained snapshots or automatic rollback. A warning is printed before mutation. Back up important files yourself: failure or interruption may leave the installation partially modified and require repair, reinstallation or restoration of your own backup.
+
+Before mutation, a private `maintenance.json` marker is written under the state
+directory. It remains after a failure or abrupt process exit; launch is blocked
+and doctor reports incomplete maintenance. Repeat the verified update or run
+repair. Successful maintenance or a completed fresh reinstall clears the marker. Activation metadata is
+updated after the work completes, but an unchanged pointer is **not** evidence
+that the in-place files are unchanged. Checksums, recipe guards, locks and idle
+checks remain enforced.
 
 To upgrade the CLI, run `sudo dnf upgrade ./powerbi-linux-0.1.0-18.noarch.rpm`
 and `pbi-linux doctor`. If the HTML/email dialog checks report outdated patches,
 close Desktop and run `pbi-linux repair`, then check again. Repair applies the
-new recipe to a new profile while retaining the previous one for rollback.
+new recipe to the existing profile without making a snapshot.
 Already-patched profiles passing doctor do not need another repair. Options requires runtime 0.1.2 as well as the RPM 9 UI recipe; see
 [Options update instructions](options-dialog.md). Older runtime archives retain
 their own documented scope. See [sign-in status](../user/sign-in.md)
@@ -80,11 +88,18 @@ for the distinction between fixing Continue and completing account authenticatio
 ```bash
 pbi-linux repair
 pbi-linux update --runtime runtime.tar.xz --runtime-sha256 '<checksum>'
-pbi-linux rollback
+
 pbi-linux uninstall
 ```
 
-`update` updates the **project runtime** and provisions the fixed WebView2 recipe recorded by that runtime. It does not upgrade Power BI Desktop or .NET; those require a separately validated installation recipe. Wine Gecko x86/x64 is also downloaded from WineHQ with hashes pinned from the Wine source. The project never schedules automatic updates. The fixed WebView2 package is selected by a per-prefix `BrowserExecutableFolder` policy and checked against the activated runtime manifest. An Evergreen copy or Microsoft updater created by another installer does not select a different browser for this application. Rollback retains the prior runtime's WebView2 contract; it does not silently adopt the current CLI's browser version. Previous profiles are retained for rollback and can consume substantial disk space when reflinks are unavailable.
+`update` updates the **project runtime** and provisions the fixed WebView2 recipe recorded by that runtime. It does not upgrade Power BI Desktop or .NET; those require a separately validated installation recipe. Wine Gecko x86/x64 is also downloaded from WineHQ with hashes pinned from the Wine source. The project never schedules automatic updates. The fixed WebView2 package is selected by a per-prefix `BrowserExecutableFolder` policy and checked against the activated runtime manifest. An Evergreen copy or Microsoft updater created by another installer does not select a different browser for this application.
+
+The legacy `rollback` command returns an explanatory error and changes nothing.
+New activation/maintenance no longer records `previous.json`. Legacy metadata is
+discarded when maintaining/activating an installation, but existing snapshot
+directories are not deleted automatically: they can contain user files or be the
+active installation despite their name. Old runtime directories and downloads
+are not automatically purged by this change either.
 
 `uninstall` removes per-user integration and preserves state. When the RPM's system desktop entry exists, a per-user `Hidden=true` entry masks it so it does not reappear in the menu or Open With. A later `repair` restores the menu and Open With entries without changing explicit default applications. `uninstall --purge` explicitly deletes managed profiles, runtime, cache and settings. It does not uninstall the RPM; use DNF for that. Project files saved outside managed directories are never deleted. Files saved inside a managed prefix are part of the purge.
 
@@ -93,7 +108,7 @@ RPM 0.1.0-2 defaults to no project RAM/swap limits or CPU quota, automatic WebVi
 Setup/repair with RPM 6 enables **Use my default web browser** for authentication.
 For an existing profile, enable it under **File → Options and settings → Options
 → Global → Security → Authentication Browser**, then restart Desktop. A repair
-snapshot is unnecessary merely to change this preference. The email patch check
+is unnecessary merely to change this preference. The email patch check
 in doctor does not certify browser selection or a signed-in account. See
 [sign-in](../user/sign-in.md) for the tested scope.
 

@@ -1,0 +1,118 @@
+name: Packages after merge
+on:
+  workflow_run:
+    workflows: ["Product checks"]
+    types: [completed]
+    branches: [main]
+permissions:
+  contents: read
+concurrency:
+  group: packages-${{ github.event.workflow_run.head_sha }}
+  cancel-in-progress: false
+jobs:
+  deb:
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_branch == 'main' &&
+      github.event.workflow_run.head_repository.full_name == github.repository
+    runs-on: ubuntu-latest
+    container: ${{ matrix.image }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: ubuntu-24.04
+            image: ubuntu:24.04
+          - target: ubuntu-26.04
+            image: ubuntu:26.04
+          - target: debian-13
+            image: debian:13-slim
+    env:
+      DEBIAN_FRONTEND: noninteractive
+      PBI_PACKAGE_BUILD_TESTS: '1'
+      PBI_DEB_DISPOSABLE: '1'
+    steps:
+      - name: Install build and check dependencies
+        run: apt-get update && apt-get install -y --no-install-recommends ca-certificates python3 git desktop-file-utils shared-mime-info
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          persist-credentials: false
+      - name: Verify the exact merged source
+        run: python3 tools/check-product.py --output build/check-product/packages
+      - name: Build experimental DEB
+        run: python3 tools/build-deb.py --local
+      - name: Test disposable package lifecycle
+        run: python3 tests/packaging/deb-lifecycle.py "$(realpath build/deb/*.deb)" --output build/deb/lifecycle.json
+      - name: Export corresponding source and checksums
+        run: |
+          python3 tools/export-source.py build/deb/source
+          tar -czf build/deb/powerbi-linux-source.tar.gz -C build/deb source
+          cd build/deb
+          sha256sum ./*.deb ./*.tar.gz > SHA256SUMS
+      - name: Preserve post-merge artifacts
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: deb-${{ matrix.target }}-${{ github.event.workflow_run.head_sha }}
+          path: |
+            build/deb/*.deb
+            build/deb/*.sha256
+            build/deb/*.tar.gz
+            build/deb/SHA256SUMS
+            build/deb/lifecycle.json
+            build/check-product/packages/*.json
+            build/check-product/packages/*.xml
+            build/check-product/packages/*.log
+          if-no-files-found: error
+          retention-days: 14
+  rpm:
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_branch == 'main' &&
+      github.event.workflow_run.head_repository.full_name == github.repository
+    runs-on: ubuntu-latest
+    container: fedora:44
+    timeout-minutes: 20
+    env:
+      PBI_PACKAGE_BUILD_TESTS: '1'
+    steps:
+      - name: Install build and check dependencies
+        run: dnf install -y python3 git rpm-build desktop-file-utils shared-mime-info
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          persist-credentials: false
+      - name: Verify the exact merged source
+        run: python3 tools/check-product.py --output build/check-product/packages
+      - name: Build RPM and source RPM
+        run: python3 tools/build-rpm.py --local
+      - name: Test installation and removal in disposable Fedora
+        run: |
+          dnf install -y --setopt=tsflags= ./build/rpm/RPMS/noarch/*.rpm
+          pbi-linux --version
+          rpm -V powerbi-linux
+          desktop-file-validate /usr/share/applications/powerbi-linux.desktop
+          dnf remove -y powerbi-linux
+          test ! -e /usr/bin/pbi-linux
+      - name: Record checksums
+        run: |
+          cd build/rpm
+          sha256sum RPMS/noarch/*.rpm SRPMS/*.rpm > SHA256SUMS
+      - name: Preserve post-merge artifacts
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: rpm-fedora44-${{ github.event.workflow_run.head_sha }}
+          path: |
+            build/rpm/RPMS/noarch/*.rpm
+            build/rpm/SRPMS/*.rpm
+            build/rpm/SHA256SUMS
+            build/check-product/packages/*.json
+            build/check-product/packages/*.xml
+            build/check-product/packages/*.log
+          if-no-files-found: error
+          retention-days: 14

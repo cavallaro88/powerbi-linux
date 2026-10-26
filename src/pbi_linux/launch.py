@@ -85,6 +85,9 @@ def open_file(paths, value, diagnostics=False):
     filename = file_argument(value)
     unit = session_unit(paths.data)
     with paths.lock('maintenance'):
+        if paths.maintenance.exists():
+            raise Error('In-place maintenance did not finish. Run repair or repeat update '
+                        'before opening Power BI; no automatic rollback is available.')
         if not paths.active.is_file():
             raise Error('Power BI is not set up for this user. Run pbi-linux setup --help to prepare the installation.')
         installation = active(paths)

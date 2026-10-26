@@ -1,5 +1,7 @@
 # Install Power BI Desktop on Fedora
 
+For the experimental Ubuntu/Debian package, use the [DEB guide](debian-ubuntu.md).
+
 > [!WARNING]
 > **Beta software.** Read [known issues](known-issues.md), keep complete project backups and try copies of your reports first. Microsoft does not support this community installation.
 
@@ -7,7 +9,7 @@
 
 You need **Fedora 44 x86_64**, a **Wayland** desktop session, a working systemd user session and a **Vulkan-capable graphics driver**. Install your GPU's appropriate Vulkan driver before continuing.
 
-Allow approximately **9 GiB for Power BI**, plus its compatibility components, downloads and your reports. Repairs may need space for another complete installation. Wine can access files available to your user; it is not a sandbox.
+Allow approximately **9 GiB for Power BI**, plus its compatibility components, downloads and your reports. Maintenance needs room for downloads, extraction and derived cache, but does not clone the complete installation. Wine can access files available to your user; it is not a sandbox.
 
 ## Release availability
 
@@ -63,7 +65,7 @@ PBIX, PBIP and PBIR are supported file types. Default file associations are opti
 
 ## Recovery and removal
 
-Close all Power BI windows before maintenance. Repeating an interrupted setup with the same inputs resumes completed stages. `pbi-linux repair` repairs a separate copy; `pbi-linux rollback` restores the previous installation. Updating the RPM alone does not upgrade Power BI Desktop.
+Close all Power BI windows before maintenance. Repeating an interrupted setup with the same inputs resumes completed stages. `pbi-linux repair` and `pbi-linux update` modify the existing prefix in place: no temporary full-prefix copy, retained snapshot or automatic rollback is provided. Back up important files yourself. Failure can leave a partially modified installation requiring repair or reinstallation. Updating the RPM alone does not upgrade Power BI Desktop.
 
 `pbi-linux update` activates the published runtime. To use a local archive instead, pass `--runtime` together with `--runtime-sha256`.
 

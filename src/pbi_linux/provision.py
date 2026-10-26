@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Transactional per-user provisioning, snapshots and explicit maintenance."""
+"""Verified per-user provisioning and explicit in-place maintenance."""
 import json
 import os
 from pathlib import Path
@@ -59,17 +59,6 @@ def idle(paths):
         raise Error('Close all managed Power BI windows before maintenance')
 
 
-def snapshot(source, target):
-    if target.exists():
-        raise Error('Snapshot target already exists')
-    target.mkdir(parents=True, mode=0o700)
-    try:
-        run(['cp', '-a', '--reflink=auto', str(source) + '/.', target], timeout=1800)
-    except Error:
-        shutil.rmtree(target)
-        raise
-
-
 def install_runtime(paths, archive, checksum):
     archive = Path(archive).resolve()
     check_digest(archive, checksum)
@@ -92,7 +81,7 @@ def registry(wine, env, key, name, kind, value, log):
 
 
 def stop_server(runtime, env, log):
-    # A provisioning prefix is owned by this transaction, never the user's active session.
+    # Stop only this managed prefix, after idle checks exclude a user session.
     subprocess.run([str(runtime/'bin/wineserver'), '-k'], env=env, capture_output=True)
     run([runtime/'bin/wineserver', '-w'], env=env, timeout=30, log=log)
 
@@ -151,17 +140,17 @@ def configure(prefix, runtime, paths, log):
 def activate(paths, prefix, runtime, hashes, runtime_sha, powerbi_version=None):
     manifest = read_json(Path(runtime) / 'runtime.json')
     version = powerbi_version or manifest.get('sources', {}).get('powerbi', {}).get('version', '2.158.1177.0')
-    if paths.active.exists():
-        atomic_json(paths.previous, active(paths))
     atomic_json(paths.active, {'schema':1, 'prefix':str(prefix), 'runtime':str(runtime),
                               'runtime_sha256':runtime_sha, 'patches':hashes,
                               'installed_at':time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()),
                               'powerbi_version':version, 'recipe_id':'powerbi-' + version})
     atomic_json(paths.settings, settings(paths))
+    # Old snapshot directories are user data and are not deleted automatically.
+    paths.previous.unlink(missing_ok=True)
 
 
 def require_recipe(metadata, runtime):
-    """Refuse a foreign Desktop recipe before copying or changing a profile."""
+    """Refuse a foreign Desktop recipe before changing a profile."""
     manifest = read_json(Path(runtime) / 'runtime.json')
     recorded = metadata.get('powerbi_version', manifest.get('sources', {}).get('powerbi', {}).get('version', '2.158.1177.0'))
     recipes.powerbi(recorded)
@@ -263,13 +252,14 @@ def setup(paths, args):
             print('Finishing installation...', flush=True)
             pe_cache.prepare(source, paths.cache/'pe'/generation)
             # Completed setup can retain verified downloads outside the prefix;
-            # installer copies are unnecessary in every future repair snapshot.
+            # installer copies are unnecessary after setup has finished.
             shutil.rmtree(inputs)
             activate(paths, prefix, runtime, hashes, args.runtime_sha256, config['powerbi']['version'])
         finally:
             stop_server(runtime, env, log)
         from .desktop import integrate
         integrate(paths, args.make_default)
+        paths.maintenance.unlink(missing_ok=True)
     print('Power BI installed. Open Power BI Desktop (Wine) from the application menu,\n'
           'or run pbi-linux open. For reports, use Open With in your file manager.\n'
           'Keep backups; review known issues before using important reports.\n'
@@ -287,37 +277,39 @@ def maintain(paths, args):
             runtime = install_runtime(paths, args.runtime, args.runtime_sha256)
             require_recipe(old, runtime)
             runtime_sha = args.runtime_sha256
-        prefix = paths.data/'profiles'/('snapshot-' + uuid.uuid4().hex[:16])
-        snapshot(Path(old['prefix']), prefix)
+        prefix = Path(old['prefix'])
+        print('WARNING: ' + args.command + ' modifies this installation in place; '
+              'no snapshot or automatic rollback is available. Back up important files yourself. '
+              'An interrupted or failed operation may require repair or reinstallation.', flush=True)
         log, env = paths.state/'maintenance.log', wine_env(prefix)
+        state = {'schema':1, 'command':args.command, 'prefix':str(prefix),
+                 'runtime':str(runtime), 'status':'running'}
+        atomic_json(paths.maintenance, state)
+        paths.previous.unlink(missing_ok=True)
         try:
-            init_env = dict(env, WINEDLLOVERRIDES='winemenubuilder.exe=d;mscoree,mshtml=')
-            run([runtime/'bin/wine', 'wineboot.exe', '-u'], env=init_env, log=log)
-            hashes = configure(prefix, runtime, paths, log)
-            stop_server(runtime, env, log)
-            pe_cache.prepare(verified_webview(prefix,runtime), paths.cache/'pe'/prefix.name)
+            try:
+                init_env = dict(env, WINEDLLOVERRIDES='winemenubuilder.exe=d;mscoree,mshtml=')
+                run([runtime/'bin/wine', 'wineboot.exe', '-u'], env=init_env, log=log)
+                hashes = configure(prefix, runtime, paths, log)
+                stop_server(runtime, env, log)
+                pe_cache.prepare(verified_webview(prefix,runtime), paths.cache/'pe'/prefix.name)
+            finally:
+                stop_server(runtime, env, log)
             old_manifest = read_json(Path(old['runtime']) / 'runtime.json')
             version = old.get('powerbi_version', old_manifest.get('sources', {}).get('powerbi', {}).get('version', '2.158.1177.0'))
             activate(paths, prefix, runtime, hashes, runtime_sha, version)
-        finally:
-            stop_server(runtime, env, log)
-        from .desktop import integrate
-        integrate(paths)
-    print('Installation activated; the previous profile is available with rollback.')
+            from .desktop import integrate
+            integrate(paths)
+        except (Exception, KeyboardInterrupt) as exc:
+            atomic_json(paths.maintenance, {**state, 'status':'failed'})
+            if isinstance(exc, KeyboardInterrupt):
+                raise
+            raise Error('In-place maintenance failed; the installation may be partially modified. '
+                        'Run repair or repeat update; no automatic rollback is available. ' + str(exc)) from exc
+        paths.maintenance.unlink()
+    print('Installation maintained in place; no snapshot was created or retained.')
 
 
 def rollback(paths):
-    with paths.lock():
-        idle(paths)
-        previous = read_json(paths.previous)
-        # Validate paths and artifacts before committing the pointer swap.
-        for key, base in [('prefix', paths.data/'profiles'), ('runtime', paths.data/'runtimes')]:
-            if not Path(previous[key]).resolve().is_relative_to(base.resolve()):
-                raise Error('Invalid rollback path')
-        assets.verify_runtime(previous['runtime'])
-        for name, sha in previous['patches'].items():
-            check_digest(Path(previous['prefix'])/BIN/name, sha)
-        current = active(paths)
-        atomic_json(paths.active, previous)
-        atomic_json(paths.previous, current)
-    print('Previous installation restored.')
+    raise Error('Rollback is no longer available: maintenance runs in place without snapshots. '
+                'Run repair or restore your own external backup. Existing profile directories are not deleted.')

@@ -36,7 +36,7 @@ The operation is scoped to the active profile. It verifies all packages before
 publishing the provider directory and registration, rejects a running managed
 session and rolls back its new files if activation fails. It does not make a
 second complete prefix snapshot. Repeating a verified installation is a no-op.
-Repair/update snapshots retain the selected connector with the profile.
+In-place repair/update retains the selected connector in the existing profile.
 
 The driver and dependencies are downloaded separately; they are not included in
 the RPM, runtime archive or public project source export. Oracle's 8.0.33 NuGet

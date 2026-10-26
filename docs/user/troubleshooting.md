@@ -8,6 +8,7 @@ Run `pbi-linux doctor --json`. It reports prerequisites, runtime/patch integrity
 - **WebView2 version differs:** use `repair` to restore the fixed-version CAB matching the active runtime manifest. Launch never adopts an Evergreen update.
 - **Stale PE backing:** close all windows and run `pbi-linux repair`. Open falls back safely but may consume more memory.
 - **Maintenance blocked:** close all managed Power BI windows and let the Wine processes finish. Do not kill a Wine server belonging to another application.
+- **Incomplete in-place maintenance:** a failed or interrupted repair/update may have changed the existing installation. Repeat the update with the same verified runtime, or run repair. There is no automatic rollback; restore your own backup or reinstall if recovery fails. Do not remove `maintenance.json` merely to bypass the launch guard.
 - **An explorer.exe window advertises a Power BI update:** Wine can display a standalone Windows tray window. Setup/repair disables Desktop's upstream update notices with Microsoft's own policy; an already displayed icon may persist until exit. See [update policy](updates.md) for existing profiles and the separate validated-release backlog.
 - **General Get Data chooser blocked by OneLake sign-in:** for a local CSV, open a blank report, expand the **Get Data** menu on the Home ribbon and choose **Text/CSV** directly. This path imported the synthetic CSV without sign-in in the clean-prefix test. Microsoft browser sign-in and account persistence after restart passed; the general source chooser has not been revalidated after that fix.
 - **Large-report OOM or empty visuals after external refresh:** record the scenario and versions; these are release blockers. External TMSL refresh is a diagnostic tool, not a replacement for Desktop UI refresh.
@@ -22,7 +23,7 @@ Before attaching any log to a public issue, remove usernames, document paths, da
 - **Data source settings list is blank:** older HTML recipes initialized its
   virtualized list before the dialog had a usable height. Upgrade to RPM 7 and
   inspect doctor. An outdated profile requires repair with Desktop closed; a
-  locally patched profile already passing doctor does not need another snapshot.
+  locally patched profile already passing doctor does not need another repair.
   This visual issue is separate from provider installation. Do not clear all
   permissions or remove `.pbi/cache.abf` to repair the list.
 - **Sources appear but clicks initially do nothing or the cursor disappears:**

@@ -3,7 +3,7 @@
 > [!WARNING]
 > **Power BI Linux is beta software.** Keep a private backup of your complete project and work with copies first. For PBIP projects, include `.pbi/cache.abf`: a normal Git checkout excludes imported cached data. See [cache recovery](../reference/model-cache.md).
 
-The tested platform is **Fedora 44 x86_64, native Wayland**, with a systemd user session and Vulkan graphics. Other distributions and X11 are outside the current support target. Other Fedora versions are experimental.
+The tested platform is **Fedora 44 x86_64, native Wayland**, with a systemd user session and Vulkan graphics. Ubuntu 24.04/26.04 and Debian 13 are accepted only as [experimental DEB targets](debian-ubuntu.md), not certified platforms. Other distributions and X11 are outside the current support target. Other Fedora versions are experimental.
 
 ## What has worked in recorded tests
 

@@ -1,0 +1,16 @@
+#!/bin/sh
+set -e
+case "$1" in
+    remove|purge|disappear)
+        if [ -d /usr/share/powerbi-linux ]; then
+            find /usr/share/powerbi-linux -depth -type d -empty -delete
+        fi
+        if command -v update-desktop-database >/dev/null 2>&1 && [ -d /usr/share/applications ]; then
+            update-desktop-database /usr/share/applications
+        fi
+        if command -v update-mime-database >/dev/null 2>&1 && [ -d /usr/share/mime ]; then
+            update-mime-database /usr/share/mime
+        fi
+        ;;
+esac
+exit 0

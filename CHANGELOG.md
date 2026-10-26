@@ -4,6 +4,24 @@
 
 ### Unreleased — product repository and upstream review
 
+- Separate source-only CI from post-merge package delivery. Branches/PRs never
+  construct RPM/DEB archives; successful same-repository main-push checks trigger
+  package builds/lifecycle tests for the exact merged SHA. Keep release publication
+  explicit and repository permissions read-only; see the [CI/CD policy](docs/development/ci-cd.md).
+
+- Remove automatic full-prefix snapshots from repair/runtime update: maintain
+  the existing prefix in place, warn before mutation and retain no rollback
+  generation. Mark incomplete maintenance, block launch until a successful retry,
+  and report recovery instructions. Do not automatically delete legacy profile
+  directories or change resource settings. Historical snapshot-based release
+  evidence does not certify this new maintenance path.
+
+- Add experimental DEB packaging for Ubuntu 24.04/26.04 and Debian 13 x86_64:
+  native/container builder, desktop integration, dependency metadata and package
+  lifecycle checks. Preserve the Fedora baseline and all user-controlled resource
+  defaults; no VM settings or resource preset is applied by packaging. See the
+  [experimental DEB guide](docs/user/debian-ubuntu.md). No new release is published.
+
 - Test the original AWS Redshift 1.6.3.1008 Windows x64 MSI in the managed prefix:
   silent installation and automatic driver/default-DSN registration passed without
   manual driver registration. Add a generic offline Windows driver/DSN loading

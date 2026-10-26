@@ -7,7 +7,36 @@ on:
     - cron: '17 7 * * *'
 permissions:
   contents: read
+env:
+  PBI_PACKAGE_BUILD_TESTS: '0'
 jobs:
+  deb-checks:
+    runs-on: ubuntu-latest
+    container: ${{ matrix.image }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        image: ['ubuntu:24.04', 'ubuntu:26.04', 'debian:13-slim']
+    env:
+      DEBIAN_FRONTEND: noninteractive
+    steps:
+      - name: Install build and test dependencies
+        run: apt-get update && apt-get install -y --no-install-recommends ca-certificates python3 git desktop-file-utils shared-mime-info
+      - uses: actions/checkout@v4
+      - name: Unit and documentation checks
+        run: python3 tools/check-product.py --output build/check-product/ci-deb
+      - name: Preserve check evidence only
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: deb-checks-${{ strategy.job-index }}-${{ github.run_id }}
+          path: |
+            build/check-product/ci-deb/result.json
+            build/check-product/ci-deb/junit.xml
+            build/check-product/ci-deb/*.log
+          if-no-files-found: error
+          retention-days: 14
   quick:
     runs-on: ubuntu-latest
     container: fedora:44

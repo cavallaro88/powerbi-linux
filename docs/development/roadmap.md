@@ -47,5 +47,8 @@ The development preview is scoped to Fedora 44 x86_64 and native Wayland.
   partition/schema changes. Automatic versioned backup/rotation is not implemented.
 
 A GUI, other distributions, X11, Flatpak and AppImage are outside this release.
+Future Arch, Debian and Ubuntu support is scoped in the
+[multi-distribution proposal](multi-distro-plan.md); it does not enable or certify
+those targets for the current release.
 Keep CLI, runtime recipes and tests together until separate versioning solves a
 concrete maintenance problem. The CLI remains the interface for any future GUI.

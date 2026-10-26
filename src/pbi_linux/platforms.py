@@ -25,12 +25,17 @@ def status(info=None):
     name, version = info.get('ID', ''), info.get('VERSION_ID', '')
     if name == 'fedora':
         return True, 'Fedora 44 is the tested target; other Fedora releases are experimental'
+    if (name, version) in (('ubuntu', '24.04'), ('ubuntu', '26.04'), ('debian', '13')):
+        return True, name.capitalize() + ' ' + version + ' is experimental; compatibility is not certified'
     detected = info.get('PRETTY_NAME') or (name + ' ' + version).strip() or 'unknown distribution'
-    return False, 'Detected ' + detected + '. Target: Fedora 44, x86_64 and Wayland'
+    return False, 'Detected ' + detected + '. Targets: ' + TARGETS
 
 
-TARGETS = 'Fedora 44, x86_64 / Wayland'
+TARGETS = ('Fedora 44; experimental Ubuntu 24.04 / 26.04 and Debian 13; '
+           'x86_64 / Wayland')
 
 
 def ntlm_help():
+    if release().get('ID') in ('ubuntu', 'debian'):
+        return 'Run sudo apt install winbind before opening Power BI'
     return 'Install samba-winbind-clients before opening Power BI'

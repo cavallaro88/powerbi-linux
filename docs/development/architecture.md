@@ -6,7 +6,7 @@ validated-release notifier is future work. See [update policy](../user/updates.m
 
 One repository contains the CLI, runtime patches, packaging and test tools. Keeping these together permits atomic compatibility changes. No GUI-specific API is required yet; a future GUI can drive the CLI. `doctor --json` is the initial structured interface, schema version 1.
 
-The package launcher calls a Python standard-library CLI. Setup verifies inputs, installs a runtime into a content-addressed directory, provisions a private profile, applies local compatibility changes and generates readonly PE section backing. Only a completed installation becomes active. Snapshots remain at stable absolute paths; activation swaps metadata pointers rather than moving a populated prefix.
+The package launcher calls a Python standard-library CLI. Setup verifies inputs, installs a runtime into a content-addressed directory, provisions a private profile, applies local compatibility changes and generates readonly PE section backing. Only a completed initial setup becomes active. Later repair/update modifies that same prefix in place, without a full-prefix copy, snapshot retention or rollback. A small state marker blocks launch after failed/incomplete maintenance until repair/update succeeds; metadata activation alone cannot restore partially changed files. Existing legacy profile directories are not automatically deleted.
 
 The onboarding front end resolves omitted inputs from the packaged release
 manifest, checks local files before downloads and collects terminal license
@@ -41,6 +41,6 @@ patches. `connector install` shares the maintenance lock, requires an idle manag
 session, verifies pinned upstream archives in the user cache, and stages only the
 provider directory/registration. A per-prefix manifest records its files. Existing
 external registrations, including .NET machine.config registrations used by vendor
-MSI packages, are reported without being overwritten. Profile snapshots naturally
-retain connector files; no complete snapshot is needed just to add a new provider.
+MSI packages, are reported without being overwritten. In-place maintenance
+retains connector files; no complete snapshot is created to add a new provider.
 No replacement database protocol or plugin runtime is introduced.

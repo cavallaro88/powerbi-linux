@@ -20,8 +20,19 @@ alone does not certify that a current icon has disappeared.
 
 The RPM updates the community launcher and recipes. `pbi-linux update` activates the published runtime; `--runtime` with `--runtime-sha256` activates a local archive instead. It is not a general Desktop updater. A newly released Microsoft installer must be validated with matching patches before the project can offer that Desktop version. There is currently no automatic validated-release notification or automatic Desktop upgrade channel.
 
+Current CLI maintenance works **in place**, without a full-prefix copy or retained
+snapshot. It warns before modification and offers no automatic rollback. Back up
+important files yourself. An interrupted/failed operation is recorded in
+`$XDG_STATE_HOME/powerbi-linux/maintenance.json`; launch is blocked until repair
+or a repeated update completes (a successful fresh reinstall also clears it).
+Existing snapshot directories are not deleted or
+renamed automatically, including an active prefix whose name starts with
+`snapshot-`. Runtime archives, versioned runtime directories and ordinary
+component extraction/cache are separate from full-prefix snapshots and still
+need disk space. The old `rollback` command now returns an explanatory error.
+
 The intended product flow is a Fedora notification when a tested project release
-is available, followed by an explicit upgrade with a recoverable previous profile.
+is available, followed by explicit in-place maintenance with a clear failure warning.
 This notification service remains backlog. Hiding upstream notices does not make
 an older Desktop version current or extend Microsoft's support policy.
 
