@@ -4,6 +4,10 @@
 Power BI 2.159 candidate has separate [port and validation status](powerbi-2.159.md).
 The older passes in this table do not certify that candidate.
 
+Snapshot/rollback results below describe historical CLI behavior. Current CLI
+maintenance is [in place without snapshots](installation-lifecycle.md#maintenance);
+the new release gate requires separate in-place maintenance failure/retry evidence.
+
 The current runtime was built from source and exercised on Fedora 44 x86_64 Wayland in a disposable prefix created from official installers. The table below distinguishes current product checks from older investigation results. Required synthetic scenarios passed, including a two-hour session. This remains a development preview: one discrepant idle native-frame sample is retained, and its cause is not established. See [validation](validation.md) for the exact checksum and scope of each result.
 
 | Scenario | Investigation evidence | New product certification |
@@ -46,4 +50,4 @@ Install from an empty user profile on Fedora 44. Verify PBIX/PBIP/PBIR through t
 
 Use a synthetic 158-table model and report for a UI refresh, verify both model commit and displayed numbers, save/reopen and run a two-hour session. Monitor renderer heap/PSS, cgroup RAM/swap, OOM events and GPU process restarts. A successful TMSL response or screenshot showing a populated Data pane is insufficient. Passing this workload does not certify every enterprise model or untested connector.
 
-Also test interrupted setup, checksum failures, runtime update, repair, rollback, default-association restoration and uninstall. Retain sanitized evidence with exact runtime/Power BI/WebView2 versions and environment. The release checker requires passing evidence for every listed scenario and the exact runtime checksum. These gates describe synthetic coverage; the preview retains known limitations and the discrepant capture documented in validation.
+Also test interrupted setup, checksum failures, in-place runtime update/repair, failure marking and successful retry, default-association restoration and uninstall. Retain sanitized evidence with exact runtime/Power BI/WebView2 versions and environment. The release checker requires passing evidence for every listed scenario and the exact runtime checksum. These gates describe synthetic coverage; the preview retains known limitations and the discrepant capture documented in validation.

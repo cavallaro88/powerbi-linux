@@ -43,7 +43,7 @@
       "status": "pending",
       "evidence": ""
     },
-    "update_repair_rollback": {
+    "update_repair_in_place": {
       "status": "pending",
       "evidence": ""
     },

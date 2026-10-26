@@ -41,7 +41,7 @@ Defaults remain unlimited RAM/swap/CPU and automatic browser resources. Measure
 consumption rather than silently adding caps. Reserve disk before creating a
 full QA profile (about 9 GiB plus builds, downloads and reports); avoid a full
 profile clone merely to test a native window. Keep one baseline/candidate pair
-and required rollback evidence; clean up owned test processes and prefixes.
+and in-place failure/retry evidence; clean up owned test processes and prefixes.
 
 Most of this work is scriptable. Physical monitor arrangements or
 ambiguous Windows behavior may require a separate lab or targeted manual evidence.

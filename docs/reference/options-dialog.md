@@ -109,9 +109,10 @@ pbi-linux update \
 pbi-linux doctor
 ```
 
-Standard update snapshots the profile, so allow space for another approximately
-9 GiB on filesystems without reflink. Do not repeat it on a locally maintained
-profile already matching this runtime/UI recipe and passing doctor.
+Current CLI update modifies the existing prefix without a snapshot or rollback;
+see the [maintenance policy](installation-lifecycle.md#maintenance) and back up
+important files yourself. Do not repeat it on a locally maintained profile
+already matching this runtime/UI recipe and passing doctor.
 
 From the source checkout, the isolated regression is:
 

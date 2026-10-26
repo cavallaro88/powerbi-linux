@@ -17,6 +17,9 @@ def doctor(paths):
     def add(name, ok, detail):
         checks.append({'name':name, 'ok':bool(ok), 'detail':detail})
     add('distribution', *platforms.status())
+    add('maintenance', not paths.maintenance.exists(),
+        'No incomplete maintenance' if not paths.maintenance.exists() else
+        'In-place maintenance did not finish; run repair or repeat update. No automatic rollback is available')
     add('architecture', os.uname().machine == 'x86_64', os.uname().machine)
     display = os.environ.get('WAYLAND_DISPLAY', '')
     socket = Path(display) if display.startswith('/') else Path(os.environ.get('XDG_RUNTIME_DIR', '/nonexistent'))/display
@@ -123,7 +126,7 @@ def parser():
     opening.add_argument('--desktop', action='store_true', help=argparse.SUPPRESS)
     diagnosis = sub.add_parser('doctor', help='Check prerequisites and installation integrity')
     diagnosis.add_argument('--json', action='store_true')
-    sub.add_parser('repair', help='Repair a snapshot while preserving the current installation')
+    sub.add_parser('repair', help='Repair the existing installation in place, without snapshots or rollback')
     connector = sub.add_parser('connector', help='Install or inspect optional original database providers')
     connector.add_argument('operation', choices=('status', 'install'))
     connector.add_argument('name', choices=('mysql',))
@@ -143,10 +146,10 @@ def parser():
     profile.add_argument('--webview-heap',dest='webview_heap_mb',type=option_type(resources.heap_limit),help='V8 old-space cap: auto (default) or 128–8192 MiB')
     profile.add_argument('--renderer-process-limit',type=option_type(resources.renderer_limit),help='auto (default) or 1–128 renderer processes')
     profile.add_argument('--browser-mode',choices=('standard','economy'),help='standard (default) or opt-in economy browser flags')
-    update = sub.add_parser('update', help='Activate the published runtime, or an explicitly supplied archive')
+    update = sub.add_parser('update', help='Update the runtime in place, without snapshots or rollback')
     update.add_argument('--runtime', help='Runtime archive (defaults to the published release)')
     update.add_argument('--runtime-sha256', help='SHA-256 of the runtime archive (required with --runtime)')
-    sub.add_parser('rollback', help='Restore the previous installation')
+    sub.add_parser('rollback', help='Unavailable: snapshots and rollback are no longer provided')
     uninstall = sub.add_parser('uninstall', help='Remove per-user desktop integration; preserve data by default')
     uninstall.add_argument('--purge', action='store_true', help='Delete managed prefixes, runtime, cache and settings')
     session = sub.add_parser('_session', help='Internal session service')
@@ -211,7 +214,12 @@ def main(argv=None):
         elif args.command == '_session':
             launch.broker(paths, diagnostics=args.diagnostics)
     except KeyboardInterrupt:
-        message = 'Setup interrupted. Run setup again with the same inputs to resume completed stages.' if args.command == 'setup' else 'Operation interrupted.'
+        if args.command == 'setup':
+            message = 'Setup interrupted. Run setup again with the same inputs to resume completed stages.'
+        elif args.command in ('repair', 'update'):
+            message = 'In-place maintenance interrupted. Run repair or repeat update; no automatic rollback is available.'
+        else:
+            message = 'Operation interrupted.'
         print('pbi-linux: ' + message, file=sys.stderr)
         return 130
     except (Error, OSError, ValueError, KeyError, subprocess.SubprocessError) as exc:

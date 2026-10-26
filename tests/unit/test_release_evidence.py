@@ -36,6 +36,12 @@ class ReleaseEvidenceTests(unittest.TestCase):
     def test_complete_matching_tuple_is_accepted(self):
         self.assertEqual(release_check.validate(self.runtime, self.evidence), [])
 
+    def test_old_snapshot_evidence_does_not_certify_in_place_maintenance(self):
+        self.evidence['cases'].pop('update_repair_in_place',None)
+        self.evidence['cases']['update_repair_rollback']={'status':'passed','evidence':'historical snapshot test'}
+        errors=release_check.validate(self.runtime,self.evidence)
+        self.assertTrue(any('update_repair_in_place' in error for error in errors))
+
     def test_old_application_evidence_cannot_certify_the_new_recipe(self):
         self.evidence['powerbi_version'] = '2.158.1177.0'
         self.assertTrue(any('powerbi_version' in e for e in release_check.validate(self.runtime, self.evidence)))

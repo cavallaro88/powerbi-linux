@@ -45,7 +45,7 @@ published runtime 0.1.5 release; do not substitute an incremental investigation 
 5. Set the verified fixed URLs and checksums, then set `status: ready`. Build the
    matching RPM and source RPM. Validate the RPM from an empty Fedora 44 Wayland
    user installation using only `pbi-linux setup`; also test explicit local inputs,
-   interrupted setup, repair and rollback. Publish the paired beta and update the
+   interrupted setup, in-place maintenance failure and successful retry. Publish the paired beta and update the
    recommended release links only after those checks pass.
 
 Runtime 0.1.5 was published with the two-hour soak still pending to enable
@@ -59,7 +59,7 @@ Installed metadata records `powerbi_version` and `recipe_id`; older installation
 are identified from their runtime's Power BI source record. The CLI retains exact
 2.158 and 2.159 recipes. Local installers select by their complete SHA-256; repair
 and runtime changes preserve the installed application version. Unregistered or
-inconsistent recipe identities are rejected before copying a maintenance profile.
+inconsistent recipe identities are rejected before modifying the maintenance profile.
 
 Native QA installations isolate XDG data/config/cache/state and derive distinct
 session sockets, locks and systemd service names from the data directory. Keep

@@ -1,0 +1,15 @@
+powerbi-linux (0.1.0-18~experimental2) experimental; urgency=medium
+
+  * Maintain the existing prefix in place without snapshots or rollback.
+  * Record incomplete maintenance, block launch and permit explicit retry.
+  * Preserve existing profile directories and user-controlled resource policy.
+
+ -- Power BI Linux <cavallaro88@users.noreply.github.com>  Mon, 26 Oct 2026 10:43:22 -0300
+
+powerbi-linux (0.1.0-18~experimental1) experimental; urgency=medium
+
+  * Add experimental Ubuntu 24.04/26.04 and Debian 13 packaging.
+  * Reuse the managed runtime/setup and standard desktop launcher.
+  * Preserve user data and user-controlled resource settings.
+
+ -- Power BI Linux <cavallaro88@users.noreply.github.com>  Mon, 26 Oct 2026 09:44:25 -0300

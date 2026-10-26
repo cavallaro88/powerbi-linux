@@ -1,0 +1,53 @@
+.TH PBI-LINUX 1 "October 2026" "Power BI Linux 0.1.0" "User Commands"
+.SH NAME
+pbi-linux \- community Power BI Desktop installation and launcher
+.SH SYNOPSIS
+.B pbi-linux
+.I command
+.RI [ options ]
+.SH DESCRIPTION
+Manage a dedicated per-user installation of Microsoft Power BI Desktop using
+this project's versioned Wine runtime. Installing the Linux package does not
+install Microsoft software. Ubuntu 24.04/26.04 and Debian 13 are experimental;
+Fedora 44 remains the tested baseline. Native Wayland, a systemd user session
+and a suitable Vulkan driver are required.
+.SH COMMANDS
+.TP
+.B setup
+Download verified components and prepare Desktop after terms acceptance.
+Use setup --help for local-file options.
+.TP
+.BI "open " [report]
+Open Desktop or a PBIX, PBIP or PBIR file.
+.TP
+.B doctor
+Check dependencies and installation integrity. Use --json for structured output.
+.TP
+.B profile
+Show optional user-controlled resource settings; use profile --help to change them.
+The Linux package does not select a resource preset.
+.TP
+.B update
+Activate the published runtime, preserving the managed installation contract.
+.TP
+.B repair
+Repair the existing profile in place, without a full-prefix copy or rollback.
+.TP
+.B uninstall
+Remove per-user desktop integration while preserving managed data.
+The separate --purge option deletes managed installations, settings and caches.
+.TP
+.B connector
+Inspect or install optional managed database providers; use connector --help.
+.SH FILES
+User state follows XDG data, config, cache and state directories.
+Package removal does not delete these user files.
+.SH NOTES
+Microsoft does not support this community installation. Keep report backups.
+Repair and update modify the existing installation without snapshots.
+An interruption or failure can require repair or reinstallation; no automatic
+rollback is available. The legacy rollback command reports that it is unavailable.
+A successful diagnostic does not certify all reports or connectors.
+.SH SEE ALSO
+.BR pbi-linux " --help"
+and /usr/share/powerbi-linux/docs/user/debian-ubuntu.md.

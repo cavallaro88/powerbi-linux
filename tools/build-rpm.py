@@ -15,7 +15,7 @@ work=ROOT/'build/rpm'
 for name in ('SOURCES','SPECS','BUILD','BUILDROOT','RPMS','SRPMS'):
     (work/name).mkdir(parents=True,exist_ok=True)
 with tarfile.open(work/'SOURCES/powerbi-linux-0.1.0.tar.gz','w:gz') as tar:
-    for name in ('src','runtime','connectors','packaging','docs','tests','tools','LICENSE','LICENSES','README.md','CONTRIBUTING.md','SECURITY.md','CODE_OF_CONDUCT.md','CHANGELOG.md'):
+    for name in ('src','runtime','connectors','packaging','docs','tests','tools','.github','.gitignore','LICENSE','LICENSES','README.md','CONTRIBUTING.md','SECURITY.md','CODE_OF_CONDUCT.md','CHANGELOG.md'):
         tar.add(ROOT/name,arcname='powerbi-linux-0.1.0/'+name,
                 filter=lambda info: None if '__pycache__' in info.name or info.name.endswith('.pyc') else info)
 command=['rpmbuild','-ba','--define','_topdir '+str(work),str(ROOT/'packaging/powerbi-linux.spec')]

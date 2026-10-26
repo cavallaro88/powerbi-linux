@@ -1,6 +1,6 @@
 Name:           powerbi-linux
 Version:        0.1.0
-Release:        18%{?dist}
+Release:        19%{?dist}
 Summary:        Community Power BI Desktop compatibility tools for Fedora
 License:        GPL-3.0-or-later AND LGPL-2.1-or-later AND Zlib
 Source0:        %{name}-%{version}.tar.gz
@@ -33,6 +33,8 @@ CLI installer, launcher and diagnostic tools for a community maintained Wine
 runtime. Supports Fedora x86_64 with a native Wayland session. Microsoft Power
 BI Desktop, .NET and WebView2 are obtained and installed separately per user.
 This package does not contain Microsoft software or a populated Wine prefix.
+Repair and runtime updates modify the existing profile in place without full
+profile snapshots or rollback. Back up important files before maintenance.
 
 %prep
 %setup -q
@@ -63,6 +65,10 @@ find %{buildroot} -type d -name __pycache__ -prune -exec rm -rf {} +
 %{_datadir}/icons/hicolor/scalable/apps/powerbi-linux.svg
 
 %changelog
+* Mon Oct 26 2026 Project maintainers - 0.1.0-19
+- Maintain the existing prefix in place without snapshot copies or rollback.
+- Record incomplete maintenance and block launch until recovery succeeds.
+- Preserve legacy profile directories and user-controlled resource defaults.
 * Sun Oct 25 2026 Project maintainers - 0.1.0-18
 - Enable automatic setup and update downloads from the published runtime release.
 * Fri Oct 23 2026 Power BI Linux contributors <maintainers@localhost> - 0.1.0-17

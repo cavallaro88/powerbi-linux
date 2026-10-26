@@ -28,6 +28,11 @@ CI success. GitHub's [schedule rules](https://docs.github.com/en/actions/referen
 and [artifact action](https://github.com/actions/upload-artifact) describe execution
 and retention.
 
+The current [CI/CD policy](ci-cd.md) separates source checks from package delivery:
+branch/PR checks do not generate RPM/DEB archives. Packaging starts only after
+successful checks for a same-repository push to `main`, using that exact SHA.
+Release publication remains a separate explicit operation.
+
 The local quick run on October 16 passed all four checks, including **59 unit
 tests**. This is later development-source validation; the installed RPM 9 and
 its existing artifact hashes remain unchanged.

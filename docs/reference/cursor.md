@@ -83,8 +83,9 @@ its compositor motion/protocol assertions are not yet integrated into a public
 unattended runner.
 
 RPM 9 is compatible with this runtime: no additional DNF upgrade is required.
-Standard `pbi-linux update --runtime ... --runtime-sha256 ...` also snapshots the
-profile and needs the documented disk space. This notebook uses a bounded local
+Current `pbi-linux update --runtime ... --runtime-sha256 ...` modifies the prefix
+in place without a snapshot or rollback; see the [maintenance policy](installation-lifecycle.md#maintenance).
+This historical notebook used a bounded local
 runtime-only maintenance after Wine is idle, with active metadata backup and the
 old runtime retained. Never replace the active pointer while a managed session
 is running. The runtime archive's adjacent SHA-256 file identifies the exact

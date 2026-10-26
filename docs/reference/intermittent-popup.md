@@ -48,8 +48,8 @@ validation. This is not a general fix for every Wine popup.
 
 Setup/repair applies the recipe with Desktop closed; installing the project
 package alone does not update the profile. `pbi-linux doctor` adds a `tooltips`
-integrity check. Repair creates a managed snapshot and may require approximately
-9 GiB additional space for another complete installation.
+integrity check. Current CLI repair works in place without a snapshot or rollback;
+read the [maintenance policy](installation-lifecycle.md#maintenance) first.
 
 ## Validation scope
 
