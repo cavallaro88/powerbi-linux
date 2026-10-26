@@ -35,7 +35,7 @@ jobs:
       PBI_DEB_DISPOSABLE: '1'
     steps:
       - name: Install build and check dependencies
-        run: apt-get update && apt-get install -y --no-install-recommends python3 git desktop-file-utils shared-mime-info
+        run: apt-get update && apt-get install -y --no-install-recommends ca-certificates python3 git desktop-file-utils shared-mime-info
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.workflow_run.head_sha }}

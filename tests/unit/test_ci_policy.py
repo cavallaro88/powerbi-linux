@@ -1,11 +1,22 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 from pathlib import Path
+import re
 import unittest
 
 ROOT = Path(__file__).resolve().parents[2]
 
 
 class DeliveryPolicy(unittest.TestCase):
+    def test_minimal_apt_containers_install_ca_certificates_before_checkout(self):
+        for name in ('checks.yml', 'packages.yml'):
+            with self.subTest(workflow=name):
+                workflow = (ROOT / '.github/workflows' / name).read_text()
+                commands = re.findall(r'run: (apt-get update && apt-get install[^\n]+)', workflow)
+                self.assertTrue(commands, 'APT bootstrap must run before checkout')
+                for command in commands:
+                    self.assertIn('ca-certificates', command.split())
+                self.assertLess(workflow.index(commands[0]), workflow.index('uses: actions/checkout@'))
+
     def test_pre_merge_checks_do_not_build_or_install_packages(self):
         workflow = (ROOT / '.github/workflows/checks.yml').read_text()
         for command in ('tools/build-deb.py', 'tools/build-rpm.py', 'deb-lifecycle.py'):
