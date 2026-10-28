@@ -76,7 +76,7 @@ updated after the work completes, but an unchanged pointer is **not** evidence
 that the in-place files are unchanged. Checksums, recipe guards, locks and idle
 checks remain enforced.
 
-To upgrade the CLI, run `sudo dnf upgrade ./powerbi-linux-0.1.0-18.noarch.rpm`
+To upgrade the CLI, run `sudo dnf upgrade ./powerbi-linux-0.1.0-19.fc44.noarch.rpm`
 and `pbi-linux doctor`. If the HTML/email dialog checks report outdated patches,
 close Desktop and run `pbi-linux repair`, then check again. Repair applies the
 new recipe to the existing profile without making a snapshot.

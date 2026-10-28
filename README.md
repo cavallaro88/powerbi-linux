@@ -41,10 +41,10 @@ These results apply to their recorded versions and test cases. They do not certi
 This does not expand Fedora's validation claims to other distributions or apply
 any resource preset. The instructions below are for the published Fedora RPM.
 
-Download the recommended **binary RPM** from [Releases](https://github.com/cavallaro88/powerbi-linux/releases/tag/v0.1.0-18), then install it using DNF. The `.src.rpm` is for developers.
+Download the recommended **binary RPM** from [Releases](https://github.com/cavallaro88/powerbi-linux/releases/tag/v0.1.0-19), then install it using DNF. The `.src.rpm` is for developers.
 
 ```bash
-sudo dnf install ./powerbi-linux-0.1.0-18.noarch.rpm
+sudo dnf install ./powerbi-linux-0.1.0-19.fc44.noarch.rpm
 ```
 
 > [!IMPORTANT]

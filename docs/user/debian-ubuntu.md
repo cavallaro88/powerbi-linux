@@ -11,7 +11,7 @@
 
 Use an experimental DEB supplied with its SHA-256 and corresponding project
 sources, or [reproduce a post-merge build](../development/build.md#experimental-deb).
-The candidate filename is `powerbi-linux_0.1.0-18~experimental2_amd64.deb`;
+The candidate filename is `powerbi-linux_0.1.0-19.experimental1_amd64.deb`;
 this guide does not imply that it has already been published on GitHub. An
 unpublished `0.1.0-19~experimental1` beta candidate also exists in the source tree,
 with automatic runtime setup deliberately pending.
@@ -19,9 +19,9 @@ with automatic runtime setup deliberately pending.
 From the directory containing the package and checksum:
 
 ```bash
-sha256sum -c powerbi-linux_0.1.0-18~experimental2_amd64.deb.sha256
+sha256sum -c powerbi-linux_0.1.0-19.experimental1_amd64.deb.sha256
 sudo apt update
-sudo apt install ./powerbi-linux_0.1.0-18~experimental2_amd64.deb
+sudo apt install ./powerbi-linux_0.1.0-19.experimental1_amd64.deb
 pbi-linux setup
 ```
 
