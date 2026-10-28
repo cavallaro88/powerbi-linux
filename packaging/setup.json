@@ -1,8 +1,13 @@
 {
   "schema": 1,
-  "status": "pending",
-  "reason": "Runtime 0.1.6-beta.1 has no published artifact yet: the binary archive, its complete corresponding source and the exact-archive evidence must be published with fixed URLs and SHA-256 values before this package can enable automatic setup. No placeholder checksum is shipped and the published Runtime 0.1.5 pin is not silently reused. Use --runtime and --runtime-sha256 with a locally verified 0.1.6-beta.1 archive, or install RPM 18 for the published Runtime 0.1.5",
-  "runtime": null,
+  "status": "ready",
+  "runtime": {
+    "version": "0.1.6-beta.1",
+    "url": "https://github.com/cavallaro88/powerbi-linux/releases/download/runtime-v0.1.6-beta.1/powerbi-linux-runtime-0.1.6-beta.1-x86_64.tar.xz",
+    "sha256": "7a24a7dcf950457c65b8eac90e6b2b7640a6d460279d29fce7f3867a6064d421",
+    "source_url": "https://github.com/cavallaro88/powerbi-linux/releases/download/runtime-v0.1.6-beta.1/powerbi-linux-source-runtime-0.1.6-beta.1.tar.gz",
+    "evidence_url": "https://github.com/cavallaro88/powerbi-linux/releases/download/runtime-v0.1.6-beta.1/release-evidence-beta.json"
+  },
   "powerbi": {
     "version": "2.159.883.0",
     "sha256": "5412131d1f5d535e42358cb6d496703c3c0cdf9267779ac9220171f58ce20cdd",

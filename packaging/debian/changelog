@@ -1,9 +1,9 @@
 powerbi-linux (0.1.0-19~experimental1) experimental; urgency=medium
 
   * Beta candidate for the 0.1.0-19 CLI on the experimental DEB suite.
-  * Keep setup metadata pending until runtime 0.1.6-beta.1 publishes fixed
-    URLs and SHA-256 values for its binary, corresponding source and
-    exact-archive evidence; no placeholder checksum is shipped.
+  * Pin setup to Runtime 0.1.6-beta.1 binary, corresponding source and evidence
+    with fixed URLs and SHA-256 values; exact-archive certification gaps remain
+    recorded in that evidence.
   * Ship no Wine runtime, Microsoft installer, populated prefix or ODBC DLL.
   * The experimental ODBC bridge stays unpublished; repair or update does not
     restore an ODBC manager missing from an existing profile.

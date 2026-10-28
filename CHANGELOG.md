@@ -5,11 +5,10 @@
 ### Unreleased — product repository and upstream review
 
 - Prepare the 0.1.0-19 beta CLI release (RPM `0.1.0-19`, experimental DEB
-  `0.1.0-19~experimental1`) without publishing it. The setup manifest ships
-  `status: pending` with no runtime pin until Runtime 0.1.6-beta.1 publishes its
-  binary, complete corresponding source and exact-archive evidence with fixed
-  SHA-256 values; automatic setup stays disabled until then. Packaging ships no
-  runtime, installer, prefix or ODBC DLL, and repair/update do not restore an ODBC
+  `0.1.0-19~experimental1`). The setup manifest pins Runtime 0.1.6-beta.1
+  binary, complete corresponding source and evidence with fixed SHA-256 values;
+  exact-archive certification gaps remain recorded in that evidence. Packaging ships
+  no runtime, installer, prefix or ODBC DLL, and repair/update do not restore an ODBC
   manager missing from an existing profile. Add a version/payload consistency test.
 
 - Keep zero-valued Wine x64 protection metadata sparse on Linux, preserving
