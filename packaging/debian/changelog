@@ -1,3 +1,15 @@
+powerbi-linux (0.1.0-19~experimental1) experimental; urgency=medium
+
+  * Beta candidate for the 0.1.0-19 CLI on the experimental DEB suite.
+  * Keep setup metadata pending until runtime 0.1.6-beta.1 publishes fixed
+    URLs and SHA-256 values for its binary, corresponding source and
+    exact-archive evidence; no placeholder checksum is shipped.
+  * Ship no Wine runtime, Microsoft installer, populated prefix or ODBC DLL.
+  * The experimental ODBC bridge stays unpublished; repair or update does not
+    restore an ODBC manager missing from an existing profile.
+
+ -- Power BI Linux <cavallaro88@users.noreply.github.com>  Tue, 27 Oct 2026 23:04:27 -0300
+
 powerbi-linux (0.1.0-18~experimental2) experimental; urgency=medium
 
   * Maintain the existing prefix in place without snapshots or rollback.

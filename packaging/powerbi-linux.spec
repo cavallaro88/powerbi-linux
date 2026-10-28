@@ -65,7 +65,11 @@ find %{buildroot} -type d -name __pycache__ -prune -exec rm -rf {} +
 %{_datadir}/icons/hicolor/scalable/apps/powerbi-linux.svg
 
 %changelog
-* Mon Oct 26 2026 Project maintainers - 0.1.0-19
+* Tue Oct 27 2026 Project maintainers - 0.1.0-19
+- Ship the 0.1.0-19 beta CLI; automatic setup stays pending until the runtime
+  0.1.6-beta.1 binary, source and evidence checksums are published.
+- Do not ship or enable the experimental ODBC bridge, and do not restore an
+  ODBC manager that is missing from an existing profile during maintenance.
 - Maintain the existing prefix in place without snapshot copies or rollback.
 - Record incomplete maintenance and block launch until recovery succeeds.
 - Preserve legacy profile directories and user-controlled resource defaults.
