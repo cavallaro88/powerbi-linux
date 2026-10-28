@@ -20,7 +20,8 @@ from pbi_linux.common import check_digest, digest
 from pbi_linux import build_provenance
 
 WINE_PATCHES = ('wine-11.18-composition.patch','wine-11.18-oledb32-variant.patch',
-                'wine-11.18-wayland-parent.patch','wine-11.18-cgroup-memory.patch','wine-11.18-secur32-status.patch','wine-11.18-jscript-int64.patch','wine-11.18-cursor-resource.patch','wine-11.18-wayland-normal-resize.patch')
+                'wine-11.18-wayland-parent.patch','wine-11.18-cgroup-memory.patch','wine-11.18-secur32-status.patch','wine-11.18-jscript-int64.patch','wine-11.18-cursor-resource.patch','wine-11.18-wayland-normal-resize.patch',
+                'wine-11.18-vprot-sparse-zero.patch')
 
 
 def preparation_matches(marker, expected):

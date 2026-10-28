@@ -1,0 +1,48 @@
+--- a/dlls/ntdll/unix/virtual.c
++++ b/dlls/ntdll/unix/virtual.c
+@@ -1188,6 +1188,32 @@
+  *
+  * Set a range of page protection bytes.
+  */
++#ifdef _WIN64
++/* The table blocks are private anonymous mappings. Keep zero ranges sparse
++ * without changing their addresses or discarding neighboring protection bytes.
++ * The caller holds virtual_mutex, as for the original memset. */
++static void fill_page_vprot( BYTE *ptr, size_t size, BYTE vprot )
++{
++    if (!size) return;
++#ifdef __linux__
++    if (!vprot)
++    {
++        UINT_PTR start = (UINT_PTR)ptr, end = start + size;
++        UINT_PTR first = (start + host_page_mask) & ~host_page_mask;
++        UINT_PTR last = end & ~host_page_mask;
++
++        if (first < last && !madvise( (void *)first, last - first, MADV_DONTNEED ))
++        {
++            memset( ptr, 0, first - start );
++            memset( (void *)last, 0, end - last );
++            return;
++        }
++    }
++#endif
++    memset( ptr, vprot, size );
++}
++#endif
++
+ static void set_page_vprot( const void *addr, size_t size, BYTE vprot )
+ {
+     size_t idx = (size_t)addr >> page_shift;
+@@ -1197,10 +1223,10 @@
+     while (idx >> pages_vprot_shift != end >> pages_vprot_shift)
+     {
+         size_t dir_size = pages_vprot_mask + 1 - (idx & pages_vprot_mask);
+-        memset( pages_vprot[idx >> pages_vprot_shift] + (idx & pages_vprot_mask), vprot, dir_size );
++        fill_page_vprot( pages_vprot[idx >> pages_vprot_shift] + (idx & pages_vprot_mask), dir_size, vprot );
+         idx += dir_size;
+     }
+-    memset( pages_vprot[idx >> pages_vprot_shift] + (idx & pages_vprot_mask), vprot, end - idx );
++    fill_page_vprot( pages_vprot[idx >> pages_vprot_shift] + (idx & pages_vprot_mask), end - idx, vprot );
+ #else
+     memset( pages_vprot + idx, vprot, end - idx );
+ #endif
