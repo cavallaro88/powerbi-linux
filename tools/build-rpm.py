@@ -24,8 +24,11 @@ if args.local:
         raise SystemExit('--check-helpers uses the prepared container builder')
     subprocess.run(command,check=True)
 else:
-    container=[args.engine,'run','--rm','--user',str(os.getuid())+':'+str(os.getgid()),
-               '-e','HOME=/tmp/pbi-rpm-home','-v',str(ROOT)+':/work:z','pbi-linux-builder:0.1.0']
+    container=[args.engine,'run','--rm','--user',str(os.getuid())+':'+str(os.getgid())]
+    if args.engine == 'podman':
+        # Rootless Podman maps --user to a subordinate ID without this guard.
+        container.append('--userns=keep-id')
+    container += ['-e','HOME=/tmp/pbi-rpm-home','-v',str(ROOT)+':/work:z','pbi-linux-builder:0.1.0']
     if args.check_helpers:
         subprocess.run([*container,'bash','/work/tools/validate-helpers.sh'],check=True)
     subprocess.run([*container,'rpmbuild','-ba','--define',

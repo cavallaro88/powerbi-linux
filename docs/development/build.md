@@ -1,6 +1,6 @@
 # Build from a clean source tree
 
-The current recipe defaults to runtime **0.1.5** (`--runtime-version 0.1.5`), with
+The current recipe defaults to runtime **0.1.6-beta.1** (`--runtime-version 0.1.6-beta.1`), with
 the Power BI 2.159.883.0 installer pin and the existing reviewed Wine/DXVK patches.
 A complete local build and successful-build receipt were produced on October 20.
 The 2.159 port passed offline and preliminary native checks; exact-archive release
@@ -115,7 +115,7 @@ python3 tools/build-deb.py --local
 python3 tools/build-deb.py --stage-only /path/to/new-staging-directory
 ```
 
-Outputs are `build/deb/powerbi-linux_0.1.0-18~experimental2_amd64.deb` and its
+Outputs are `build/deb/powerbi-linux_0.1.0-19~experimental1_amd64.deb` and its
 `.deb.sha256`. Existing artifacts are not overwritten: change the version in
 `packaging/debian/control` or use a fresh `--output` directory. The builder does
 not claim byte-identical reproducibility. It runs no tests implicitly; run the

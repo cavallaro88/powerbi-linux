@@ -12,7 +12,9 @@
 Use an experimental DEB supplied with its SHA-256 and corresponding project
 sources, or [reproduce a post-merge build](../development/build.md#experimental-deb).
 The candidate filename is `powerbi-linux_0.1.0-18~experimental2_amd64.deb`;
-this guide does not imply that it has already been published on GitHub.
+this guide does not imply that it has already been published on GitHub. An
+unpublished `0.1.0-19~experimental1` beta candidate also exists in the source tree,
+with automatic runtime setup deliberately pending.
 
 From the directory containing the package and checksum:
 

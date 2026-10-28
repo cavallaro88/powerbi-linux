@@ -1,5 +1,5 @@
 Package: powerbi-linux
-Version: 0.1.0-18~experimental2
+Version: 0.1.0-19~experimental1
 Section: utils
 Priority: optional
 Architecture: amd64
@@ -11,6 +11,8 @@ Description: experimental Power BI Desktop compatibility tools for Linux
  Ubuntu 24.04/26.04 and Debian 13 on x86_64 with Wayland are experimental:
  compatibility is not certified. A systemd user session and a suitable
  Vulkan driver are required. Fedora 44 remains the tested target.
+ Beta candidate: the package version, setup metadata and packaging behavior may
+ change; no stable release is certified.
  Microsoft Power BI Desktop, .NET, WebView2 and the Wine runtime are
  obtained separately per user. This package contains no Microsoft software
  or Wine prefix. Resource settings remain user-controlled; packaging does

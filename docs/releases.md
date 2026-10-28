@@ -3,12 +3,16 @@
 Local candidates are prepared in the source tree and have not been published as
 new GitHub releases:
 
+- [RPM/DEB 19 — beta with Runtime 0.1.6-beta.1](releases/v0.1.0-19.md)
 - [RPM 17 — local GNOME theme integration](releases/v0.1.0-17.md)
 - [RPM 16 — local tooltip correction](releases/v0.1.0-16.md)
 - [RPM 15 — local Options interaction fixes](releases/v0.1.0-15.md)
 - [RPM 14 — local guided setup and documentation candidate](releases/v0.1.0-14.md)
 
-The current RPM preview is [0.1.0-18](https://github.com/cavallaro88/powerbi-linux/releases/tag/v0.1.0-18).
+The current published RPM preview is [0.1.0-18](https://github.com/cavallaro88/powerbi-linux/releases/tag/v0.1.0-18).
+Revision 19 (RPM `0.1.0-19`, experimental DEB `0.1.0-19~experimental1`) is a beta
+pinned to the published Runtime 0.1.6-beta.1. Exact-archive certification gaps remain
+recorded in that runtime evidence. See [the 19 notes](releases/v0.1.0-19.md).
 All entries are **prereleases**, with dated, version-specific changelogs.
 Access follows the GitHub repository visibility. No stable release is certified.
 

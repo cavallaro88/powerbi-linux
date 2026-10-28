@@ -23,8 +23,10 @@ rejected before any Microsoft download.
 
 All downloads use fixed HTTPS URLs and SHA-256 checks. Power BI's installer must
 come from `download.microsoft.com`. WebView2, .NET, Gecko and fonts continue using
-the existing pinned prerequisite recipes. The current manifest points at the
-published runtime 0.1.5 release; do not substitute an incremental investigation build.
+the existing pinned prerequisite recipes. The 0.1.0-19 beta manifest points at
+Runtime 0.1.6-beta.1 with fixed binary, source and evidence URLs plus SHA-256 values.
+Do not substitute a placeholder checksum or an incremental investigation build. RPM 18
+keeps the published runtime 0.1.5 pin.
 
 ## Preparing a release
 
