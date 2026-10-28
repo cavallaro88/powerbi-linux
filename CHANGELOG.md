@@ -4,6 +4,13 @@
 
 ### Unreleased — product repository and upstream review
 
+- Keep zero-valued Wine x64 protection metadata sparse on Linux, preserving
+  protections, table addresses, edge bytes and fallback behavior. Add helper
+  regression and synthetic Win64 probes; document isolated memory A/B and
+  remaining validation limits in [memory evidence](docs/reference/wine-vprot-memory.md).
+  Resource defaults and the separate experimental ODBC correction are unchanged;
+  source integration does not replace an installed runtime.
+
 - Separate source-only CI from post-merge package delivery. Branches/PRs never
   construct RPM/DEB archives; successful same-repository main-push checks trigger
   package builds/lifecycle tests for the exact merged SHA. Keep release publication

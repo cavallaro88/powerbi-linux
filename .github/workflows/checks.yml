@@ -22,7 +22,7 @@ jobs:
       DEBIAN_FRONTEND: noninteractive
     steps:
       - name: Install build and test dependencies
-        run: apt-get update && apt-get install -y --no-install-recommends ca-certificates python3 git desktop-file-utils shared-mime-info
+        run: apt-get update && apt-get install -y --no-install-recommends ca-certificates python3 git gcc libc6-dev desktop-file-utils shared-mime-info
       - uses: actions/checkout@v4
       - name: Unit and documentation checks
         run: python3 tools/check-product.py --output build/check-product/ci-deb
@@ -43,7 +43,7 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Install check dependencies
-        run: dnf install -y python3 git desktop-file-utils shared-mime-info
+        run: dnf install -y python3 git gcc glibc-devel desktop-file-utils shared-mime-info
       - uses: actions/checkout@v4
       - name: Repeatable product checks
         run: python3 tools/check-product.py --output build/check-product/ci

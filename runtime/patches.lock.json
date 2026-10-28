@@ -6,6 +6,7 @@
   "wine-11.18-jscript-int64.patch": "baa1e7247957c9c7fa0b740066f11b971edae2329a8b667d357dc49935e524f7",
   "wine-11.18-oledb32-variant.patch": "903661c96a17113a1a6a10d281bfda896c0ea6eb51636299e4ae9b766facf39c",
   "wine-11.18-secur32-status.patch": "5df39e54380f146405afa3b7aa08df20f306d82871e6417b29bd6f1462e86053",
+  "wine-11.18-vprot-sparse-zero.patch": "62a3e248681bb299f3ce6c4436927b35ccdf987ad262cfd1c51ac44c2a0cc8df",
   "wine-11.18-wayland-normal-resize.patch": "59ece0115d772d0671e98fb7cb18930dfb1aa2045b8b38c37ee72f623ae58446",
   "wine-11.18-wayland-parent.patch": "d8ed5e7c1d8d9f2751fb99a45d59f28594667f18f72a090f71ddb51ddebee346"
 }
