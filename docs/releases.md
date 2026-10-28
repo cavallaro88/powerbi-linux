@@ -3,16 +3,14 @@
 Local candidates are prepared in the source tree and have not been published as
 new GitHub releases:
 
-- [RPM/DEB 19 — beta with Runtime 0.1.6-beta.1](releases/v0.1.0-19.md)
 - [RPM 17 — local GNOME theme integration](releases/v0.1.0-17.md)
 - [RPM 16 — local tooltip correction](releases/v0.1.0-16.md)
 - [RPM 15 — local Options interaction fixes](releases/v0.1.0-15.md)
 - [RPM 14 — local guided setup and documentation candidate](releases/v0.1.0-14.md)
 
-The current published RPM preview is [0.1.0-18](https://github.com/cavallaro88/powerbi-linux/releases/tag/v0.1.0-18).
-Revision 19 (RPM `0.1.0-19`, experimental DEB `0.1.0-19~experimental1`) is a beta
-pinned to the published Runtime 0.1.6-beta.1. Exact-archive certification gaps remain
-recorded in that runtime evidence. See [the 19 notes](releases/v0.1.0-19.md).
+The current published preview is [0.1.0-19](https://github.com/cavallaro88/powerbi-linux/releases/tag/v0.1.0-19),
+a beta pinned to [Runtime 0.1.6-beta.1](https://github.com/cavallaro88/powerbi-linux/releases/tag/runtime-v0.1.6-beta.1).
+Exact-archive certification gaps remain recorded in that runtime evidence.
 All entries are **prereleases**, with dated, version-specific changelogs.
 Access follows the GitHub repository visibility. No stable release is certified.
 
@@ -42,6 +40,7 @@ the corresponding tags, and their artifact digests remain in the
 
 | Revision | Version notes | Downloads |
 |---|---|---|
+| 0.1.0-19 | [Changelog](releases/v0.1.0-19.md) | [Downloads](https://github.com/cavallaro88/powerbi-linux/releases/tag/v0.1.0-19) |
 | 0.1.0-18 | [Changelog](releases/v0.1.0-18.md) | [Downloads](https://github.com/cavallaro88/powerbi-linux/releases/tag/v0.1.0-18) |
 | 0.1.0-13 | [Changelog](releases/v0.1.0-13.md) | [Downloads](https://github.com/cavallaro88/powerbi-linux/releases/tag/v0.1.0-13) |
 | 0.1.0-12 | [Changelog](releases/v0.1.0-12.md) | [Downloads](https://github.com/cavallaro88/powerbi-linux/releases/tag/v0.1.0-12) |

@@ -21,10 +21,10 @@ The manual route remains available: see the [developer installation contract](..
 
 ## 1. Install the project tools
 
-Download the binary `.noarch.rpm` from [Releases](https://github.com/cavallaro88/powerbi-linux/releases/tag/v0.1.0-18). The `.src.rpm` is for developers. Open a terminal in the download folder and run, replacing the filename with the package you downloaded:
+Download the binary `.noarch.rpm` from [Releases](https://github.com/cavallaro88/powerbi-linux/releases/tag/v0.1.0-19). The `.src.rpm` is for developers. Open a terminal in the download folder and run, replacing the filename with the package you downloaded:
 
 ```bash
-sudo dnf install ./powerbi-linux-0.1.0-18.noarch.rpm
+sudo dnf install ./powerbi-linux-0.1.0-19.fc44.noarch.rpm
 ```
 
 DNF installs the Linux dependencies. The project tools install Power BI separately for your user.
