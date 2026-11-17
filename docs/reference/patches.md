@@ -16,6 +16,10 @@ and [Edit Permissions](permissions-wayland.md).
 | Wine OLE DB VARIANT conversions | Numeric/boolean values otherwise appeared as zero | Required; LGPL-2.1-or-later |
 | Wine normal Wayland resize | Accept normal compositor size hints after initial configure for resizable windows; private 0.1.4 component/Desktop candidate, see [PaperWM](paperwm.md) | LGPL-2.1-or-later |
 | Wine Wayland parent | Owned dialogs otherwise remained behind the main window | Required; LGPL-2.1-or-later |
+| Wine single-mode monitor placement | Wayland outputs lost their position, so every monitor sat at the origin and a window on a second monitor was never painted | LGPL-2.1-or-later; local build only, see [Hyprland](hyprland.md) |
+| Wine Wayland data-control primary selection | A compositor that sends `primary_selection` to a version 1 device aborted the clipboard owner | LGPL-2.1-or-later; local build only, see [Hyprland](hyprland.md) |
+| Wine visible-region race | A resize by the window's thread could leave the frame receiver's cached DC clipped to the old client area | LGPL-2.1-or-later; local build only, see [Hyprland](hyprland.md) |
+| Wine OLE Automation maximum date | Rounding the last half second of year 9999 produced an invalid date; Analysis Services then launched SQLDUMPER at every start | LGPL-2.1-or-later; local build only, see [Hyprland](hyprland.md) |
 | Wine cgroup reporting | Report cgroup limits to CLR/Chromium/AS | Required; LGPL-2.1-or-later; initializes the path buffer in the product port |
 | Wine secur32 status | Return NTSTATUS rather than BOOL from LsaFreeReturnBuffer | Required; source fix replaces the old machine-code patch; LGPL-2.1-or-later |
 | DXVK presentation | Scoped GDI delivery for WebView HWND swapchains | Required; DXVK upstream terms, preserving Neutron-derived provenance |

@@ -1,0 +1,39 @@
+winewayland: tolerate primary selection events on version 1 data-control devices
+
+The driver binds zwlr_data_control_manager_v1 version 1, but its bundled
+protocol description is version 2, so libwayland dispatches the version 2
+primary_selection event when a compositor sends it. The three-entry listener
+has no handler for that opcode and libwayland aborts the process that owns
+the clipboard window (explorer.exe), ending host clipboard exchange.
+Hyprland 0.56.2 sends the event to every data-control device regardless of
+its bound version. Windows has no primary selection: release the offer and
+leave the regular selection path unchanged.
+Wine-derived change: LGPL-2.1-or-later.
+
+--- a/dlls/winewayland.drv/wayland_data_device.c
++++ b/dlls/winewayland.drv/wayland_data_device.c
+@@ -585,11 +585,24 @@
+ {
+ }
+ 
++static void data_control_device_primary_selection(
++    void *data,
++    struct zwlr_data_control_device_v1 *zwlr_data_control_device_v1,
++    struct zwlr_data_control_offer_v1 *zwlr_data_control_offer_v1)
++{
++    /* Windows has no primary selection. This is a version 2 event, but some
++     * compositors also send it to version 1 devices: release the offer. */
++    if (zwlr_data_control_offer_v1)
++        wayland_data_offer_destroy(
++            zwlr_data_control_offer_v1_get_user_data(zwlr_data_control_offer_v1));
++}
++
+ static const struct zwlr_data_control_device_v1_listener data_control_device_listener =
+ {
+     data_control_device_data_offer,
+     data_control_device_selection,
+     data_control_device_finished,
++    data_control_device_primary_selection,
+ };
+ 
+ /**********************************************************************

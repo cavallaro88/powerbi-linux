@@ -1,0 +1,30 @@
+oleaut32: do not round the last half second of year 9999 into year 10000
+
+VarUdateFromDate() rounds to the nearest second and rolls the date forward.
+For a DATE in the last half second of 31 Dec 9999 (DateTime.MaxValue is
+2958465.9999999884) VariantTimeToSystemTime() therefore succeeds with
+1 Jan 10000, which SystemTimeToVariantTime() rejects.
+Analysis Services round-trips a trace StopTime through both functions.
+Desktop sends the maximum date at every start, so the engine raised a system
+error, crashed while unwinding and launched SQLDUMPER, whose console window
+appeared beside Desktop.
+Keep 23:59:59 for that half second so that the result stays a valid date.
+The Windows result for this exact value was not measured; the working round
+trip in Analysis Services on Windows shows that it returns a valid date.
+Wine-derived change: LGPL-2.1-or-later.
+
+--- a/dlls/oleaut32/variant.c
++++ b/dlls/oleaut32/variant.c
+@@ -1456,7 +1456,11 @@
+   lpUdate->st.wSecond = timePart;
+   timePart -= lpUdate->st.wSecond;
+   lpUdate->st.wMilliseconds = 0;
+-  if (timePart > 0.5)
++  /* Rounding the last half second of 31 Dec 9999 up would produce year 10000,
++   * which no date function accepts back. Keep 23:59:59 there. */
++  if (timePart > 0.5 &&
++      !(lpUdate->st.wYear == 9999 && lpUdate->st.wMonth == 12 && lpUdate->st.wDay == 31 &&
++        lpUdate->st.wHour == 23 && lpUdate->st.wMinute == 59 && lpUdate->st.wSecond == 59))
+   {
+     /* Round the milliseconds, adjusting the time/date forward if needed */
+     if (lpUdate->st.wSecond < 59)
