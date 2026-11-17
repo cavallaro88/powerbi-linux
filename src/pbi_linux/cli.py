@@ -31,7 +31,7 @@ def doctor(paths):
             ctypes.CDLL(library)
             add(library,True,'Host library is available')
         except OSError:
-            add(library,False,'Install the project package with DNF or APT to resolve dependencies')
+            add(library,False,'Install the project package with DNF, APT or pacman to resolve dependencies')
     bus = subprocess.run(['systemctl','--user','show-environment'], capture_output=True, timeout=5)
     add('user-service-manager', bus.returncode == 0, 'A working systemd user session is required')
     add('installation', paths.active.exists(), 'Run setup to create a managed installation')

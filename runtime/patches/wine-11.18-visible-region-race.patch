@@ -1,0 +1,34 @@
+win32u: keep a concurrent invalidation when applying a visible region
+
+update_visible_region() fetches the region from the server and then calls
+set_visible_region(), which also clears the DC's dirty flag. When another
+thread moves or resizes the window between those two steps, its
+invalidate_dce() sets the flag on the DC in use and the stale region then
+clears it again. The cached DC keeps the old region until the next unrelated
+invalidation.
+The Power BI frame receiver paints the WebView host from its own thread
+every 16 ms while the UI thread resizes that host. On a tiling compositor a
+short-lived second window (halve, then restore) left the receiver clipped to
+the half-width client area: the right half of Desktop stayed blank.
+Both callers that fetch a region clear the flag before they fetch
+(NtUserGetDCEx through DCHF_VALIDATEVISRGN, update_dc directly), so the extra
+reset is only ever a lost update. The third caller, release_dce(), applies an
+empty region without fetching; a flag left set there is cleared by the next
+NtUserGetDCEx, which refetches for a released DC in any case. Leave the flag
+alone; the next drawing call refetches. The cost is at most one extra region
+fetch per racing invalidation.
+Wine-derived change: LGPL-2.1-or-later.
+
+--- a/dlls/win32u/clipping.c
++++ b/dlls/win32u/clipping.c
+@@ -217,7 +217,9 @@
+     NtGdiOffsetRgn( hrgn, -vis_rect->left, -vis_rect->top );
+ 
+     if (dc->hVisRgn) NtGdiDeleteObjectApp( dc->hVisRgn );
+-    dc->dirty = 0;
++    /* Do not clear dc->dirty here: this region was fetched earlier, and another
++     * thread may have moved the window and flagged the DC since. The callers
++     * that fetch a region already clear the flag before they do. */
+     dc->attr->vis_rect = *vis_rect;
+     dc->device_rect = *device_rect;
+     dc->hVisRgn = hrgn;

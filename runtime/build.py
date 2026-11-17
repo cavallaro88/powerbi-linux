@@ -21,7 +21,9 @@ from pbi_linux import build_provenance
 
 WINE_PATCHES = ('wine-11.18-composition.patch','wine-11.18-oledb32-variant.patch',
                 'wine-11.18-wayland-parent.patch','wine-11.18-cgroup-memory.patch','wine-11.18-secur32-status.patch','wine-11.18-jscript-int64.patch','wine-11.18-cursor-resource.patch','wine-11.18-wayland-normal-resize.patch',
-                'wine-11.18-vprot-sparse-zero.patch')
+                'wine-11.18-vprot-sparse-zero.patch','wine-11.18-single-mode-position.patch',
+                'wine-11.18-wayland-data-control-primary.patch','wine-11.18-visible-region-race.patch',
+                'wine-11.18-oleaut32-max-date.patch')
 
 
 def preparation_matches(marker, expected):

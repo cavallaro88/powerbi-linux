@@ -7,7 +7,7 @@ These documents preserve implementation details and dated evidence. For installa
 | Compatibility and test evidence | [Detailed matrix](compatibility.md), [validation](validation.md), [validation host](validation-host.md) |
 | Installation contracts and new versions | [Detailed lifecycle](installation-lifecycle.md), [Power BI 2.159 assessment](powerbi-2.159.md) |
 | Compatibility changes and upstream work | [Patch inventory](patches.md), [Neutron review](upstream-neutron.md) |
-| Windows and input | [Window frame](window-frame.md), [PaperWM resizing](paperwm.md), [cursors](cursor.md), [GNOME theme](gnome-theme.md) |
+| Windows and input | [Window frame](window-frame.md), [PaperWM resizing](paperwm.md), [Hyprland and multiple monitors](hyprland.md), [cursors](cursor.md), [GNOME theme](gnome-theme.md) |
 | Dialogs and controls | [Native save dialog](native-dialogs.md), [legacy HTML](legacy-html.md), [Options](options-dialog.md), [permissions](permissions-wayland.md), [text pickers](text-pickers.md), [intermittent popup](intermittent-popup.md) |
 | Data handling | [Model cache and recovery](model-cache.md), [refresh cancellation](refresh-cancellation.md) |
 | Provider experiments | [Connector support policy](connector-support.md), [Redshift](redshift.md), [vendor installers](vendor-installers.md) |

@@ -135,6 +135,25 @@ Distribute the checksum and matching [source export](#corresponding-source) with
 the DEB; signing and repository publication remain separate release operations.
 See [experimental installation and scope](../user/debian-ubuntu.md).
 
+## Experimental Arch package
+
+`packaging/arch/PKGBUILD` packages the checkout that contains it: the CLI,
+recipes and desktop integration, with no runtime binary, Microsoft installer or
+prefix. It is not published and has no AUR entry.
+
+```bash
+cd packaging/arch
+makepkg -f          # runs the unit suite in check()
+namcap PKGBUILD *.pkg.tar.zst
+```
+
+`package()` ships only the files Git tracks, with the modes Git records, so
+untracked files in the checkout stay out and a checkout on a filesystem without
+Unix modes builds the same package. It needs a Git checkout. `namcap` reports the `$startdir` reference
+(the recipe deliberately packages its own checkout) and dependencies it cannot
+see because the runtime loads them, not the Python sources. See
+[experimental installation and scope](../user/arch.md).
+
 ## Corresponding source
 
 When distributing a runtime, publish the exact corresponding patched source and build recipe, Wine/Neutron notices, DXVK/submodule licenses, dnlib notice, builder image digest and package inventory. The runtime binary alone is not a complete release. Use the source export tooling to create a sanitized project source tree; the full Wine/DXVK source bundle is generated from the prepared sources.

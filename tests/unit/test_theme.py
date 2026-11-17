@@ -45,11 +45,21 @@ class ThemeTests(unittest.TestCase):
         run.assert_not_called()
         self.assertIsNone(self.bridge.thread)
 
+    def test_hyprland_uses_the_same_preference_key(self):
+        for desktop in ('Hyprland', 'omarchy:Hyprland'):
+            with self.subTest(desktop=desktop), patch.dict(os.environ, XDG_CURRENT_DESKTOP=desktop), \
+                    patch.object(theme, 'preference', return_value=None) as preference, \
+                    patch.object(theme, 'run') as run:
+                self.bridge.start()
+                preference.assert_called_once()
+                run.assert_not_called()
+
     def test_other_desktops_do_not_read_stale_gnome_settings(self):
-        with patch.dict(os.environ, XDG_CURRENT_DESKTOP='KDE'), \
-                patch.object(theme, 'preference') as preference:
-            self.bridge.start()
-        preference.assert_not_called()
+        for desktop in ('KDE', 'sway', ''):
+            with self.subTest(desktop=desktop), patch.dict(os.environ, XDG_CURRENT_DESKTOP=desktop), \
+                    patch.object(theme, 'preference') as preference:
+                self.bridge.start()
+                preference.assert_not_called()
 
     def test_changes_are_applied_once_and_missing_reads_keep_last_value(self):
         with patch.object(theme, 'run') as run:

@@ -4,9 +4,13 @@
   "wine-11.18-composition.patch": "c37ea6fa335257489eed3cb311aa445d8281e7c3138adfabff95ad8cc626b42c",
   "wine-11.18-cursor-resource.patch": "db38c2d9ad6ec2e3c313bcc0a35e9d764896473419b80c507bfcd4c5ba0e0546",
   "wine-11.18-jscript-int64.patch": "baa1e7247957c9c7fa0b740066f11b971edae2329a8b667d357dc49935e524f7",
+  "wine-11.18-oleaut32-max-date.patch": "293cbc1b75f45a89b897c8c47d4f798b7c55820e28223faece30155e52e6c337",
   "wine-11.18-oledb32-variant.patch": "903661c96a17113a1a6a10d281bfda896c0ea6eb51636299e4ae9b766facf39c",
   "wine-11.18-secur32-status.patch": "5df39e54380f146405afa3b7aa08df20f306d82871e6417b29bd6f1462e86053",
+  "wine-11.18-single-mode-position.patch": "22b49aaf9d68ad62496eb2b68c3cf698503387693e56e5954caffd539c2ed758",
+  "wine-11.18-visible-region-race.patch": "8c594ce2cabc488b604fa065efa4ccd046625417917776737d3f29954f64aa22",
   "wine-11.18-vprot-sparse-zero.patch": "62a3e248681bb299f3ce6c4436927b35ccdf987ad262cfd1c51ac44c2a0cc8df",
+  "wine-11.18-wayland-data-control-primary.patch": "eaf2e13d6c32053fe9b8b35c5aeba6c8bbccdd629c3205a6a99ac20b1ed2b310",
   "wine-11.18-wayland-normal-resize.patch": "59ece0115d772d0671e98fb7cb18930dfb1aa2045b8b38c37ee72f623ae58446",
   "wine-11.18-wayland-parent.patch": "d8ed5e7c1d8d9f2751fb99a45d59f28594667f18f72a090f71ddb51ddebee346"
 }

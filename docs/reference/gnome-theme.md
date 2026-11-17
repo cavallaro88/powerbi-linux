@@ -12,10 +12,11 @@ The integration is included in the local Fedora RPM **0.1.0-17**. See the
 ## Implementation
 
 The broker forwards `XDG_CURRENT_DESKTOP` into its systemd user service. On GNOME
-sessions it reads `org.gnome.desktop.interface color-scheme` through `gsettings`:
+and Hyprland sessions it reads `org.gnome.desktop.interface color-scheme` through `gsettings`:
 `prefer-dark` maps to dark; `prefer-light` and `default` map to light. The bridge
 does not write GNOME settings and skips other desktops to avoid reading stale
-GNOME preferences. Missing schemas, unavailable session buses and unknown values
+GNOME preferences. Hyprland has no preference of its own: the session sets this
+key (Omarchy does on every theme change) and the desktop portal reports it. Missing schemas, unavailable session buses and unknown values
 leave the last Windows preference intact.
 
 The packaged `PowerBIThemeSync.cs` helper is compiled using the managed profile's
@@ -36,7 +37,7 @@ styles, patch Microsoft assemblies or change report themes.
 
 The optional integration needs `gsettings` (Fedora's `glib2`, present in GNOME),
 a working user session bus and the already provisioned .NET compiler. Details
-and failures appear as `GNOME theme:` lines in the managed `session.log`.
+and failures appear as `Host theme:` lines (`GNOME theme:` before the Hyprland change) in the managed `session.log`.
 
 ## Validation
 
@@ -69,5 +70,13 @@ Validated locally with Desktop **2.159.883.0** and runtime **0.1.5**. This verif
 the native bridge and original theme service, not the complete visible Desktop,
 Power Query, accessibility/high-contrast behavior or all supported versions.
 Full visual validation remains a separate gate.
+
+On November 18, 2026 the bridge was observed on Omarchy with Hyprland 0.56.2,
+Desktop **2.159.1231.0** and a local runtime build: with **System default**
+selected and the host preference `prefer-dark`, Desktop started dark, and
+light/dark notifications switched the visible home screen both ways. A fresh
+profile there started on **Light**, which the bridge leaves alone, so System
+default has to be selected once. This is one observation of the visible home
+screen, not the native test above.
 
 Reference: [GNOME color-scheme behavior](https://discourse.gnome.org/t/how-light-dark-style-works/17085).

@@ -28,13 +28,30 @@ class DesktopTargets(unittest.TestCase):
 
     def test_unlisted_deb_versions_remain_rejected(self):
         for name, version in (('ubuntu', '22.04'), ('ubuntu', '25.10'), ('debian', '12'),
-                              ('ubuntu', ''), ('debian', 'testing'), ('arch', '')):
+                              ('ubuntu', ''), ('debian', 'testing')):
             self.assertFalse(platforms.status({'ID': name, 'VERSION_ID': version})[0])
+
+    def test_arch_targets_are_explicitly_experimental(self):
+        for text in ('ID=arch\nPRETTY_NAME="Arch Linux"',
+                     'ID=omarchy\nID_LIKE=arch\nVERSION_ID="4.5.0"\nPRETTY_NAME="Omarchy"'):
+            with self.subTest(text=text):
+                accepted, detail = platforms.status(platforms.release(text))
+                self.assertTrue(accepted)
+                self.assertIn('experimental', detail.lower())
+
+    def test_other_arch_derivatives_are_not_accepted_by_ancestry(self):
+        for text in ('ID=manjaro\nID_LIKE=arch', 'ID=endeavouros\nID_LIKE=arch',
+                     'ID=cachyos\nID_LIKE=arch', 'ID=archarm'):
+            with self.subTest(text=text):
+                self.assertFalse(platforms.status(platforms.release(text))[0])
 
     def test_ntlm_guidance_uses_native_package_name(self):
         for name in ('ubuntu', 'debian'):
             with patch.object(platforms, 'release', return_value={'ID': name}):
                 self.assertIn('apt install winbind', platforms.ntlm_help())
+        for name in ('arch', 'omarchy'):
+            with patch.object(platforms, 'release', return_value={'ID': name}):
+                self.assertIn('pacman -S samba', platforms.ntlm_help())
         with patch.object(platforms, 'release', return_value={'ID': 'fedora'}):
             self.assertIn('samba-winbind-clients', platforms.ntlm_help())
 

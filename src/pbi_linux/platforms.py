@@ -27,15 +27,23 @@ def status(info=None):
         return True, 'Fedora 44 is the tested target; other Fedora releases are experimental'
     if (name, version) in (('ubuntu', '24.04'), ('ubuntu', '26.04'), ('debian', '13')):
         return True, name.capitalize() + ' ' + version + ' is experimental; compatibility is not certified'
+    if name in ARCH:
+        return True, ARCH[name] + ' is experimental (rolling release); compatibility is not certified'
     detected = info.get('PRETTY_NAME') or (name + ' ' + version).strip() or 'unknown distribution'
     return False, 'Detected ' + detected + '. Targets: ' + TARGETS
 
 
-TARGETS = ('Fedora 44; experimental Ubuntu 24.04 / 26.04 and Debian 13; '
-           'x86_64 / Wayland')
+# Rolling releases have no VERSION_ID to pin. Other Arch derivatives are not
+# accepted through ID_LIKE; each needs its own native evidence.
+ARCH = {'arch': 'Arch Linux', 'omarchy': 'Omarchy'}
+TARGETS = ('Fedora 44; experimental Ubuntu 24.04 / 26.04, Debian 13 and '
+           'Arch Linux / Omarchy; x86_64 / Wayland')
 
 
 def ntlm_help():
-    if release().get('ID') in ('ubuntu', 'debian'):
+    name = release().get('ID')
+    if name in ('ubuntu', 'debian'):
         return 'Run sudo apt install winbind before opening Power BI'
+    if name in ARCH:
+        return 'Run sudo pacman -S samba before opening Power BI'
     return 'Install samba-winbind-clients before opening Power BI'

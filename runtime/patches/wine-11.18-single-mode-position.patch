@@ -1,0 +1,48 @@
+win32u: keep the driver's placement for single-mode display sources
+
+Wayland outputs expose one host mode. add_modes() then takes the physical
+mode from the host mode list, which carries no position, and the first
+current mode from that physical mode. Every source therefore lands on the
+origin: on a two-output desktop both monitors overlap at (0,0), the work area
+of the second is clipped to an empty strip, and a window assigned to it is
+placed outside the desktop window. Hit testing fails there, so the owner
+process never delivers WebView frames and Desktop stays blank.
+Carry the driver's current position into the physical mode, as the
+multi-mode path already does, and follow the host placement while no
+emulated mode is active.
+The second hunk applies to every driver: a stored current mode of the
+physical size takes the host's position, so a position-only change that an
+application requested for a single-mode source is not kept. A Wayland client
+cannot move an output in any case.
+Wine-derived change: LGPL-2.1-or-later.
+
+--- a/dlls/win32u/sysparams.c
++++ b/dlls/win32u/sysparams.c
+@@ -2218,6 +2218,13 @@
+     }
+ 
+     physical = modes_count == 1 ? *modes : *current;
++    /* Host mode lists carry no placement. Keep the driver's position for a
++     * single-mode source, as the multi-mode path already does. */
++    if (current->dmFields & DM_POSITION)
++    {
++        physical.dmFields |= DM_POSITION;
++        physical.dmPosition = current->dmPosition;
++    }
+     if (ctx->is_primary) ctx->primary = *current;
+ 
+     detached.dmPelsWidth = 0;
+@@ -2233,6 +2240,13 @@
+     {
+         if (!read_source_mode( source->key, ENUM_CURRENT_SETTINGS, &virtual ) || is_detached_mode( &virtual ))
+             virtual = physical;
++        else if ((physical.dmFields & DM_POSITION) && virtual.dmPelsWidth == physical.dmPelsWidth &&
++                 virtual.dmPelsHeight == physical.dmPelsHeight)
++        {
++            /* No emulated mode is active: follow the host placement. */
++            virtual.dmFields |= DM_POSITION;
++            virtual.dmPosition = physical.dmPosition;
++        }
+ 
+         if ((virtual_modes = get_virtual_modes( current, &physical, host_modes, host_modes_count, &virtual_count )))
+         {

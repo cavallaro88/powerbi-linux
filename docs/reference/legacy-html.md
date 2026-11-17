@@ -118,3 +118,33 @@ in Wine, followed by a pane-height error. The runtime and guarded local UI recip
 fix these two stages; seven numeric cases and the 22-tab synthetic navigation/
 geometry audit passed. See [Options](options-dialog.md) for evidence, installation
 and remaining limits. This does not certify other untested nested HTML dialogs.
+
+## Unsized error dialog: 2026-11-18
+
+Observed on the two-monitor Hyprland host described in [Hyprland](hyprland.md),
+with Desktop 2.159.1231.0 in diagnostics mode. A script error in the report
+page reached the host as `BrowserInternalContext.OnError`, and the host opened
+its unexpected error report, a legacy HTML dialog titled "Something went wrong".
+The script error came from the test's own page instrumentation, not from
+Desktop; the dialog is the subject here.
+
+- In three occurrences across two sessions the dialog window stayed 2 × 2
+  pixels for as long as it was open, 17 minutes in one case, with Wine's HTML
+  child windows at 1 × 1. Hyprland placed it as a floating 2 × 2 window on the
+  focused workspace. Enlarged from outside, it showed an empty client area.
+- Its owner, the main window, was disabled for that time. During one occurrence
+  the main window showed only the form background.
+- Posting `WM_CLOSE` to the dialog re-enabled the main window and the report
+  reappeared. Closing it through the window manager was not tested.
+- With `warn+jscript` and `fixme+mshtml` enabled, the dialog loaded without an
+  uncaught script error.
+
+Working diagnosis, not established: `ModalDialog._enableWindowAutoSize` measures
+the content once and then relies on Internet Explorer's element `onresize` and
+`mselementresize` events for later changes. Wine's HTML engine does not raise
+them, so a dialog whose content arrives after the first measurement keeps its
+initial size. The credential correction above repeats the calculation for the
+credential challenge only. Why the enlarged dialog was empty is not known.
+
+To the user this looks like a frozen Desktop with nothing to dismiss. No
+correction exists yet, and Fedora was not tested for this dialog.

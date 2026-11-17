@@ -1,0 +1,65 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Experimental Arch Linux recipe. It packages the source checkout that contains
+# it: there is no published Arch package or AUR entry. Build with
+#   cd packaging/arch && makepkg -si
+# Like the RPM and DEB, the package holds only the CLI, recipes and desktop
+# integration. The Wine runtime and Microsoft software are obtained per user by
+# `pbi-linux setup`; no hook runs Wine, setup or a download.
+pkgname=powerbi-linux
+pkgver=0.1.0
+pkgrel=19
+pkgdesc='Experimental Power BI Desktop compatibility tools for Linux (community Wine runtime launcher)'
+arch=('x86_64')
+url='https://github.com/cavallaro88/powerbi-linux'
+license=('GPL-3.0-or-later' 'LGPL-2.1-or-later' 'Zlib')
+# Providers of the RPM's dependencies plus the ELF imports recorded in
+# docs/development/multi-distro-preflight.md. samba supplies ntlm_auth.
+# libpcap is deliberately absent: Arch ships libpcap.so.1, the runtime's
+# wpcap.so imports libpcap.so.0.8, and Desktop does not capture packets.
+depends=('python>=3.12' 'systemd' 'samba' 'desktop-file-utils' 'shared-mime-info'
+         'hicolor-icon-theme' 'xdg-utils' 'zenity' 'cabextract' 'fontconfig'
+         'freetype2' 'vulkan-icd-loader' 'libxkbcommon' 'gnutls' 'libunwind'
+         'libglvnd' 'unixodbc' 'wayland' 'libpulse' 'alsa-lib' 'gstreamer'
+         'gst-plugins-base-libs')
+makedepends=('git')
+options=('!strip' '!debug')
+
+_root() {
+    # makepkg runs the functions from $srcdir; the checkout is two levels above.
+    realpath "$startdir/../.."
+}
+
+check() {
+    cd "$(_root)"
+    PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m unittest discover -s tests/unit
+}
+
+package() {
+    local root data list mode path
+    root="$(_root)"
+    data="$pkgdir/usr/share/powerbi-linux"
+    list="$srcdir/tracked-files"
+    # Package the files Git tracks, with the modes Git records. An untracked
+    # .env, report or build output in the checkout must not ship, and a
+    # checkout on a filesystem without Unix modes must not leak its modes.
+    git -C "$root" ls-files -s -z -- src runtime connectors docs packaging \
+        LICENSE LICENSES README.md > "$list"
+    [[ -s "$list" ]] || { echo 'Build from a Git checkout of the project' >&2; return 1; }
+    while IFS= read -r -d '' path; do
+        mode="${path%% *}"
+        path="${path#*$'\t'}"
+        case "$mode" in
+            100755) install -Dm755 "$root/$path" "$data/$path" ;;
+            100644) install -Dm644 "$root/$path" "$data/$path" ;;
+            *) echo "Refusing to package $path (Git mode $mode)" >&2; return 1 ;;
+        esac
+    done < "$list"
+    install -Dm755 "$root/packaging/pbi-linux" "$pkgdir/usr/bin/pbi-linux"
+    install -Dm644 "$root/packaging/powerbi-linux.desktop" "$pkgdir/usr/share/applications/powerbi-linux.desktop"
+    install -Dm644 "$root/packaging/powerbi-linux.xml" "$pkgdir/usr/share/mime/packages/powerbi-linux.xml"
+    install -Dm644 "$root/packaging/powerbi-linux.svg" "$pkgdir/usr/share/icons/hicolor/scalable/apps/powerbi-linux.svg"
+    install -Dm644 "$root/packaging/pbi-linux.1" "$pkgdir/usr/share/man/man1/pbi-linux.1"
+    install -d "$pkgdir/usr/share/licenses/$pkgname"
+    ln -s /usr/share/powerbi-linux/LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+    ln -s /usr/share/powerbi-linux/LICENSES "$pkgdir/usr/share/licenses/$pkgname/LICENSES"
+}

@@ -1,6 +1,6 @@
 # Install Power BI Desktop on Fedora
 
-For the experimental Ubuntu/Debian package, use the [DEB guide](debian-ubuntu.md).
+For the experimental Ubuntu/Debian package, use the [DEB guide](debian-ubuntu.md). For Arch Linux or Omarchy, use the [Arch guide](arch.md).
 
 > [!WARNING]
 > **Beta software.** Read [known issues](known-issues.md), keep complete project backups and try copies of your reports first. Microsoft does not support this community installation.

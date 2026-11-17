@@ -1,6 +1,6 @@
 # Installation and lifecycle
 
-The tested target is Fedora 44 x86_64 on native Wayland; [Ubuntu/Debian DEBs](../user/debian-ubuntu.md) are experimental. Install the RPM with DNF or the DEB with APT so dependencies are resolved. `samba-winbind-clients` on Fedora and `winbind` on Debian/Ubuntu supply the local SSPI/NTLM helper; a Winbind daemon is not needed. Install the appropriate Vulkan driver for your GPU separately.
+The tested target is Fedora 44 x86_64 on native Wayland; [Ubuntu/Debian DEBs](../user/debian-ubuntu.md) and the [Arch source package](../user/arch.md) are experimental. Install the RPM with DNF, the DEB with APT or the Arch package with pacman so dependencies are resolved. `samba-winbind-clients` on Fedora, `winbind` on Debian/Ubuntu and `samba` on Arch supply the local SSPI/NTLM helper; a Winbind daemon is not needed. Install the appropriate Vulkan driver for your GPU separately.
 
 The runtime is built against glibc 2.39 in an Ubuntu build container to provide a conservative ABI baseline. This build choice alone does not certify Ubuntu compatibility.
 

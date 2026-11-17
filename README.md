@@ -38,6 +38,9 @@ These results apply to their recorded versions and test cases. They do not certi
 ## Install
 
 **Ubuntu / Debian (experimental):** use the [DEB installation guide](docs/user/debian-ubuntu.md).
+
+**Arch Linux / Omarchy (experimental):** use the [Arch guide](docs/user/arch.md); it needs a locally built runtime.
+
 This does not expand Fedora's validation claims to other distributions or apply
 any resource preset. The instructions below are for the published Fedora RPM.
 

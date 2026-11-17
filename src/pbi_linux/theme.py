@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Bridge GNOME's color preference to Desktop's original Windows theme handler."""
+"""Bridge the host's color preference to Desktop's original Windows theme handler."""
 import os
 from pathlib import Path
 import shutil
@@ -10,6 +10,11 @@ import threading
 from .common import Error, run
 
 POLL_SECONDS = 2
+# Desktops whose light/dark preference is org.gnome.desktop.interface color-scheme.
+# Hyprland has no setting of its own: the session (Omarchy on every theme change)
+# sets this key and the desktop portal reports it to applications. Elsewhere the
+# key can be a stale leftover, so other desktops are skipped.
+DESKTOPS = frozenset(('GNOME', 'HYPRLAND'))
 COMPILER = r'C:\windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe'
 
 
@@ -42,10 +47,10 @@ class ThemeSync:
 
     def _log(self, message):
         with (self.paths.state / 'session.log').open('a') as stream:
-            stream.write('GNOME theme: ' + message + '\n')
+            stream.write('Host theme: ' + message + '\n')
 
     def start(self):
-        if 'GNOME' not in os.environ.get('XDG_CURRENT_DESKTOP', '').upper().split(':'):
+        if not DESKTOPS.intersection(os.environ.get('XDG_CURRENT_DESKTOP', '').upper().split(':')):
             return
         selected = preference()
         if selected is None:
@@ -63,7 +68,7 @@ class ThemeSync:
                  source.name], env=self.env, cwd=folder, timeout=8,
                 log=self.paths.state / 'session.log')
             self.sync(selected)
-            self.thread = threading.Thread(target=self._watch, name='gnome-theme', daemon=True)
+            self.thread = threading.Thread(target=self._watch, name='host-theme', daemon=True)
             self.thread.start()
         except (Error, OSError) as error:
             self._log('synchronization unavailable: ' + str(error))
