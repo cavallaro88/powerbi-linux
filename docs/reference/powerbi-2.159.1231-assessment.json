@@ -1,0 +1,99 @@
+{
+  "powerbi_version": "2.159.1231.0",
+  "installer_sha256": "55e8ee44aa908d75edaed4bdb1a34863f41c047951f3724f298486fe07049f2d",
+  "installer_bytes": 702986400,
+  "source": "https://download.microsoft.com/download/8/8/0/880bca75-79dd-466a-927d-1abf1f5454b0/PBIDesktopSetup_x64.exe",
+  "replaces_at_same_address": "2.159.883.0",
+  "date": "2026-11-17",
+  "scope": "Guarded recipe port and one scoped synthetic native session on an experimental host; not release certification",
+  "status": "ported-one-experimental-host-tested-release-pending",
+  "runtime_certified": false,
+  "files": {
+    "Microsoft.PowerBI.Client.Shared.dll": {
+      "sha256": "3c4a994c17a3a61396711c6986b2a03f898bca9eb6973b893a91207fc68a99bc",
+      "matches_2159_883": false
+    },
+    "Microsoft.PowerBI.Client.Windows.dll": {
+      "sha256": "708f3de4cffe09a0c3aed30db5f0af820c3a7219b7924f0fac062b815d8e6c32",
+      "matches_2159_883": false
+    },
+    "Microsoft.Mashup.Client.UI.dll": {
+      "sha256": "1b90774991b5a1951ec8ac712bf079388d4feef1ed49edeebaf908702400bbb9",
+      "matches_2159_883": false
+    },
+    "msmdsrv.exe": {
+      "sha256": "90dd9882dd0ef22c1a49261099021798d1edf4817afff6b336322e7651659495",
+      "matches_2159_883": true
+    },
+    "WebView2Resources/minerva/reportView.html": {
+      "sha256": "0a03d24a6967d3026e8e910399cddd51ef668efd8f9b700a874f55f63059c41a",
+      "matches_2159_883": true
+    }
+  },
+  "port": {
+    "identical_html_resources": 5,
+    "resource_offset_shift": 328,
+    "html_intermediate_sha256": "072a113c12b0cfb170e8ab00eb3e05a58237d2581ac9c479e9e4c858667d7749",
+    "ui_patched_sha256": "3b0639cf526493de18e7d088561f0bfcbb7a528917b4c3e1424ec8637ac260c1",
+    "options_native_method_changed_bytes": 2,
+    "options_native_method_change": "Low bytes of two ldstr user-string tokens",
+    "email_resource_unchanged": true,
+    "text_picker_document_unchanged": true,
+    "offline_recipe_check": {
+      "schema": 1,
+      "date": "2026-11-17T08:43:55.105204+00:00",
+      "powerbi_version": "2.159.1231.0",
+      "scope": "Offline original-file/resource guards only; not native UI or release certification",
+      "status": "passed",
+      "files": {
+        "Microsoft.Mashup.Client.UI.dll": {
+          "original_sha256": "1b90774991b5a1951ec8ac712bf079388d4feef1ed49edeebaf908702400bbb9",
+          "patched_sha256": "3b0639cf526493de18e7d088561f0bfcbb7a528917b4c3e1424ec8637ac260c1",
+          "length_preserved": true
+        },
+        "Microsoft.PowerBI.Client.Windows.dll": {
+          "original_sha256": "708f3de4cffe09a0c3aed30db5f0af820c3a7219b7924f0fac062b815d8e6c32",
+          "patched_sha256": "c1e400e4c94e52b54f89bd25993585b03cad61db45620c2195cf70c9cc444a76",
+          "length_preserved": true
+        },
+        "msmdsrv.exe": {
+          "original_sha256": "90dd9882dd0ef22c1a49261099021798d1edf4817afff6b336322e7651659495",
+          "patched_sha256": "1ef50a9a52da6693ebeaa439da01ca7b2142247b340e90c4eaea579243621d35",
+          "length_preserved": true
+        },
+        "WebView2Resources/minerva/reportView.html": {
+          "original_sha256": "0a03d24a6967d3026e8e910399cddd51ef668efd8f9b700a874f55f63059c41a",
+          "patched_sha256": "1d45d1ed9faf3253e1013941dc3be9bc51ff5415f8994e77e9e873c9671ae708"
+        }
+      }
+    }
+  },
+  "native_experimental_host": {
+    "host": "Omarchy 4.5.0, Hyprland 0.56.2, two monitors, NVIDIA RTX 3060 with Intel Iris Xe",
+    "fedora_validation_host": false,
+    "clean_setup_seconds": 338,
+    "clean_setup_runtime": "0.1.6-beta.1",
+    "doctor_checks_passed": 20,
+    "session_runtime": "local build with Wine corrections proposed separately, not published",
+    "session_runtime_sha256": "73fb3dae562434c923ef04c47b6bbc14aade87be6f8b1374044c82e7f95deab4",
+    "model_tables": 3,
+    "expected_sum": 300,
+    "dax_total_verified": true,
+    "fact_rows_verified": true,
+    "relationship_filter_verified": true,
+    "ui_refresh_seconds": 14.33,
+    "saved_cache_observed": true,
+    "native_frames_reviewed": true,
+    "gpu_restart_events": 0
+  },
+  "not_run": [
+    "native component checks",
+    "CSV import",
+    "158-table refresh",
+    "PBIX save/reopen",
+    "sign-in",
+    "publishing",
+    "two-hour session",
+    "any Fedora test"
+  ]
+}

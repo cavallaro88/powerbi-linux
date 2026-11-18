@@ -12,12 +12,30 @@ ORIGINALS = {
     'msmdsrv.exe': '7975dcb62edd6e53cc16fe808f66dbf0551cb155069138d68080c4bd32e92a1d',
     'Microsoft.Mashup.Client.UI.dll': legacy_html.UI_ORIGINAL_SHA256,
 }
+# 2.159.883.0. The name dates from when that build was the current one.
 CURRENT_ORIGINALS = {
     'Microsoft.PowerBI.Client.Shared.dll': 'b374f445156cea1caf13eabbfc0b03ee8d2179a75039713f0dfc9cad2535c10a',
     'Microsoft.PowerBI.Client.Windows.dll': '5c49618814888815ec3649ad2bf7dcf0209de1b3722d30372c126b3ebaf79938',
     'msmdsrv.exe': '90dd9882dd0ef22c1a49261099021798d1edf4817afff6b336322e7651659495',
     'Microsoft.Mashup.Client.UI.dll': legacy_html.UI_2159_ORIGINAL_SHA256,
 }
+# 2.159.1231.0 rebuilt the three managed assemblies; msmdsrv.exe is unchanged.
+ORIGINALS_2159_1231 = {
+    'Microsoft.PowerBI.Client.Shared.dll': '3c4a994c17a3a61396711c6986b2a03f898bca9eb6973b893a91207fc68a99bc',
+    'Microsoft.PowerBI.Client.Windows.dll': '708f3de4cffe09a0c3aed30db5f0af820c3a7219b7924f0fac062b815d8e6c32',
+    'msmdsrv.exe': CURRENT_ORIGINALS['msmdsrv.exe'],
+    'Microsoft.Mashup.Client.UI.dll': legacy_html.UI_2159_1231_ORIGINAL_SHA256,
+}
+RECIPES = {'2.158.1177.0': ORIGINALS, '2.159.883.0': CURRENT_ORIGINALS,
+           '2.159.1231.0': ORIGINALS_2159_1231}
+
+
+def originals_for(desktop_sha256):
+    """Select one complete recipe from the exact Desktop assembly; 2.158 otherwise."""
+    for recipe in (ORIGINALS_2159_1231, CURRENT_ORIGINALS):
+        if recipe['Microsoft.PowerBI.Client.Windows.dll'] == desktop_sha256:
+            return recipe
+    return ORIGINALS
 
 NATIVE_DIALOG = 'PowerBISaveDialog.dll'
 CACHE_COMPAT = 'PowerBICacheCompatibility.dll'
@@ -118,8 +136,7 @@ def install(prefix, runtime, log):
     desktop_source = backups / 'Microsoft.PowerBI.Client.Windows.dll'
     if not desktop_source.exists():
         desktop_source = bin_dir / desktop_source.name
-    current = digest(desktop_source) == CURRENT_ORIGINALS[desktop_source.name]
-    originals = CURRENT_ORIGINALS if current else ORIGINALS
+    originals = originals_for(digest(desktop_source))
     # Validate every input before replacing any file.
     for name, expected in originals.items():
         backup = backups / name
@@ -135,8 +152,10 @@ def install(prefix, runtime, log):
     windows_source = backups / windows_name
     if not windows_source.exists():
         windows_source = bin_dir / windows_name
-    patched_windows = (signin.patch_windows(windows_source.read_bytes(), CURRENT_ORIGINALS[windows_name])
-                       if current else signin.patch_windows(windows_source.read_bytes()))
+    # The 2.158 fallback keeps signin's own fixed whole-file guard.
+    patched_windows = (signin.patch_windows(windows_source.read_bytes())
+                       if originals is ORIGINALS else
+                       signin.patch_windows(windows_source.read_bytes(), originals[windows_name]))
     picker_name = text_pickers.DOCUMENT
     picker_source = backups / picker_name
     if not picker_source.exists():

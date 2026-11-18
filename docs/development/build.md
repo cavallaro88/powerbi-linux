@@ -1,7 +1,7 @@
 # Build from a clean source tree
 
 The current recipe defaults to runtime **0.1.6-beta.1** (`--runtime-version 0.1.6-beta.1`), with
-the Power BI 2.159.883.0 installer pin and the existing reviewed Wine/DXVK patches.
+the Power BI 2.159.1231.0 installer pin and the existing reviewed Wine/DXVK patches.
 A complete local build and successful-build receipt were produced on October 20.
 The 2.159 port passed offline and preliminary native checks; exact-archive release
 acceptance is tracked separately. See [the current assessment](../reference/powerbi-2.159.md).

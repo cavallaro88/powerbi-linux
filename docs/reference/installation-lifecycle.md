@@ -8,9 +8,10 @@ The runtime is built against glibc 2.39 in an Ubuntu build container to provide 
 
 - Project runtime archive and its SHA-256, produced together by `runtime/build.py`.
 - Microsoft Power BI Desktop x64 installer matching a registered exact recipe.
-  The source-tree default is 2.159.883.0 in `runtime/sources.lock.json`;
-  2.158.1177.0 remains accepted for local inputs and existing profiles. RPM 18
-  accepts both exact installers. See the [current installation status](../user/install.md).
+  The source-tree default is 2.159.1231.0 in `runtime/sources.lock.json`, the
+  build Microsoft has served since November 2, 2026; 2.159.883.0 and
+  2.158.1177.0 remain accepted for local inputs and existing profiles. RPM 18
+  accepts the two older exact installers. See the [current installation status](../user/install.md).
 - Microsoft fixed WebView2 x64 **154.0.4258.62 CAB**, automatically downloaded using the official URL and checksum in the lock. Use `--webview-runtime` to supply the same CAB offline. No Evergreen installer is needed as a project setup input.
 - .NET 4.0 prerequisite and .NET 4.8 installers, optionally passed with `--dotnet40-installer` and `--dotnet-installer`; otherwise downloaded from the official link and checked against the lock.
 
@@ -26,6 +27,7 @@ manual route remains available and accepts both guarded installers. Installer id
 |---|---|
 | 2.158.1177.0 | `4924187834d34605c3046f01b876fba6a2cf36f864c36d16fd52c3f17a21009c` |
 | 2.159.883.0 | `5412131d1f5d535e42358cb6d496703c3c0cdf9267779ac9220171f58ce20cdd` |
+| 2.159.1231.0 | `55e8ee44aa908d75edaed4bdb1a34863f41c047951f3724f298486fe07049f2d` |
 
 Microsoft's [official download page](https://www.microsoft.com/pt-br/download/details.aspx?id=58494)
 may no longer offer the older validated installer. If you do not already have its

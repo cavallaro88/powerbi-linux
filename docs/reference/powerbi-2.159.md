@@ -9,6 +9,10 @@ user installation was changed during the assessment or candidate preparation.
 The [machine-readable assessment](powerbi-2.159-assessment.json) retains the
 observed installer/file hashes and guarded-recipe results without Microsoft binaries.
 
+Microsoft replaced this installer with 2.159.1231.0 at the same address on
+November 2, 2026. That port is recorded [below](#215912310-november-2026); the
+sections before it describe 2.159.883.0 and are kept as dated evidence.
+
 The [official Microsoft download page](https://www.microsoft.com/pt-br/download/details.aspx?id=58494)
 advertised 2.159.883.0, published October 15. Its EXE's embedded version also
 reported 2.159.883.0. The exact installer obtained from Microsoft was:
@@ -138,3 +142,88 @@ binary is published as a beta candidate (runtime 0.1.5) with its complete
 corresponding source and evidence, and automatic setup uses it; the two-hour
 session remains the open gate in the
 [release contract](../development/setup-release.md).
+
+## 2.159.1231.0 (November 2026)
+
+**November 17, 2026: guarded recipe ported; one experimental host tested.** The
+unversioned Microsoft address pinned for 2.159.883.0 has served a different
+file since November 2, 2026. Automatic setup of a release that pins the older
+build therefore stops at `Checksum verification failed`. The older installer
+could not be obtained again from Microsoft, so no 2.159.883.0 baseline was run
+on the new host.
+
+- [PBIDesktopSetup_x64.exe](https://download.microsoft.com/download/8/8/0/880bca75-79dd-466a-927d-1abf1f5454b0/PBIDesktopSetup_x64.exe), the same address as before
+- Embedded version: 2.159.1231.0.
+- Size: 702,986,400 bytes.
+- SHA-256: `55e8ee44aa908d75edaed4bdb1a34863f41c047951f3724f298486fe07049f2d`.
+
+The [machine-readable record](powerbi-2.159.1231-assessment.json) holds the
+hashes and the offline check result without Microsoft binaries.
+
+### What changed in the application files
+
+The cabinet was extracted without running the installer.
+
+| Installed file | 2.159.1231.0 SHA-256 | Against 2.159.883.0 |
+|---|---|---|
+| Microsoft.PowerBI.Client.Shared.dll | `3c4a994c17a3a61396711c6986b2a03f898bca9eb6973b893a91207fc68a99bc` | Rebuilt |
+| Microsoft.PowerBI.Client.Windows.dll | `708f3de4cffe09a0c3aed30db5f0af820c3a7219b7924f0fac062b815d8e6c32` | Rebuilt |
+| Microsoft.Mashup.Client.UI.dll | `1b90774991b5a1951ec8ac712bf079388d4feef1ed49edeebaf908702400bbb9` | Rebuilt |
+| msmdsrv.exe | `90dd9882dd0ef22c1a49261099021798d1edf4817afff6b336322e7651659495` | Identical |
+| WebView2Resources/minerva/reportView.html | `0a03d24a6967d3026e8e910399cddd51ef668efd8f9b700a874f55f63059c41a` | Identical |
+
+Both 2.159 recipes reject the other build's files: the existing guards did their
+job, and updating checksums alone would not have been a port.
+
+### Guarded port
+
+- The five targeted legacy HTML resources are byte-identical to 2.158 and
+  2.159.883.0 and moved by exactly **328** bytes (256 in 2.159.883.0). The recipe
+  looks the shift up from the exact original hash, checks every original and
+  patched resource hash, keeps each length and verifies the intermediate assembly
+  hash `072a113c12b0cfb170e8ab00eb3e05a58237d2581ac9c479e9e4c858667d7749`.
+- The Options native method sits at a new file offset with the same method and
+  member tokens. Its 2.159.883.0 replacement body differs in exactly two bytes,
+  the low bytes of two user-string (`ldstr`) tokens, because the `#US` heap
+  moved. Mapping those two tokens back makes the original
+  region hash to the 2.159.883.0 guard, which shows the code is otherwise the
+  same. The final assembly hash is
+  `3b0639cf526493de18e7d088561f0bfcbb7a528917b4c3e1424ec8637ac260c1`.
+- The email resource and the Quill report-view document are byte-identical;
+  their existing guarded transformations passed against the new assemblies.
+- The Analysis Services workaround applies unchanged, since `msmdsrv.exe` is
+  the same file.
+- The name-based native patchers (window frame, save confirmation, Store prompt,
+  cache normalization, WinRT remap, installed path) accepted the new assemblies
+  during a real setup. No fingerprint had to be loosened.
+
+```bash
+python3 tools/test-powerbi-recipe.py /path/to/unmodified/bin \
+  --version 2.159.1231.0 --output /path/to/new-evidence.json
+```
+
+That offline check passed. Exact 2.159.883.0 and 2.158.1177.0 installers remain
+registered for local inputs and existing profiles; only the build Microsoft
+currently serves carries a download address.
+
+### Native result on one experimental host
+
+Omarchy 4.5.0 (Arch based) with Hyprland 0.56.2, two monitors, NVIDIA RTX 3060
+with Intel Iris Xe. This is **not** the Fedora validation host and not release
+certification.
+
+- A genuinely empty managed profile completed `pbi-linux setup` in 5 minutes 38
+  seconds, downloads included, with the published runtime 0.1.6-beta.1. Doctor
+  passed all 20 checks.
+- With that runtime the window stayed blank on the two-monitor desktop because
+  of a Wine defect unrelated to the Desktop version. The remaining checks used
+  a local runtime build with corrections that are proposed separately.
+- `tests/e2e/session.py --ui-refresh --save` on a three-table synthetic PBIP:
+  refresh requested through the UI 14.33 seconds after launch; independent ADOMD
+  queries confirmed total 300, the fact row count and the relationship filter;
+  Save wrote the imported cache; the native frames before and after Save showed
+  Cafe 120, Suco 100, Cha 80 and total 300. No GPU restart or cgroup OOM.
+
+Not run for this build: the nine native component checks, CSV import, the
+158-table refresh, save/reopen of a PBIX, sign-in, publishing, the two-hour
+session, and anything on Fedora.

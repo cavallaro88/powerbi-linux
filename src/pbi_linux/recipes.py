@@ -7,9 +7,15 @@ POWERBI = {
         'version': '2.158.1177.0',
         'sha256': '4924187834d34605c3046f01b876fba6a2cf36f864c36d16fd52c3f17a21009c',
     },
+    # Microsoft replaced this build at its unversioned download URL on
+    # November 2, 2026; it stays accepted as a local installer.
     '2.159.883.0': {
         'version': '2.159.883.0',
         'sha256': '5412131d1f5d535e42358cb6d496703c3c0cdf9267779ac9220171f58ce20cdd',
+    },
+    '2.159.1231.0': {
+        'version': '2.159.1231.0',
+        'sha256': '55e8ee44aa908d75edaed4bdb1a34863f41c047951f3724f298486fe07049f2d',
         'url': 'https://download.microsoft.com/download/8/8/0/880bca75-79dd-466a-927d-1abf1f5454b0/PBIDesktopSetup_x64.exe',
     },
 }

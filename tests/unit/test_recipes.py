@@ -12,12 +12,29 @@ from pbi_linux import common, legacy_html, launch, patches, provision, recipes
 
 class VersionedRecipeTests(unittest.TestCase):
     def test_official_installer_hash_selects_its_recipe(self):
-        default = recipes.powerbi('2.159.883.0')
-        for version in ('2.158.1177.0', '2.159.883.0'):
+        default = recipes.powerbi('2.159.1231.0')
+        for version in ('2.158.1177.0', '2.159.883.0', '2.159.1231.0'):
             source = recipes.powerbi(version)
             self.assertEqual(recipes.installer(source['sha256'], default)['version'], version)
         with self.assertRaisesRegex(common.Error, 'Unsupported Power BI installer'):
             recipes.installer('a' * 64, default)
+
+    def test_only_the_build_microsoft_still_serves_has_a_download(self):
+        # The unversioned Microsoft URL is replaced in place by each build.
+        lock = common.read_json(Path(__file__).resolve().parents[2] / 'runtime/sources.lock.json')
+        self.assertEqual(lock['powerbi'], recipes.powerbi('2.159.1231.0'))
+        self.assertNotIn('url', recipes.powerbi('2.159.883.0'))
+        self.assertNotIn('url', recipes.powerbi('2.158.1177.0'))
+
+    def test_each_recipe_guards_one_complete_set_of_originals(self):
+        self.assertEqual(set(patches.RECIPES), set(recipes.POWERBI))
+        windows = 'Microsoft.PowerBI.Client.Windows.dll'
+        for version, originals in patches.RECIPES.items():
+            with self.subTest(version=version):
+                self.assertEqual(set(originals), set(patches.ORIGINALS))
+                self.assertIs(patches.originals_for(originals[windows]), originals)
+        self.assertIs(patches.originals_for('a' * 64), patches.ORIGINALS)
+        self.assertEqual(patches.ORIGINALS_2159_1231['msmdsrv.exe'], patches.CURRENT_ORIGINALS['msmdsrv.exe'])
 
     def test_recipe_entries_cannot_be_modified_by_a_caller(self):
         entry = recipes.powerbi('2.159.883.0')
@@ -27,6 +44,9 @@ class VersionedRecipeTests(unittest.TestCase):
     def test_html_integrity_is_selected_per_installed_version(self):
         self.assertEqual(legacy_html.patched_hash('2.158.1177.0'), legacy_html.UI_PATCHED_SHA256)
         self.assertEqual(legacy_html.patched_hash('2.159.883.0'), legacy_html.UI_2159_PATCHED_SHA256)
+        self.assertEqual(legacy_html.patched_hash('2.159.1231.0'), legacy_html.UI_2159_1231_PATCHED_SHA256)
+        self.assertEqual(len({legacy_html.UI_PATCHED_SHA256, legacy_html.UI_2159_PATCHED_SHA256,
+                              legacy_html.UI_2159_1231_PATCHED_SHA256}), 3)
         with self.assertRaises(common.Error):
             legacy_html.patched_hash('unknown')
         with self.assertRaisesRegex(common.Error, 'Unsupported 2.159'):
@@ -50,6 +70,29 @@ class VersionedRecipeTests(unittest.TestCase):
             self.assertEqual(list((prefix / 'powerbi-linux-originals').iterdir()), [])
             for name, expected in inputs.items():
                 self.assertEqual(common.digest(app / name), expected)
+
+    def test_the_two_2159_builds_reject_each_others_files(self):
+        windows = 'Microsoft.PowerBI.Client.Windows.dll'
+        for selected, other in (('ORIGINALS_2159_1231', 'CURRENT_ORIGINALS'), ('CURRENT_ORIGINALS', 'ORIGINALS_2159_1231')):
+            with self.subTest(selected=selected), tempfile.TemporaryDirectory() as directory:
+                prefix = Path(directory)
+                app = prefix / provision.BIN
+                app.mkdir(parents=True)
+                first, second = {}, {}
+                for name in patches.ORIGINALS:
+                    path = app / name
+                    path.write_bytes(('first build ' + name).encode())
+                    first[name] = common.digest(path)
+                    path.write_bytes(('second build ' + name).encode())
+                    second[name] = common.digest(path)
+                # The Desktop assembly of one build beside the other build's files.
+                (app / windows).write_bytes(('first build ' + windows).encode())
+                with patch.object(patches, selected, first), patch.object(patches, other, second):
+                    self.assertIs(patches.originals_for(first[windows]), first)
+                    with self.assertRaisesRegex(common.Error, 'Checksum verification failed'):
+                        patches.install(prefix, Path('/runtime'), prefix / 'log')
+                self.assertEqual(list((prefix / 'powerbi-linux-originals').iterdir()), [])
+                self.assertEqual(common.digest(app / windows), first[windows])
 
     def test_supported_app_version_is_independent_of_runtime_default_recipe(self):
         with tempfile.TemporaryDirectory() as directory:

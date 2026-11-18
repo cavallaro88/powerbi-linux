@@ -17,11 +17,21 @@ UI_ORIGINAL_SHA256 = '28829058269cd42b5f731db43f94bcf34baf50d1cdf1ad624c0696468e
 _UI_BASE_SHA256 = 'a700f3e4b37e586d5529518176573ad62c88c79fe76525a46d0a437b23d0a855'
 UI_2159_ORIGINAL_SHA256 = '15a88f90544f1a2c7f002f0de05c6aed65dcfcda1074a0ab847f3623e55ecb3d'
 _UI_2159_BASE_SHA256 = 'a2c3db990ed08e371356aec9055d9d46026978413472512873385593917e6c94'
+UI_2159_1231_ORIGINAL_SHA256 = '1b90774991b5a1951ec8ac712bf079388d4feef1ed49edeebaf908702400bbb9'
+_UI_2159_1231_BASE_SHA256 = '072a113c12b0cfb170e8ab00eb3e05a58237d2581ac9c479e9e4c858667d7749'
 UI_PATCHED_SHA256 = options_layout.PATCHED['2.158.1177.0']
 UI_2159_PATCHED_SHA256 = options_layout.PATCHED['2.159.883.0']
+UI_2159_1231_PATCHED_SHA256 = options_layout.PATCHED['2.159.1231.0']
+# Exact 2.159 originals: resource shift from the 2.158 layout and verified output.
+_UI_2159_BUILDS = {
+    UI_2159_ORIGINAL_SHA256: (256, _UI_2159_BASE_SHA256),
+    UI_2159_1231_ORIGINAL_SHA256: (328, _UI_2159_1231_BASE_SHA256),
+}
 
 
 def patched_hash(version):
+    if version == '2.159.1231.0':
+        return UI_2159_1231_PATCHED_SHA256
     if version == '2.159.883.0':
         return UI_2159_PATCHED_SHA256
     if version == '2.158.1177.0':
@@ -177,7 +187,7 @@ def _patch_source_list_base(source):
 
 def _patch_ui_base(source):
     """Change two supported embedded JS resources, retaining PE/IL layout."""
-    if hashlib.sha256(source).hexdigest() == UI_2159_ORIGINAL_SHA256:
+    if hashlib.sha256(source).hexdigest() in _UI_2159_BUILDS:
         return _patch_ui_2159_base(source)
     if hashlib.sha256(source).hexdigest() != UI_ORIGINAL_SHA256:
         raise Error('Unsupported legacy HTML assembly; no patch produced')
@@ -212,14 +222,23 @@ def _patch_ui_base(source):
 
 def _patch_ui_2159_base(source):
     """Port unchanged, hash-verified resources to their exact 2.159 locations."""
-    if hashlib.sha256(source).hexdigest() != UI_2159_ORIGINAL_SHA256:
+    if hashlib.sha256(source).hexdigest() not in _UI_2159_BUILDS:
         raise Error('Unsupported 2.159 legacy HTML assembly; no patch produced')
+    shift, expected = _UI_2159_BUILDS[hashlib.sha256(source).hexdigest()]
+    result = _shift_resources(source, shift)
+    if len(result) != len(source) or hashlib.sha256(result).hexdigest() != expected:
+        raise Error('Unexpected 2.159 legacy HTML assembly output')
+    return result
+
+
+def _shift_resources(source, shift):
     # All five original resources are byte-identical to 2.158. The PE layout
-    # shifts them by 256 bytes. Check original and patched resource contents,
-    # retain their lengths, and verify the complete resulting assembly.
+    # shifts them by 256 bytes in 2.159.883.0 and by 328 bytes in 2.159.1231.0.
+    # Check original and patched resource contents, retain their lengths, and
+    # let the caller verify the complete resulting assembly.
     output = bytearray(source)
     def replace(offset, size, original, patched, transform):
-        start = offset + 256
+        start = offset + shift
         resource = source[start:start + size]
         if hashlib.sha256(resource).hexdigest() != original:
             raise Error('Unexpected 2.159 legacy HTML resource')
@@ -255,10 +274,7 @@ def _patch_ui_2159_base(source):
             lambda r: re.sub(rb'(?m)^ +', b'', r.replace(_PERMISSIONS_ANCHOR, _PERMISSIONS_HOOK + _PERMISSIONS_ANCHOR)))
     replace(_OPTIONS_OFFSET, _OPTIONS_SIZE, _OPTIONS_ORIGINAL, _OPTIONS_PATCHED,
             lambda r: re.sub(rb'(?m)^ +', b'', r.replace(_OPTIONS_ANCHOR, _OPTIONS_HOOK)))
-    result = bytes(output)
-    if len(result) != len(source) or hashlib.sha256(result).hexdigest() != _UI_2159_BASE_SHA256:
-        raise Error('Unexpected 2.159 legacy HTML assembly output')
-    return result
+    return bytes(output)
 
 
 
@@ -275,7 +291,8 @@ def patch_ui(source):
 
 def patch_ui_2159(source):
     if hashlib.sha256(source).hexdigest() not in (
-            UI_2159_ORIGINAL_SHA256, _UI_2159_BASE_SHA256, UI_2159_PATCHED_SHA256):
+            UI_2159_ORIGINAL_SHA256, _UI_2159_BASE_SHA256, UI_2159_PATCHED_SHA256,
+            UI_2159_1231_ORIGINAL_SHA256, _UI_2159_1231_BASE_SHA256, UI_2159_1231_PATCHED_SHA256):
         raise Error('Unsupported 2.159 legacy HTML assembly; no patch produced')
     return _complete(source, _patch_ui_2159_base)
 

@@ -94,6 +94,20 @@ class OptionsInteractionGuards(unittest.TestCase):
 
 
 class NativeResizeGuards(unittest.TestCase):
+    def test_2159_builds_differ_only_in_location_and_user_string_tokens(self):
+        _, _, first, (first_row, first_old, first_new) = options_layout._NATIVE[256]
+        offset, _, second, (row, old, new) = options_layout._NATIVE[328]
+        self.assertEqual(len(first), len(second))
+        changed = [i for i in range(len(first)) if first[i] != second[i]]
+        # Low bytes of two ldstr operands: the error format string and 'SettingsDialog'.
+        self.assertEqual(changed, [22, 95])
+        self.assertEqual((first[21], first[94]), (0x72, 0x72))
+        # The relocated getter stays 44 bytes into the freed, four-byte aligned slot.
+        self.assertEqual(new - first_new, offset - options_layout._NATIVE[256][0])
+        self.assertEqual(new % 4, 0)
+        self.assertEqual(old - first_old, new - first_new)
+        self.assertEqual(row - first_row, 328 - 256)
+
     def fixture(self):
         import struct
         source = bytearray(b'x' * 1500)

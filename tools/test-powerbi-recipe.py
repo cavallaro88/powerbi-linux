@@ -17,12 +17,12 @@ from pbi_linux.common import Error, check_digest
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('originals', type=Path, help='Unmodified Desktop bin directory or preserved originals')
-    parser.add_argument('--version', choices=('2.158.1177.0', '2.159.883.0'), required=True)
+    parser.add_argument('--version', choices=tuple(patches.RECIPES), required=True)
     parser.add_argument('--output', type=Path, required=True, help='New JSON evidence file; no Microsoft binaries are written')
     args = parser.parse_args()
     if args.output.exists():
         parser.error('Evidence output must be a new file')
-    originals = patches.CURRENT_ORIGINALS if args.version == '2.159.883.0' else patches.ORIGINALS
+    originals = patches.RECIPES[args.version]
     result = {'schema': 1, 'date': datetime.datetime.now(datetime.timezone.utc).isoformat(),
               'powerbi_version': args.version, 'scope': 'Offline original-file/resource guards only; not native UI or release certification',
               'status': 'failed', 'files': {}}

@@ -14,6 +14,7 @@ Opening PBIX/PBIP/PBIR from the desktop; CSV import, visuals and save/reopen; a 
 | Feature | Status | Impact and next step |
 |---|---|---|
 | Installing from current published releases | Partial | RPM 18 enables automatic setup: `pbi-linux setup` downloads the published runtime, its matching source and evidence, and the pinned Microsoft installer, verifying every SHA-256. Earlier published previews need explicit local inputs. The published runtime is a beta candidate whose two-hour soak is pending. See [installation](install.md). |
+| Automatic download of Power BI Desktop | Known failure in releases pinning 2.159.883.0 | Microsoft replaced that installer with 2.159.1231.0 at the same address on November 2, 2026, so setup stops with a checksum error. The source tree ports the recipe to 2.159.1231.0; with an older release, pass your own exact 2.159.883.0 file with `--installer`. See the [assessment](../reference/powerbi-2.159.md#215912310-november-2026). |
 | Published runtime 0.1.5 | Partial | Clean install, native components, a 158-table refresh, save/reopen and lifecycle checks passed on the exact archive; the two-hour soak remains pending. No stable runtime certification is claimed. |
 | New Power BI Desktop versions | Not validated as a release | RPM 18 targets 2.159.883.0 and also accepts the exact 2.158.1177.0 installer; other installer hashes are rejected. Do not bypass checksum checks. |
 | Embedded Windows authentication broker | Known failure | Use the default system browser for Microsoft sign-in. See [sign-in](sign-in.md). |
