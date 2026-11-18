@@ -1,0 +1,430 @@
+server, ntdll: list the pipes of the named pipe root directory
+
+NtQueryDirectoryFile on the named pipe root directory (\\.\pipe\) failed with
+STATUS_BAD_DEVICE_TYPE. The directory is a server object with no Unix fd, and
+the client side of NtQueryDirectoryFile only reads Unix directories. Windows
+lists the pipes there, and tools use that to find a running program by the
+name of its pipe: FindFirstFile on \\.\pipe\*, Python's os.listdir and
+.NET's Directory.GetFiles all failed, with ERROR_BAD_DEVICE_TYPE or "Bad
+device type". The pbir CLI finds Power BI Desktop's local API through such a
+listing (\\.\pipe\pbi-desktop-bridge-<PID>), so `pbir desktop` and `pbir
+model -q` reported that no Desktop was running while it was.
+The server now answers a private control code on the root directory with the
+pipe names, their current instances and maximum instances, from a position it
+keeps on the file object; the first query's search mask is kept there too,
+as on Windows, so a later query without a mask goes on with it. ntdll
+recognises the root directory by its object name, matches the mask with the
+existing wildcard matcher and fills every directory information class: size
+is the current instance count, allocation the maximum, attributes normal, as
+Windows reports them. It then tells the server how many entries it used, so
+an entry that did not fit is returned by the next query. The reply buffer is
+virtual memory: the server checks it like a client buffer, and Unix heap
+memory fails that check.
+Checked with tests/e2e/pipe-directory-probe.c in a fresh prefix: 75 checks
+(FindFirstFile with and without masks, every information class, the kept
+mask, restart, a truncated entry, no match, no access, a closed pipe and
+1,100 pipes read through FindNextFile); 14 passed and 27 failed before. With
+Desktop open, `pbir desktop list`, `pbir desktop refresh` and `pbir desktop
+screenshot` work, and so does `pbir model -q` once it can load an ADOMD.NET
+client, which it needs on Windows too.
+Wine-derived change: LGPL-2.1-or-later.
+
+--- a/dlls/ntdll/unix/file.c
++++ b/dlls/ntdll/unix/file.c
+@@ -2876,6 +2876,205 @@
+ }
+ 
+ 
++/* Wine extension, shared with server/named_pipe.c: the server lists the pipes of the named pipe
++ * root directory, which has no Unix directory behind it. The search mask and the position
++ * belong to the server's file object, as on Windows; ntdll matches the mask and formats. */
++#define FSCTL_WINE_QUERY_PIPE_DIRECTORY CTL_CODE(FILE_DEVICE_NAMED_PIPE, 0x800, METHOD_BUFFERED, FILE_READ_ACCESS)
++#define PIPE_DIR_RESTART 0x1  /* start again from the first pipe */
++#define PIPE_DIR_MASK    0x2  /* a search mask follows the query */
++
++struct pipe_dir_query
++{
++    unsigned int flags;
++    unsigned int advance;     /* entries the caller consumed from the previous reply */
++};
++
++struct pipe_dir_reply
++{
++    unsigned int mask_len;    /* search mask in bytes, then padded to 4 bytes; 0 matches all */
++    unsigned int count;       /* entries after the mask */
++    unsigned int fresh;       /* this query started the enumeration */
++};
++
++struct pipe_dir_entry
++{
++    unsigned int name_len;    /* name in bytes, then padded to 4 bytes */
++    unsigned int instances;
++    unsigned int max_instances;
++};
++
++
++/***********************************************************************
++ *           is_named_pipe_root
++ *
++ * Check whether a handle is the root directory of the named pipe device (\\.\pipe\).
++ */
++static BOOL is_named_pipe_root( HANDLE handle )
++{
++    static const WCHAR rootW[] = {'\\','D','e','v','i','c','e','\\','N','a','m','e','d','P','i','p','e','\\'};
++    char buffer[sizeof(OBJECT_NAME_INFORMATION) + sizeof(rootW) + sizeof(WCHAR)];
++    OBJECT_NAME_INFORMATION *info = (OBJECT_NAME_INFORMATION *)buffer;
++    ULONG size;
++
++    if (NtQueryObject( handle, ObjectNameInformation, info, sizeof(buffer), &size )) return FALSE;
++    return info->Name.Length == sizeof(rootW) &&
++           !wcsnicmp( info->Name.Buffer, rootW, ARRAY_SIZE(rootW) );
++}
++
++
++/***********************************************************************
++ *           get_pipe_dir_entry
++ *
++ * Format one pipe of the named pipe root directory; the counterpart of get_dir_data_entry.
++ * Like Windows, report the current instances as the size and the maximum as the allocation.
++ */
++static NTSTATUS get_pipe_dir_entry( const struct pipe_dir_entry *entry, void *info_ptr, IO_STATUS_BLOCK *io,
++                                    ULONG max_length, FILE_INFORMATION_CLASS class,
++                                    union file_directory_info **last_info )
++{
++    union file_directory_info *info;
++    ULONG name_len = entry->name_len, start, dir_size;
++
++    start = dir_info_align( io->Information );
++    dir_size = dir_info_size( class, 0 );
++    if (start + dir_size > max_length) return STATUS_MORE_ENTRIES;
++
++    max_length -= start + dir_size;
++    /* if this is not the first entry, fail; the first entry is always returned (but truncated) */
++    if (*last_info && name_len > max_length) return STATUS_MORE_ENTRIES;
++
++    info = (union file_directory_info *)((char *)info_ptr + start);
++    memset( info, 0, dir_size );
++    if (class != FileNamesInformation)
++    {
++        info->dir.EndOfFile.QuadPart = entry->instances;
++        info->dir.AllocationSize.QuadPart = entry->max_instances;
++        info->dir.FileAttributes = FILE_ATTRIBUTE_NORMAL;
++    }
++
++    switch (class)
++    {
++    case FileDirectoryInformation:           info->dir.FileNameLength = name_len; break;
++    case FileFullDirectoryInformation:       info->full.FileNameLength = name_len; break;
++    case FileIdFullDirectoryInformation:     info->id_full.FileNameLength = name_len; break;
++    case FileBothDirectoryInformation:       info->both.FileNameLength = name_len; break;
++    case FileIdBothDirectoryInformation:     info->id_both.FileNameLength = name_len; break;
++    case FileIdExtdBothDirectoryInformation: info->extd_both.FileNameLength = name_len; break;
++    case FileIdGlobalTxDirectoryInformation: info->id_tx.FileNameLength = name_len; break;
++    case FileNamesInformation:               info->names.FileNameLength = name_len; break;
++    default:
++        assert(0);
++        return 0;
++    }
++
++    memcpy( (char *)info + dir_size, entry + 1, min( name_len, max_length ) );
++    io->Information = start + dir_size + min( name_len, max_length );
++    if (*last_info) (*last_info)->next = (char *)info - (char *)*last_info;
++    *last_info = info;
++    return name_len > max_length ? STATUS_BUFFER_OVERFLOW : STATUS_SUCCESS;
++}
++
++
++/***********************************************************************
++ *           query_pipe_directory
++ *
++ * NtQueryDirectoryFile for the named pipe root directory.
++ */
++static NTSTATUS query_pipe_directory( HANDLE handle, IO_STATUS_BLOCK *io, void *buffer, ULONG length,
++                                      FILE_INFORMATION_CLASS class, BOOLEAN single_entry,
++                                      const UNICODE_STRING *mask, BOOLEAN restart_scan )
++{
++    union file_directory_info *last_info = NULL;
++    const struct pipe_dir_reply *reply;
++    const struct pipe_dir_entry *entry;
++    struct pipe_dir_query *query;
++    IO_STATUS_BLOCK32 io32;
++    IO_STATUS_BLOCK iosb;
++    UNICODE_STRING stored;
++    ULONG query_size, pos, i;
++    /* room for the largest mask and the largest name; the server checks the reply buffer
++     * like a client buffer, so it must be virtual memory rather than the Unix heap */
++    SIZE_T reply_size = 2 * (sizeof(struct pipe_dir_reply) + UNICODE_STRING_MAX_CHARS * sizeof(WCHAR) + 4);
++    BOOL first = TRUE, fresh = FALSE, done = FALSE;
++    NTSTATUS status;
++    char *out = NULL;
++
++    query_size = sizeof(*query) + (mask ? mask->Length : 0);
++    if (!(query = malloc( query_size ))) return STATUS_NO_MEMORY;
++    if ((status = NtAllocateVirtualMemory( NtCurrentProcess(), (void **)&out, 0, &reply_size,
++                                           MEM_COMMIT, PAGE_READWRITE )))
++    {
++        free( query );
++        return status;
++    }
++    query->flags = (restart_scan ? PIPE_DIR_RESTART : 0) | (mask ? PIPE_DIR_MASK : 0);
++    query->advance = 0;
++    if (mask) memcpy( query + 1, mask->Buffer, mask->Length );
++
++    io->Information = 0;
++    for (;;)
++    {
++        /* the 32-bit iosb is filled for overlapped file handles */
++        iosb.Pointer = &io32;
++        status = NtDeviceIoControlFile( handle, NULL, NULL, NULL, &iosb, FSCTL_WINE_QUERY_PIPE_DIRECTORY,
++                                        query, query_size, out, reply_size );
++        if (status) break;
++        reply = (const struct pipe_dir_reply *)out;
++        if (iosb.Information < sizeof(*reply)) break;
++        if (first) fresh = reply->fresh;
++        first = FALSE;
++        query->flags = query->advance = 0;
++        query_size = sizeof(*query);
++        if (!reply->count) break;  /* no more pipes */
++
++        stored.Buffer = (WCHAR *)(reply + 1);
++        stored.Length = stored.MaximumLength = reply->mask_len;
++        pos = (sizeof(*reply) + reply->mask_len + 3) & ~3;
++        for (i = 0; i < reply->count && !done; i++)
++        {
++            entry = (const struct pipe_dir_entry *)(out + pos);
++            pos += (sizeof(*entry) + entry->name_len + 3) & ~3;
++            if (stored.Length && !match_filename( (const WCHAR *)(entry + 1), entry->name_len / sizeof(WCHAR), &stored ))
++            {
++                query->advance++;
++                continue;
++            }
++            status = get_pipe_dir_entry( entry, buffer, io, length, class, &last_info );
++            if (status == STATUS_MORE_ENTRIES)
++            {
++                done = TRUE;
++                break;
++            }
++            query->advance++;
++            if (status == STATUS_BUFFER_OVERFLOW || single_entry) done = TRUE;
++        }
++        if (done)
++        {
++            /* commit the consumed entries; the next query starts after them */
++            iosb.Pointer = &io32;
++            if (query->advance)
++                NtDeviceIoControlFile( handle, NULL, NULL, NULL, &iosb, FSCTL_WINE_QUERY_PIPE_DIRECTORY,
++                                       query, sizeof(*query), NULL, 0 );
++            break;
++        }
++    }
++    free( query );
++    reply_size = 0;
++    NtFreeVirtualMemory( NtCurrentProcess(), (void **)&out, &reply_size, MEM_RELEASE );
++
++    if (status == STATUS_MORE_ENTRIES) status = STATUS_SUCCESS;
++    if (status && status != STATUS_BUFFER_OVERFLOW)
++    {
++        if (!last_info) return status;  /* the server refused the query */
++        status = STATUS_SUCCESS;  /* a later batch failed: return the entries so far */
++    }
++    if (!last_info) status = fresh ? STATUS_NO_SUCH_FILE : STATUS_NO_MORE_FILES;
++    if (status != STATUS_NO_SUCH_FILE) io->Status = status;
++    TRACE( "=> %x (%ld)\n", status, io->Information );
++    return status;
++}
++
++
+ /******************************************************************************
+  *              NtQueryDirectoryFile   (NTDLL.@)
+  */
+@@ -2926,7 +3125,15 @@
+     if (!buffer) return STATUS_ACCESS_VIOLATION;
+ 
+     if ((status = server_get_unix_fd( handle, FILE_LIST_DIRECTORY, &fd, &needs_close, &type, NULL )))
++    {
++        /* the named pipe root directory has no Unix fd; the server lists its pipes */
++        if (status == STATUS_BAD_DEVICE_TYPE && is_named_pipe_root( handle ))
++        {
++            if (mask && mask->Length == 0) mask = NULL;
++            return query_pipe_directory( handle, io, buffer, length, info_class, single_entry, mask, restart_scan );
++        }
+         return status;
++    }
+ 
+     if (type != FD_TYPE_DIR)
+     {
+--- a/server/named_pipe.c
++++ b/server/named_pipe.c
+@@ -100,6 +100,38 @@
+     struct object             obj;         /* object header */
+     struct fd                *fd;          /* pseudo-fd for ioctls */
+     struct named_pipe_device *device;      /* named pipe device */
++    unsigned int              dir_index;   /* root directory: enumeration position */
++    int                       dir_started; /* root directory: an enumeration has started */
++    WCHAR                    *dir_mask;    /* root directory: search mask of the enumeration */
++    data_size_t               dir_mask_len;
++};
++
++/* Wine extension, shared with dlls/ntdll/unix/file.c: list the pipes of the root directory
++ * (NtQueryDirectoryFile on \Device\NamedPipe\), which has no Unix directory behind it.
++ * The search mask and the position belong to the file object, as on Windows; ntdll
++ * matches the mask and formats the entries. */
++#define FSCTL_WINE_QUERY_PIPE_DIRECTORY CTL_CODE(FILE_DEVICE_NAMED_PIPE, 0x800, METHOD_BUFFERED, FILE_READ_ACCESS)
++#define PIPE_DIR_RESTART 0x1  /* start again from the first pipe */
++#define PIPE_DIR_MASK    0x2  /* a search mask follows the query */
++
++struct pipe_dir_query
++{
++    unsigned int flags;
++    unsigned int advance;     /* entries the caller consumed from the previous reply */
++};
++
++struct pipe_dir_reply
++{
++    unsigned int mask_len;    /* search mask in bytes, then padded to 4 bytes; 0 matches all */
++    unsigned int count;       /* entries after the mask */
++    unsigned int fresh;       /* this query started the enumeration */
++};
++
++struct pipe_dir_entry
++{
++    unsigned int name_len;    /* name in bytes, then padded to 4 bytes */
++    unsigned int instances;
++    unsigned int max_instances;
+ };
+ 
+ struct named_pipe_init_data
+@@ -516,6 +548,10 @@
+ 
+         dir->fd = NULL;  /* defer alloc_pseudo_fd() until after we have options */
+         dir->device = (struct named_pipe_device *)grab_object( obj );
++        dir->dir_index = 0;
++        dir->dir_started = 0;
++        dir->dir_mask = NULL;
++        dir->dir_mask_len = 0;
+ 
+         return &dir->obj;
+     }
+@@ -533,6 +569,10 @@
+ 
+     if (!(file = alloc_object( &named_pipe_device_file_ops ))) return NULL;
+     file->device = (struct named_pipe_device *)grab_object( obj );
++    file->dir_index = 0;
++    file->dir_started = 0;
++    file->dir_mask = NULL;
++    file->dir_mask_len = 0;
+     if (!(file->fd = alloc_pseudo_fd( &named_pipe_device_fd_ops, obj, options )))
+     {
+         release_object( file );
+@@ -660,6 +700,7 @@
+     struct named_pipe_device_file *file = (struct named_pipe_device_file *)obj;
+     assert( obj->ops == &named_pipe_dir_ops );
+     if (file->fd) release_object( file->fd );
++    free( file->dir_mask );
+     release_object( file->device );
+ }
+ 
+@@ -1477,6 +1518,92 @@
+     }
+ }
+ 
++static void named_pipe_dir_query( struct named_pipe_device_file *dir )
++{
++    const struct pipe_dir_query *query = get_req_data();
++    data_size_t size = get_req_data_size(), mask_len = 0, total, entry_size, name_len;
++    struct pipe_dir_reply *header;
++    struct pipe_dir_entry *entry;
++    struct named_pipe *pipe;
++    struct object *obj;
++    unsigned int i, count;
++    const WCHAR *name;
++    char *buffer;
++    int fresh;
++
++    if (size < sizeof(*query))
++    {
++        set_error( STATUS_INVALID_PARAMETER );
++        return;
++    }
++    if (query->flags & PIPE_DIR_MASK) mask_len = (size - sizeof(*query)) & ~(data_size_t)(sizeof(WCHAR) - 1);
++
++    /* as on Windows, the mask of the first query is kept; a restart with a new mask replaces it */
++    fresh = !dir->dir_started;
++    if (!dir->dir_started || ((query->flags & PIPE_DIR_RESTART) && (query->flags & PIPE_DIR_MASK)))
++    {
++        WCHAR *mask = NULL;
++
++        if (mask_len && !(mask = memdup( query + 1, mask_len ))) return;
++        free( dir->dir_mask );
++        dir->dir_mask = mask;
++        dir->dir_mask_len = mask_len;
++        dir->dir_started = 1;
++    }
++    if (query->flags & PIPE_DIR_RESTART) dir->dir_index = 0;
++    dir->dir_index += query->advance;
++
++    /* a commit of the consumed entries asks for no reply */
++    if (get_reply_max_size() < sizeof(*header)) return;
++
++    total = (sizeof(*header) + dir->dir_mask_len + 3) & ~3;
++    if (total > get_reply_max_size())
++    {
++        set_error( STATUS_BUFFER_TOO_SMALL );
++        return;
++    }
++    for (count = 0; (obj = find_object_index( dir->device->pipes, dir->dir_index + count )); count++)
++    {
++        name_len = 0;
++        get_object_name( obj, &name_len );
++        release_object( obj );
++        entry_size = (sizeof(*entry) + name_len + 3) & ~3;
++        if (total + entry_size > get_reply_max_size())
++        {
++            /* an empty reply means the end of the directory */
++            if (!count) set_error( STATUS_BUFFER_TOO_SMALL );
++            break;
++        }
++        total += entry_size;
++    }
++    if (!count && get_error()) return;
++
++    if (!(buffer = set_reply_data_size( total ))) return;
++    memset( buffer, 0, total );
++    header = (struct pipe_dir_reply *)buffer;
++    header->mask_len = dir->dir_mask_len;
++    header->count = count;
++    header->fresh = fresh;
++    if (dir->dir_mask_len) memcpy( header + 1, dir->dir_mask, dir->dir_mask_len );
++
++    total = (sizeof(*header) + dir->dir_mask_len + 3) & ~3;
++    for (i = 0; i < count; i++)
++    {
++        obj = find_object_index( dir->device->pipes, dir->dir_index + i );
++        assert( obj && obj->ops == &named_pipe_ops );
++        pipe = (struct named_pipe *)obj;
++        name_len = 0;
++        name = get_object_name( obj, &name_len );
++        entry = (struct pipe_dir_entry *)(buffer + total);
++        entry->name_len = name_len;
++        entry->instances = pipe->instances;
++        entry->max_instances = pipe->maxinstances;
++        if (name_len) memcpy( entry + 1, name, name_len );
++        total += (sizeof(*entry) + name_len + 3) & ~3;
++        release_object( obj );
++    }
++}
++
+ static void named_pipe_dir_ioctl( struct fd *fd, ioctl_code_t code, struct async *async )
+ {
+     struct named_pipe_device *device = get_fd_user( fd );
+@@ -1513,6 +1640,10 @@
+             return;
+         }
+ 
++    case FSCTL_WINE_QUERY_PIPE_DIRECTORY:
++        named_pipe_dir_query( get_fd_user( fd ) );
++        return;
++
+     default:
+         named_pipe_device_ioctl( fd, code, async );
+     }

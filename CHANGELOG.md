@@ -64,6 +64,14 @@
 - Review the 87 neutron-wine commits through `8ecb7fd`, with decisions for all 59 changed patch files and separate external-library scope. Add a repeatable consistency audit to quick QA. No new runtime patch is enabled.
 - Stage mouse capture tracking, rendering-mode glyph caching and signed DPI arithmetic separately. The actual Wine DPI helper fails six of fourteen arithmetic controls before the port and passes all after; server/compositor validation remains pending.
 
+- List the pipes of the named pipe root directory, `\\.\pipe\`. Wine failed
+  every listing of it with `STATUS_BAD_DEVICE_TYPE`, so tools that find a
+  program by the name of its pipe saw nothing: the pbir CLI reported no running
+  Desktop, and `pbir desktop` and `pbir model -q` could not reach the open
+  report. `tools/test-pipe-directory.py` checks the listing in a disposable
+  prefix and joins the components suite. Needs a rebuilt runtime. See
+  [named pipes](docs/reference/named-pipes.md).
+
 ### RPM release 18 — automatic setup and update, 2026-10-25
 
 - Resolve the published runtime 0.1.5, its complete corresponding source and

@@ -146,6 +146,7 @@ def main():
                 ('qa-doctor', [sys.executable, '-m', 'pbi_linux', 'doctor', '--json'], 60),
                 ('window-frame', [sys.executable, 'tools/test-window-frame.py'], 120),
                 ('cursor-resource', [sys.executable, 'tools/test-cursor-resource.py', '--runtime', metadata['runtime']], 180),
+                ('pipe-directory', [sys.executable, 'tools/test-pipe-directory.py', '--runtime', metadata['runtime']], 180),
                 ('store-rating', [sys.executable, 'tools/test-store-rating.py'], 90),
                 ('cache-compatibility', [sys.executable, 'tools/test-cache-compatibility.py'], 90),
                 ('legacy-html', [sys.executable, 'tools/test-legacy-html.py'], 90),

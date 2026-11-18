@@ -10,6 +10,7 @@ These documents preserve implementation details and dated evidence. For installa
 | Windows and input | [Window frame](window-frame.md), [PaperWM resizing](paperwm.md), [cursors](cursor.md), [GNOME theme](gnome-theme.md) |
 | Dialogs and controls | [Native save dialog](native-dialogs.md), [legacy HTML](legacy-html.md), [Options](options-dialog.md), [permissions](permissions-wayland.md), [text pickers](text-pickers.md), [intermittent popup](intermittent-popup.md) |
 | Data handling | [Model cache and recovery](model-cache.md), [refresh cancellation](refresh-cancellation.md) |
+| Tools that drive Desktop | [Named pipe listing](named-pipes.md) |
 | Provider experiments | [Connector support policy](connector-support.md), [Redshift](redshift.md), [vendor installers](vendor-installers.md) |
 | Artwork and licensing | [Application icon](app-icon.md), [legal and provenance](legal.md) |
 
