@@ -1,0 +1,73 @@
+dwrite: fall back to symbol fonts for geometric shapes and other symbols
+
+The system font fallback had no mapping for Geometric Shapes (U+25A0-25FF),
+Box Drawing, Block Elements, Mathematical Operators, Miscellaneous Technical
+and the other symbol blocks that Windows covers with Segoe UI Symbol, so
+MapCharacters() returned no font and WebView2 drew a .notdef box for
+characters such as U+25B2 and U+25BC (common in Power BI variance labels).
+Map those blocks to Noto Sans Symbols 2, Noto Sans Math, Noto Sans Symbols,
+DejaVu Sans or Liberation Sans, whichever is installed first, and add more
+candidates to the Arrows block. The family list per mapping grows from 4 to
+8 entries.
+When a mapping matched but none of its fonts had the characters,
+MapCharacters() reported the whole locale span as unmapped rather than the
+mapped run, so text after the symbol (CJK beside an unsupported operator,
+for example) lost its own fallback. With more blocks mapped that becomes
+more likely; only the mapped run is now reported.
+Wine-derived change: LGPL-2.1-or-later.
+
+--- a/dlls/dwrite/analyzer.c
++++ b/dlls/dwrite/analyzer.c
+@@ -315,7 +315,29 @@
+       "1E00-1EFF",              L"Noto Sans" },
+ 
+     /* Arrows - 2190-21FF */
+-    { "2190-21FF",              L"Noto Sans Symbols" },
++    { "2190-21FF",              L"Noto Sans Symbols, Noto Sans Symbols2, Noto Sans Symbols 2, "
++                                 L"Noto Sans Math, DejaVu Sans, Liberation Sans" },
++
++    /* Currency Symbols                - 20A0-20CF
++       Letterlike Symbols              - 2100-214F
++       Number Forms                    - 2150-218F
++       Mathematical Operators          - 2200-22FF
++       Miscellaneous Technical         - 2300-23FF
++       Control Pictures                - 2400-243F
++       Enclosed Alphanumerics          - 2460-24FF
++       Box Drawing                     - 2500-257F
++       Block Elements                  - 2580-259F
++       Geometric Shapes                - 25A0-25FF
++       Misc. Mathematical Symbols-A    - 27C0-27EF
++       Supplemental Arrows-A           - 27F0-27FF
++       Supplemental Arrows-B           - 2900-297F
++       Misc. Mathematical Symbols-B    - 2980-29FF
++       Supplemental Math Operators     - 2A00-2AFF
++       Windows covers these with Segoe UI Symbol. */
++    { "20A0-20CF, 2100-218F, 2200-243F, "
++      "2460-25FF, 27C0-27FF, 2900-2AFF",
++                                L"Noto Sans Symbols2, Noto Sans Symbols 2, Noto Sans Math, "
++                                 L"Noto Sans Symbols, DejaVu Sans, Liberation Sans" },
+ 
+     /* Miscellaneous Symbols - 2600-26FF */
+     { "2600-26FF",              L"Noto Sans Symbols2, Noto Sans Symbols 2, Noto Sans Symbols" },
+@@ -2582,9 +2604,10 @@
+         }
+     }
+ 
+-    /* Mapping was found, but either font couldn't be created or there's no font that supports given input. */
++    /* Mapping was found, but either font couldn't be created or there's no font that supports given input.
++       Only the mapped run is left without a font, so the text after it still gets its own fallback. */
+     *ret_font = NULL;
+-    *ret_length = length;
++    *ret_length = mapped;
+ 
+     return S_OK;
+ }
+@@ -3102,7 +3125,7 @@
+     unsigned int range_count, families_count;
+     IDWriteFactory7 *factory = param;
+     DWRITE_UNICODE_RANGE ranges[16];
+-    WCHAR *families[4], *str;
++    WCHAR *families[8], *str;
+     HRESULT hr;
+     size_t i;
+ 

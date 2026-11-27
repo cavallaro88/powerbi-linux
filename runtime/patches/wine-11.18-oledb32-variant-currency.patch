@@ -1,0 +1,50 @@
+oledb32: convert VARIANT sources to currency, UI1 and UI2
+
+IDataConvert::DataConvert() handled DBTYPE_VARIANT sources for most
+destination types but not DBTYPE_CY, DBTYPE_UI1 or DBTYPE_UI2, and returned
+E_NOTIMPL for them. The MSOLAP provider in Power BI Desktop converts its
+VARIANT cells this way when a column is bound as currency, so every Fixed
+Decimal (currency) measure reached the report as 0 ("$0K" on a card) while
+DAX queries over ADOMD.NET returned the right value.
+Convert through VariantChangeType(), as the other destinations already do.
+Applies after wine-11.18-oledb32-variant.patch.
+Wine-derived change: LGPL-2.1-or-later.
+
+--- a/dlls/oledb32/convert.c
++++ b/dlls/oledb32/convert.c
+@@ -649,6 +649,11 @@
+         case DBTYPE_UI4:         hr = VarCyFromUI4(*(DWORD*)src, d);             break;
+         case DBTYPE_I8:          hr = VarCyFromI8(*(LONGLONG*)src, d);           break;
+         case DBTYPE_UI8:         hr = VarCyFromUI8(*(ULONGLONG*)src, d);         break;
++        case DBTYPE_VARIANT:
++            VariantInit(&tmp);
++            if ((hr = VariantChangeType(&tmp, src, 0, VT_CY)) == S_OK)
++                *d = V_CY(&tmp);
++            break;
+         default: FIXME("Unimplemented conversion %04x -> CY\n", src_type); return E_NOTIMPL;
+         }
+         break;
+@@ -753,6 +758,11 @@
+         case DBTYPE_UI4:         hr = VarUI1FromUI4(*(DWORD*)src, d);            break;
+         case DBTYPE_I8:          hr = VarUI1FromI8(*(LONGLONG*)src, d);          break;
+         case DBTYPE_UI8:         hr = VarUI1FromUI8(*(ULONGLONG*)src, d);        break;
++        case DBTYPE_VARIANT:
++            VariantInit(&tmp);
++            if ((hr = VariantChangeType(&tmp, src, 0, VT_UI1)) == S_OK)
++                *d = V_UI1(&tmp);
++            break;
+         default: FIXME("Unimplemented conversion %04x -> UI1\n", src_type); return E_NOTIMPL;
+         }
+         break;
+@@ -778,6 +788,11 @@
+         case DBTYPE_UI4:         hr = VarUI2FromUI4(*(DWORD*)src, d);            break;
+         case DBTYPE_I8:          hr = VarUI2FromI8(*(LONGLONG*)src, d);          break;
+         case DBTYPE_UI8:         hr = VarUI2FromUI8(*(ULONGLONG*)src, d);        break;
++        case DBTYPE_VARIANT:
++            VariantInit(&tmp);
++            if ((hr = VariantChangeType(&tmp, src, 0, VT_UI2)) == S_OK)
++                *d = V_UI2(&tmp);
++            break;
+         default: FIXME("Unimplemented conversion %04x -> UI2\n", src_type); return E_NOTIMPL;
+         }
+         break;

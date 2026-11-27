@@ -4,6 +4,70 @@
 
 ### Unreleased — product repository and upstream review
 
+- Show report numbers and symbols as Windows does (runtime 0.1.7-local.11).
+  Three Wine patches: `wine-11.18-oleaut32-format-scaling.patch` makes a
+  trailing comma in a number format divide by 1000, so DAX `FORMAT(x,
+  "$#,0,K")` gives `$4,376K` instead of `$4,376,023K`, and rounds 0.6 with
+  format "0" to 1; `wine-11.18-oledb32-variant-currency.patch` lets MSOLAP
+  convert its VARIANT cells to currency, so Fixed Decimal measures no longer
+  reach visuals as 0 (a card showed `$0K`); `wine-11.18-dwrite-symbol-fallback.patch`
+  gives Geometric Shapes (▲ ▼), box drawing, block elements and the other
+  blocks Windows covers with Segoe UI Symbol a fallback font, so they no
+  longer render as boxes. `tools/test-number-format.py` checks the first two.
+- Round decimals as Windows does (runtime 0.1.7-local.12).
+  `wine-11.18-oleaut32-decimal-round.patch`: VarDecRound rounded up whenever
+  the discarded part was 5 or more units in its last place, so .NET
+  `Math.Round(258.40941m, 0)` gave 259 and `Convert.ToInt64(258409.41m)` gave
+  258410. It now rounds to nearest, half to even. `tools/test-number-format.py`
+  covers it.
+  The symbol fallback patch also stops a symbol that no installed font has
+  from taking the fallback away from the text after it.
+- Start on a seat without a keyboard (runtime 0.1.7-local.13).
+  `wine-11.18-wayland-no-layout-hkl.patch`: before a keymap existed, text
+  input focus announced a keyboard layout of language 0, and Desktop showed
+  two .NET "Culture is not supported" errors at start instead of the report.
+  Found on headless GNOME in a Fedora 44 container.
+- The packages depend on Noto Sans Symbols 2 (`font(notosanssymbols2)`,
+  Debian `fonts-noto-core`, Arch `noto-fonts`), the font the symbol fallback
+  finds first; without it ▲ and ▼ had no fallback.
+- Review fixes: `pbi-linux update` keeps a locally built runtime
+  (`0.1.7-local.N`) instead of replacing it with a published pre-release whose
+  label sorts higher; the WineBrowser entry quotes the `open-url` path, which
+  winebrowser parses as a command line; the session broker no longer spins
+  when `accept` fails for a reason other than its timeout; the RPM source
+  archive test uses the builder's own member filter and checks its mode
+  clamp; source exports and the SRPM include `SECURITY-RULES.md`, which
+  `SECURITY.md` links to.
+- `PBIDesktop.exe.config` is changed only when its original checksum is known
+  (security rule 5): 2.159.1231.0 and 2.160.1151.0. 2.158.1177.0 and
+  2.159.883.0, whose installers can no longer be downloaded to check, keep
+  their configuration (repair puts back one an earlier repair changed) and
+  launch names the AppDomain manager instead, as before the configuration
+  patch. `pbi-linux stop` waits for a session start (at most 85 s) instead of
+  refusing it; the broker socket is created with mode 0600; a bad XDG variable
+  is reported without a traceback; a damaged PE cache manifest counts as
+  stale. Frame transport: a publisher's waits share one deadline, waits grow
+  with the frame size (an 8K frame was often dropped), and the shared objects
+  are renamed for the larger mapping. Wayland (runtime 0.1.7-local.15): a window whose own maximize
+  request is unanswered is not resized to its normal size by an older
+  configure, told apart by a `wl_display.sync` handled in order with the
+  configures; the initial configure still restores, so a maximized start
+  on a workspace without the focus is tiled. The PE cache allows one writer
+  at a time and is used read-only when it cannot be written. Native checks clean up after a deadline; `window-state.py`
+  verifies its setup; the e2e probes use the installation's Wine.
+- Apply the four legacy HTML dialog fixes to Desktop 2.160.1151.0 as well as
+  2.159.1231.0 (`pbi-linux repair` applies them; `doctor` reports each): the
+  shared dialog serializers, so OK works in Options, Export template, View as,
+  connector warnings and about 15 more; the "Auto recovery" serializer, so its
+  OK closes Desktop again; the Options show call, so Options appears where the
+  compositor honours window opacity (Hyprland); and the Data source settings
+  scroll step. The changed resources are byte-identical to those of
+  2.159.1231.0. Whole-assembly hashes for 2.160.1151.0: UI `36d72e61...`,
+  scroll step `c7d7c812...`, serializers `e6fb874f...`;
+  `tools/test-powerbi-recipe.py --version 2.160.1151.0` passed. See
+  [legacy HTML](docs/reference/legacy-html.md#ok-did-nothing-in-most-legacy-dialogs-2026-11-21)
+  and [Options](docs/reference/options-dialog.md#november-21-options-was-an-empty-frame-on-hyprland).
+
 - Release RPM `0.1.0-20`, experimental DEB `0.1.0-20~experimental1` and Arch
   revision 20 with community PRs #5–#8 and the 2.160 installer port. Automatic setup
   pins the published, verified 0.1.7-pr-integration.1 runtime containing the Wine
@@ -19,6 +83,81 @@
   remain unsupported. See the
   [2.160 assessment](docs/reference/powerbi-2.160.md).
 
+- Keep the report on screen while a modal dialog is open (runtime
+  0.1.7-local.10). The runtime's frame receiver copies browser frames into
+  Desktop's window only while their host is exposed, and its test stopped at
+  the main window, which Desktop disables during any modal dialog. No frame
+  arrived until the dialog closed, so behind Options the main window showed an
+  empty background. `tools/test-modal-frames.py` checks frame delivery with the
+  main window enabled, disabled, and under an owned dialog. The Options
+  reference also gives a Hyprland window rule that opens Options at 1000 x 800.
+  See [Options](docs/reference/options-dialog.md#november-22-the-report-went-blank-behind-a-modal-dialog).
+
+- Let the Options dialog appear on Hyprland. Floating dialogs start fully
+  transparent and fade in when their page reports it is ready; the Options
+  recipe turned off the auto-size step that made that report, so Options stayed
+  an empty frame wherever the compositor applies window opacity. The Options
+  page now reports itself ready. Repair applies it (2.159.1231.0);
+  `pbi-linux doctor` reports it as `options-dialog`. See
+  [Options](docs/reference/options-dialog.md#november-21-options-was-an-empty-frame-on-hyprland).
+
+- Add `SECURITY-RULES.md`: six rules every change must keep (session reachable
+  only by its user, checksummed downloads, no DevTools port outside
+  diagnostics, contained archive extraction, Microsoft files changed only at
+  known checksums, packages only from checked main), each tied to a test that
+  fails when the rule is broken. New tests check that a normal session opens
+  no DevTools port.
+
+- Let OK work in every legacy HTML dialog that has no serializer of its own.
+  The two shared dialog scripts serialized the view model with `ko.toJSON`,
+  which walked into the .NET host object and failed under Wine's JScript, so
+  OK did nothing in Export template, Options, View as, the connector warnings,
+  the storage mode and DirectQuery choices and about a dozen more. A guarded
+  resource change gives both scripts a walker that skips non-JScript objects,
+  for 2.159.1231.0. Repair applies it; `pbi-linux doctor` reports it as
+  `dialog-serializers`. See [legacy HTML dialogs](docs/reference/legacy-html.md#ok-did-nothing-in-most-legacy-dialogs-2026-11-21).
+
+- Add `pbi-linux stop` and a "Force quit Power BI" desktop action for a Desktop
+  that cannot be closed. It stops the session, ends the Wine server and any
+  leftover Power BI process, and waits for a repair or update still running.
+
+- Keep every open report when one client misbehaves. A `pbi-linux open` that
+  was interrupted before its answer, or a malformed request, ended the session
+  broker, which then stopped the Wine server and closed every open report. The
+  session unit keeps running after an out-of-memory kill of one process
+  (`OOMPolicy=continue`). A session lock is held until the Wine server has
+  gone, and the next launch, repair and update wait for it instead of racing a
+  closing Desktop.
+
+- Rename the PE section cache at the next open when only the file's device
+  number changed. Btrfs numbers subvolumes when they are mounted, so every
+  reboot made the cache stale and `doctor` reported it. Files of earlier
+  identities are deleted.
+
+- Recover from damaged downloads and copies instead of failing setup until the
+  cache is cleared by hand. Original Desktop files are backed up atomically,
+  and a Desktop configuration that does not parse as XML is refused before it
+  is patched.
+
+- `pbi-linux doctor` reports WebView2 on its own line and keeps checking after
+  one check fails. A broken `settings.json` is named in the error, and
+  `pbi-linux profile <preset>` resets it.
+
+- Hardening: the session runs Python with `-P`; the installed launcher never
+  loads code from the source tree of a checkout; packages normalise file
+  modes; a link Desktop opens starts the browser in its own scope without the
+  Wine environment; `--diagnostics` warns that its DevTools port is open to
+  every local program; error dialogs show their text as plain text, so a file
+  name cannot add a link to them.
+
+- Let OK in the "Auto recovery" dialog close Desktop. Closing Desktop with a
+  recovered file that was never opened shows this legacy HTML dialog; under Wine
+  its OK did nothing (`DISP_E_BADPARAMCOUNT` while the page serialized the .NET
+  host object), and Cancel cancelled the close, so Desktop could not be closed.
+  A guarded resource change gives the dialog's view model its own serializer, for
+  2.159.1231.0. Repair applies it; `pbi-linux doctor` reports it as
+  `auto-recovery-dialog`. See [legacy HTML dialogs](docs/reference/legacy-html.md#desktop-would-not-close-auto-recovery-dialog-2026-11-21).
+
 - Port the guarded recipe to Power BI Desktop 2.159.1231.0, which Microsoft has
   served at the pinned address from November 2, 2026 until the 2.160 replacement.
   Releases pinning 2.159.883.0 fail the automatic download with a checksum error.
@@ -26,6 +165,49 @@
   Options native method differs only in two user-string tokens. Exact 2.159.883.0
   and 2.158.1177.0 installers stay accepted as local inputs. See the
   [assessment](docs/reference/powerbi-2.159.md#215912310-november-2026).
+
+- Name the production AppDomain manager in `PBIDesktop.exe.config` instead of
+  the session environment. The CLR clears `APPDOMAIN_MANAGER_ASM` and
+  `APPDOMAIN_MANAGER_TYPE` once it has read them, so a Desktop started by
+  Desktop (opening a report while another is open, a recent file, a restart)
+  ran without the culture helper and crashed with an access violation in
+  `AppModule.Run`. Repair applies the change; `pbi-linux doctor` reports it as
+  `desktop-instances`. Profiles not yet repaired keep the environment variables.
+
+- Keep the session alive for a Desktop that Desktop started itself. The session
+  counted only the Desktop processes it had started, so with the manager fix
+  above a second report opened from Desktop was stopped, with any unsaved work,
+  about ten seconds after the first Desktop closed; a restart from Desktop ended
+  the same way. The session now ends when no Desktop of its prefix is left.
+
+- Let a second `pbi-linux open` wait for the first instead of failing with
+  "Another maintenance operation is running" when two reports are opened
+  together or during a cold start. Maintenance and launch still exclude each
+  other at once. The first theme write no longer delays the first report
+  (about 0.3 s on the test host).
+
+- Stop `pbi-linux update` from replacing a newer or locally built runtime with
+  the published one unasked. It now refuses, names the installed version and
+  offers `--published`; an older published runtime is still updated as before.
+
+- Explain a checksum failure of the automatic Power BI download: Microsoft
+  serves each new build at the same address, so setup now says that the pinned
+  version is no longer there and how to continue, instead of naming a temporary
+  file.
+
+- Deliver WebView frames of any shape up to 7680 x 4320 pixels in area. Frames
+  wider than 4096 or taller than 2304 pixels were rejected without a log line,
+  which left Desktop blank on a 5120 x 1440 output. A larger frame is now
+  reported once in the session log. A publisher also waits up to 50 ms for the
+  frame lock instead of dropping the frame at once, and the receiver holds the
+  lock for the copy alone: 11 and 18 frames were dropped while a report opened
+  before, none after. Both need a rebuilt runtime.
+
+- Select package and export sources through one list (`tools/source_tree.py`)
+  for the DEB, RPM and source export. After a `makepkg` run its work directories
+  and built package aborted DEB staging on their symlinks and entered the RPM
+  source archive and the export. The Arch guide now rebuilds with `makepkg -sif`:
+  without `-f`, makepkg reinstalled the package built before the pull.
 
 - Prepare the 0.1.0-19 beta CLI release (RPM `0.1.0-19`, experimental DEB
   `0.1.0-19~experimental1`). The setup manifest pins Runtime 0.1.6-beta.1

@@ -1,0 +1,61 @@
+oleaut32: round DECIMAL values half to even in VarDecRound
+
+VarDecRound() divides by a power of ten with round_remainder set, and
+VARIANT_DI_div() then rounded up whenever the remainder was 5 or more. The
+remainder is the integer left over from that division, not one digit, so
+any value with a remainder of 5 or more units in the last discarded place
+rounded up: 258.40941 to 0 places gave 259. The .NET Framework rounds
+System.Decimal through this function, so Math.Round(258.40941m, 0) returned
+259 and Convert.ToInt64(258409.41m) returned 258410 under Wine.
+The remainder is now compared with half the divisor, and an exact half
+rounds to the even neighbour. That is the rule of Microsoft's own
+VarDecRound as published with CoreCLR (src/palrt/decarith.cpp): it rounds
+up when twice the remainder exceeds the divisor, or equals it and the
+quotient is odd. Decimal.Round calls VarDecRound
+(src/classlibnative/bcltype/decimal.cpp), and .NET documents
+Math.Round(2.5m) as 2.
+VarCyFromDec() also rounds through VarDecRound().
+Wine-derived change: LGPL-2.1-or-later.
+
+--- a/dlls/oleaut32/vartype.c
++++ b/dlls/oleaut32/vartype.c
+@@ -5236,7 +5236,17 @@
+             underflow = VARIANT_int_addlossy( quotient->bitsnum, &quotientscale,
+                 ARRAY_SIZE(quotient->bitsnum), remainderplusquotient, &tempquotientscale, 4);
+             if (round_remainder) {
+-                if(remainderplusquotient[4] >= 5){
++                /* Round half to even: compare twice the remainder with the divisor.
++                   The remainder is an integer below the divisor, not a single digit. */
++                DWORD twice[4], whole[4] = {0};
++                int cmp = 0, k;
++
++                memcpy(twice, remainderplusquotient + 4, sizeof(twice));
++                VARIANT_int_mulbychar(twice, ARRAY_SIZE(twice), 2);
++                memcpy(whole, divisor->bitsnum, sizeof(divisor->bitsnum));
++                for (k = ARRAY_SIZE(twice) - 1; k >= 0 && !cmp; k--)
++                    cmp = (twice[k] > whole[k]) - (twice[k] < whole[k]);
++                if (cmp > 0 || (cmp == 0 && (quotient->bitsnum[0] & 1))) {
+                     unsigned int i;
+                     unsigned char remainder = 1;
+                     for (i = 0; i < ARRAY_SIZE(quotient->bitsnum) && remainder; i++) {
+--- a/dlls/oleaut32/tests/vartype.c
++++ b/dlls/oleaut32/tests/vartype.c
+@@ -4209,6 +4209,18 @@
+     CLEAR(out); SETDEC64(l, 28, DECIMAL_NEG, 0xffffffff, 0xffffffff, 0xffffffff); hres = VarDecRound(&l, 0, &out); EXPECTDEC64(0, DECIMAL_NEG, 0, 0, 8);
+ 
+     CLEAR(out); SETDEC(l, 2, 0, 0, 0); hres = VarDecRound(&l, 1, &out); EXPECTDEC(1, 0, 0, 0);
++
++    /* The remainder is compared with half the divisor, not with 5 */
++    CLEAR(out); SETDEC(l, 5, 0, 0, 25840941); hres = VarDecRound(&l, 0, &out); EXPECTDEC(0, 0, 0, 258);
++    CLEAR(out); SETDEC(l, 2, 0, 0, 25840941); hres = VarDecRound(&l, 0, &out); EXPECTDEC(0, 0, 0, 258409);
++    CLEAR(out); SETDEC(l, 2, 0, 0, 25840951); hres = VarDecRound(&l, 0, &out); EXPECTDEC(0, 0, 0, 258410);
++    CLEAR(out); SETDEC(l, 2, DECIMAL_NEG, 0, 25840941); hres = VarDecRound(&l, 0, &out); EXPECTDEC(0, DECIMAL_NEG, 0, 258409);
++    CLEAR(out); SETDEC(l, 3, 0, 0, 1049); hres = VarDecRound(&l, 1, &out); EXPECTDEC(1, 0, 0, 10);
++    CLEAR(out); SETDEC(l, 3, 0, 0, 1050); hres = VarDecRound(&l, 1, &out); EXPECTDEC(1, 0, 0, 10);
++    CLEAR(out); SETDEC(l, 3, 0, 0, 1150); hres = VarDecRound(&l, 1, &out); EXPECTDEC(1, 0, 0, 12);
++    CLEAR(out); SETDEC(l, 1, 0, 0, 25); hres = VarDecRound(&l, 0, &out); EXPECTDEC(0, 0, 0, 2);
++    CLEAR(out); SETDEC(l, 1, 0, 0, 35); hres = VarDecRound(&l, 0, &out); EXPECTDEC(0, 0, 0, 4);
++    CLEAR(out); SETDEC(l, 1, DECIMAL_NEG, 0, 25); hres = VarDecRound(&l, 0, &out); EXPECTDEC(0, DECIMAL_NEG, 0, 2);
+ }
+ 
+ /*

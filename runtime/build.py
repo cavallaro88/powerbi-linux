@@ -24,7 +24,16 @@ WINE_PATCHES = ('wine-11.18-composition.patch','wine-11.18-oledb32-variant.patch
                 'wine-11.18-wayland-parent.patch','wine-11.18-cgroup-memory.patch','wine-11.18-secur32-status.patch','wine-11.18-jscript-int64.patch','wine-11.18-cursor-resource.patch','wine-11.18-wayland-normal-resize.patch',
                 'wine-11.18-vprot-sparse-zero.patch','wine-11.18-single-mode-position.patch',
                 'wine-11.18-wayland-data-control-primary.patch','wine-11.18-visible-region-race.patch',
-                'wine-11.18-oleaut32-max-date.patch')
+                'wine-11.18-oleaut32-max-date.patch',
+                'wine-11.18-queue-masks-after-internal.patch',
+                'wine-11.18-wayland-fixed-dialog-maximized.patch',
+                'wine-11.18-wayland-keep-toplevel-state.patch',
+                'wine-11.18-wayland-unmaximize-restore-size.patch',
+                'wine-11.18-oleaut32-format-scaling.patch',
+                'wine-11.18-oledb32-variant-currency.patch',
+                'wine-11.18-dwrite-symbol-fallback.patch',
+                'wine-11.18-oleaut32-decimal-round.patch',
+                'wine-11.18-wayland-no-layout-hkl.patch')
 
 
 def preparation_matches(marker, expected):

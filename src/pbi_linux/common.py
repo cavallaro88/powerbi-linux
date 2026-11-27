@@ -9,6 +9,7 @@ from pathlib import Path
 import re
 import subprocess
 import tempfile
+import time
 
 class Error(Exception):
     pass
@@ -22,9 +23,13 @@ def digest(path):
     return h.hexdigest()
 
 
+class ChecksumError(Error):
+    pass
+
+
 def check_digest(path, expected):
     if not re.fullmatch('[a-f0-9]{64}', expected or '') or digest(path) != expected:
-        raise Error('Checksum verification failed: ' + Path(path).name)
+        raise ChecksumError('Checksum verification failed: ' + Path(path).name)
 
 
 def read_json(path):
@@ -58,13 +63,14 @@ def installation_token(data):
 class Paths:
     def __init__(self):
         home = Path.home()
-        self.data = Path(os.environ.get('XDG_DATA_HOME', home / '.local/share')) / 'powerbi-linux'
-        self.config = Path(os.environ.get('XDG_CONFIG_HOME', home / '.config')) / 'powerbi-linux'
-        self.cache = Path(os.environ.get('XDG_CACHE_HOME', home / '.cache')) / 'powerbi-linux'
-        self.state = Path(os.environ.get('XDG_STATE_HOME', home / '.local/state')) / 'powerbi-linux'
+        # The XDG spec treats an empty variable as unset.
+        self.data = Path(os.environ.get('XDG_DATA_HOME') or home / '.local/share') / 'powerbi-linux'
+        self.config = Path(os.environ.get('XDG_CONFIG_HOME') or home / '.config') / 'powerbi-linux'
+        self.cache = Path(os.environ.get('XDG_CACHE_HOME') or home / '.cache') / 'powerbi-linux'
+        self.state = Path(os.environ.get('XDG_STATE_HOME') or home / '.local/state') / 'powerbi-linux'
         token = installation_token(self.data)
         session_name = 'powerbi-linux' + ('-' + token if token else '')
-        self.session = Path(os.environ.get('XDG_RUNTIME_DIR', self.state / 'session')) / session_name
+        self.session = Path(os.environ.get('XDG_RUNTIME_DIR') or self.state / 'session') / session_name
         for base in (self.data, self.config, self.cache, self.state, self.session):
             if not base.is_absolute():
                 raise Error('XDG directories must be absolute')
@@ -79,14 +85,20 @@ class Paths:
             directory.mkdir(parents=True, exist_ok=True, mode=0o700)
 
     @contextlib.contextmanager
-    def lock(self, name='maintenance'):
+    def lock(self, name='maintenance', wait=0):
+        """Hold an exclusive lock; wait up to that many seconds for its current holder."""
         self.create()
         with (self.session / (name + '.lock')).open('a') as lock:
             os.chmod(lock.name, 0o600)
-            try:
-                fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
-            except BlockingIOError as exc:
-                raise Error('Another ' + name + ' operation is running') from exc
+            deadline = time.monotonic() + wait
+            while True:
+                try:
+                    fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                    break
+                except BlockingIOError as exc:
+                    if time.monotonic() >= deadline:
+                        raise Error('Another ' + name + ' operation is running') from exc
+                    time.sleep(.05)
             yield
 
 
@@ -102,7 +114,10 @@ def run(args, *, env=None, cwd=None, timeout=120, log=None, success_codes=(0,)):
     except (OSError, subprocess.TimeoutExpired) as exc:
         raise Error('Command could not complete: ' + Path(str(args[0])).name) from exc
     if result.returncode not in success_codes:
-        raise Error('Command failed: ' + Path(str(args[0])).name + '; see the operation log')
+        if log:
+            raise Error('Command failed: ' + Path(str(args[0])).name + '; see ' + str(log))
+        detail = (result.stderr or '').strip().splitlines()
+        raise Error('Command failed: ' + Path(str(args[0])).name + (': ' + detail[-1][:300] if detail else ''))
     return getattr(result, 'stdout', '') or ''
 
 
@@ -119,16 +134,27 @@ def wine_env(prefix):
     return env
 
 
-def busy(paths):
-    # All Wine processes in any managed prefix, including launches outside our broker.
-    profiles = str(paths.data / 'profiles') + '/'
+def wine_processes(paths):
+    """PIDs of Wine processes in any managed prefix, including launches outside our broker.
+
+    A shell or script that merely exported WINEPREFIX is not one: only programs
+    of a managed runtime or another Wine (wine, wine-preloader, wineserver) count.
+    """
+    profiles = (str(paths.data / 'profiles') + '/').encode()
+    runtimes = paths.data / 'runtimes'
     for proc in Path('/proc').iterdir():
         if not proc.name.isdigit():
             continue
         try:
             env = (proc / 'environ').read_bytes().split(b'\0')
-            if any(x.startswith(b'WINEPREFIX=' + profiles.encode()) for x in env):
-                return True
+            if not any(x.startswith(b'WINEPREFIX=' + profiles) for x in env):
+                continue
+            exe = Path(os.readlink(proc / 'exe').removesuffix(' (deleted)'))
         except (OSError, PermissionError):
             continue
-    return False
+        if exe.is_relative_to(runtimes) or exe.name.startswith('wine'):
+            yield int(proc.name)
+
+
+def busy(paths):
+    return next(wine_processes(paths), None) is not None

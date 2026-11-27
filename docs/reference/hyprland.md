@@ -139,6 +139,13 @@ only the first two patches gave the same results.
   The stress rounds show no regression, not the absence of the race.
 - Hyprland 0.56.2 offers no `xdg_toplevel_icon_manager_v1`, so windows have no
   per-window icon.
+- `tools/test-window-frame.py` fails its "owned frame preserved" case here and
+  passes under GNOME (mutter 50.6, checked 2026-11-27). Hyprland sends the
+  owned test form a configure with the maximized state, even as a floating
+  window, so Desktop's base class gives it the maximized insets (4,4,4,5) as on
+  Windows. The probe expects the normal frame; the custom frame and resize
+  zones pass. Runtimes from before and after the 2026-11-27 changes give the
+  same result.
 - No published runtime contains these patches. Until one does, build a runtime
   from the source tree; see [building](../development/build.md).
 
@@ -172,3 +179,129 @@ rejected. Both disposable prefixes stopped and were removed.
 This validates the date conversion only. Monitor placement, clipboard exchange,
 the visible-region race and Desktop's trace startup were not exercised by this
 headless check; Fedora/GNOME graphical acceptance remains pending.
+## Later corrections: 2026-11-18
+
+Four further Wine defects were found on the same host. None changes Desktop.
+
+- **Legacy dialogs two pixels wide.** Hyprland reports every mapped toplevel as
+  maximized, and the driver passed that on to Desktop's borderless dialogs,
+  which then ignored their own resize.
+  `wine-11.18-wayland-fixed-dialog-maximized.patch`; see
+  [legacy HTML](legacy-html.md#dialogs-two-pixels-wide-on-hyprland-2026-11-18).
+- **Desktop frozen after a cursor change.** Not specific to Hyprland.
+  `wine-11.18-queue-masks-after-internal.patch`; see
+  [cursors](cursor.md#desktop-frozen-after-a-cursor-change-2026-11-18).
+
+- **Desktop mapped as a floating window**, slightly larger than the monitor.
+  `wine-11.18-wayland-unmaximize-restore-size.patch`; see below.
+- **Window back at its restored size after a workspace switch.**
+  `wine-11.18-wayland-keep-toplevel-state.patch`; see below.
+
+### Desktop mapped as a floating window
+
+Desktop sometimes came up as a floating window of 2564 x 1084 (2564 x 1444 on
+the larger output) instead of a tile. It was first put down to the output the
+window started on; the output plays no part.
+
+- Desktop starts maximized. For a new window Hyprland predicts the size of its
+  tile from the window it would split. If that window is floating there is no
+  prediction, and the first configure carries no size and no maximized state.
+  A floating dialog holding the focus is enough (observed); so is a floating
+  window that is the first of its workspace while the focus is elsewhere (read
+  from `DwindleAlgorithm.cpp`, not exercised).
+- The driver cleared `WS_MAXIMIZE` and left the window at its maximized
+  rectangle. That rectangle covers the monitor, so win32u reports the window as
+  fullscreen and not resizable, the driver announces equal minimum and maximum
+  sizes, and Hyprland maps a window with a fixed size floating.
+
+The patch gives the window the size of its restored placement when a configure
+ends the maximized state without a size. It is then an ordinary resizable
+window; Hyprland tiles it and sends the size of the tile.
+
+### Window back at its restored size after a workspace switch
+
+Found while testing the previous correction on a workspace that was shown.
+
+- Hyprland changes a window's suspended state when it becomes hidden or
+  visible. That state exists from `xdg_wm_base` version 6; for an older client
+  Hyprland only sends the surface configure, without a toplevel event
+  (`XDGShell.cpp`, `setSuspeneded`). The driver binds version 2.
+- The driver cleared its pending toplevel state after every sequence, so it
+  read that configure as "no size, no states" and cleared `WS_MAXIMIZE`. A
+  WinForms window answers by taking its restored size.
+- The tile kept its size. The next toplevel configure, usually sent when the
+  window gets the focus back, corrected the window. A window shown again
+  without the focus stayed at its restored size inside the tile.
+
+The patch notes whether a toplevel event arrived in the sequence. Without one
+only the serial is new: it is handed to a configure that is still to be
+acknowledged, or acknowledged at once, and nothing is applied to the window.
+The last size is deliberately not applied again; a window that has resized
+itself since would be put back. Without this patch the previous one would act
+on every such configure.
+
+### Evidence for both
+
+`tests/e2e/window-state.py` shows its own windows and needs no Desktop session.
+
+Local builds of this source tree, not published:
+
+| Check | Runtime 0.1.7-local.4, without the patches | With both (SHA-256 `d7008184bd6ce496e2a431629a823383042b2feade28c93ba82d1e8bea8e571c`) |
+|---|---|---|
+| Maximized start beside a focused floating window (`window-state.py`) | Floating, 2568 x 1448 | Tiled |
+| Tiled window while its workspace is hidden, and when it is shown again | Not maximized, 900 x 600 inside a tile of 2536 x 1390, both times | Maximized, 2536 x 1390 throughout |
+| Desktop started while a floating dialog held the focus | Floating at 2564 x 1444 in 2 of 2 starts | Tiled in 3 of 3 starts |
+| Legacy dialogs (`dialog-size.py`) | Passed | Passed: error report and Data source settings |
+| `session.py --ui-refresh --save` | Passed | Passed: refresh from the interface, model total and fact rows verified, save observed |
+
+The cursor wake test was not repeated on this build. It needs the desktop
+pointer over the Desktop window, and these tests ran on a headless output so
+that no test window covered the monitor in use.
+
+Limits:
+
+- One host. Other compositors answer a maximized start with a size, and send no
+  configure without a toplevel event to a version 2 client as far as is known;
+  neither was tested.
+- The second case of a missing tile prediction (the first window of a
+  workspace while the focus is elsewhere) was exercised on 2026-11-27: a
+  maximized probe mapped on a workspace without the focus. With runtime
+  0.1.7-local.14, which skipped the restore for an initial configure sent
+  before the compositor saw the maximize request, it floated at 2568 x 1088
+  in 6 of 20 starts; with 0.1.7-local.15 (archive SHA-256
+  `609d4cc8a2b3e1f94f303a4286f7cefefa3327f8040e8617dcc2599cacd7dc18`), which
+  restores on every initial configure, it was tiled and maximized in 24 of 24
+  (12 with that driver built alone, 12 with the archive).
+
+## Fedora 44 GNOME container check: 2026-11-27
+
+Not Hyprland, but recorded here beside the other compositor evidence. A
+Fedora 44 container with systemd, a lingering user and `mutter 50.6 --headless
+--wayland --no-x11 --virtual-monitor 1920x1080` (software rendering, no input
+device), on the same host.
+
+- The RPM built by `tools/build-rpm.py` installed and passed `rpm -V`.
+- `pbi-linux setup --runtime` with a local runtime and the cached installers
+  completed; `doctor` passed all 25 checks.
+- `tools/test-window-frame.py` passed, including the owned frame case that
+  fails on Hyprland.
+- With runtime 0.1.7-local.12, Desktop showed two .NET "Culture is not
+  supported" errors at start and never loaded the report. The seat had no
+  keyboard, so no keymap ever arrived, and the driver announced a keyboard
+  layout of language 0 when a window gained text input focus. From runtime
+  0.1.7-local.13 (`wine-11.18-wayland-no-layout-hkl.patch`) Desktop loads it
+  with no dialog.
+- The container had only Cantarell and Noto Sans, so ▲ and ▼ had no fallback
+  font. Fedora Workstation installs Noto Sans Symbols 2 through
+  `default-fonts-core-math`; the packages now depend on it
+  (`font(notosanssymbols2)`, Debian `fonts-noto-core`, Arch `noto-fonts`).
+- A fresh setup on 0.1.7-local.14, then `pbi-linux update` to
+  0.1.7-local.15: `doctor` passed. On local.15 a copy of a report with tinted
+  pill badges rendered `$258K`,
+  `LY $231K` and ▲ ▼ in Noto Sans Symbols 2, as on Hyprland and Windows.
+  `dialog-size.py` (error report and Data source settings),
+  `test-number-format.py`, `test-window-frame.py`, `test-legacy-html.py`,
+  `test-html-int64.py`, `test-store-rating.py`, `test-cache-compatibility.py`
+  and `test-signin-settings.py` passed.
+- Not run there: anything that needs input (no input device), the cursor
+  wake test, and `tools/check-product.py`'s builder-compiled native probes.

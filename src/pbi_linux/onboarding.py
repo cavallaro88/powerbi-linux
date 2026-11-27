@@ -7,7 +7,7 @@ import sys
 from urllib.parse import urlsplit
 
 from . import assets, provision, recipes, platforms
-from .common import Error, check_digest, read_json, digest
+from .common import ChecksumError, Error, check_digest, read_json, digest
 
 DOWNLOAD_PAGE = 'https://www.microsoft.com/pt-br/download/details.aspx?id=58494'
 GUIDE = 'https://github.com/cavallaro88/powerbi-linux/blob/main/docs/user/install.md'
@@ -124,10 +124,63 @@ def prepare(paths, args):
     if not args.installer:
         item = manifest['powerbi']
         print('Downloading Power BI Desktop ' + item['version'] + ' from Microsoft...', flush=True)
-        args.installer = str(assets.download(item['url'], item['sha256'], paths.cache / 'downloads'))
+        try:
+            args.installer = str(assets.download(item['url'], item['sha256'], paths.cache / 'downloads'))
+        except ChecksumError as exc:
+            # Microsoft publishes each new build at the same address, so the pinned
+            # version stops being downloadable the day the next one appears.
+            raise Error('The Power BI installer at Microsoft is not version ' + item['version'] +
+                        ', which this release supports. Microsoft has probably published a newer '
+                        'build at the same address; no installation was changed. Update Power BI Linux, '
+                        'or pass your own copy of the exact ' + item['version'] + ' installer with '
+                        '--installer. Download page: ' + DOWNLOAD_PAGE + '. Guide: ' + GUIDE) from exc
     else:
         args.installer = str(Path(args.installer).expanduser().resolve())
     return args
+
+
+def runtime_order(version):
+    """Semantic-version precedence of a runtime label, or None when it is not one."""
+    match = re.fullmatch(r'(\d+)\.(\d+)\.(\d+)(?:-([0-9A-Za-z.-]+))?(?:\+[0-9A-Za-z.-]+)?', version or '')
+    if not match:
+        return None
+    core = tuple(int(part) for part in match.group(1, 2, 3))
+    if match.group(4) is None:
+        return core + (1,)  # A release follows all of its pre-releases.
+    return core + (0, tuple((0, int(part), '') if part.isdigit() else (1, 0, part)
+                            for part in match.group(4).split('.')))
+
+
+def locally_built(version):
+    """True for a runtime label from a local build (0.1.7-local.12).
+
+    Precedence alone cannot protect one: 'local' sorts below a published
+    pre-release such as 'pr-integration', and a later release need not carry
+    the local build's patches either.
+    """
+    match = re.fullmatch(r'[^-+]+-([0-9A-Za-z.-]+)(?:\+.*)?', version or '')
+    return bool(match) and 'local' in match.group(1).split('.')
+
+
+def keep_installed_runtime(paths, item):
+    """Refuse to replace a newer or locally built runtime with the published one unasked."""
+    if not paths.active.is_file():
+        return  # Maintenance reports the missing installation.
+    installed = read_json(paths.active)
+    if installed.get('runtime_sha256') == item['sha256']:
+        return
+    try:
+        version = read_json(Path(installed.get('runtime', '')) / 'runtime.json').get('version')
+    except Error:
+        version = None
+    current, offered = runtime_order(version), runtime_order(item['version'])
+    if current is not None and offered is not None and current < offered and not locally_built(version):
+        return
+    raise Error('The installed runtime (' + (version or 'unknown version') + ') is not an older release than '
+                'the published runtime ' + item['version'] + ': it is newer or was built locally, and the '
+                'published one may lack its corrections. Nothing was changed. Run pbi-linux repair to keep it, '
+                'name an archive with --runtime and --runtime-sha256, or pass --published to replace it '
+                'with the published runtime.')
 
 
 def update_inputs(paths, args):
@@ -135,6 +188,8 @@ def update_inputs(paths, args):
     if bool(args.runtime) != bool(args.runtime_sha256):
         raise Error('Supply --runtime and --runtime-sha256 together, or omit both for the published runtime')
     if args.runtime:
+        if args.published:
+            raise Error('Supply --published or an archive with --runtime, not both')
         args.runtime = str(Path(args.runtime).expanduser().resolve())
         check_digest(Path(args.runtime), args.runtime_sha256)
         return args
@@ -145,6 +200,8 @@ def update_inputs(paths, args):
                     manifest.get('reason', 'validated release downloads are pending') +
                     '. Supply --runtime and --runtime-sha256. Guide: ' + GUIDE)
     validate_runtime_download(item)
+    if not args.published:
+        keep_installed_runtime(paths, item)
     print('Downloading project runtime ' + item['version'] + '...', flush=True)
     args.runtime = str(assets.download(item['url'], item['sha256'], paths.cache / 'downloads'))
     args.runtime_sha256 = item['sha256']

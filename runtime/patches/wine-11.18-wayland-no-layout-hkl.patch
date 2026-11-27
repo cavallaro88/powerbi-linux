@@ -1,0 +1,47 @@
+winewayland: announce no keyboard layout before there is a keymap
+
+When a surface gains text input focus, the driver posts
+WM_INPUTLANGCHANGEREQUEST with the IME variant of the current layout. Before
+the compositor has sent a keymap, or on a seat with no keyboard, there is no
+current layout: the driver posted 0xe0010000, an IME layout whose language is
+0. WinForms answers that message by building a CultureInfo from the language,
+which throws CultureNotFoundException ("0 (0x0000) is an invalid culture
+identifier"). Power BI Desktop showed that exception twice at start, behind
+which the report never loaded.
+Seen under GNOME (mutter 50.6, headless with a virtual monitor and no input
+device, Fedora 44 container, 2026-11-27); WINEDEBUG=+keyboard showed
+"Changing keyboard layout to 0xffffffffe0010000".
+Post nothing until a layout exists, on text input focus or on keyboard
+focus (which posted layout 0). set_current_xkb_group activates the layout,
+with the IME state, when the keymap arrives, as before.
+Applies after wine-11.18-composition.patch.
+Wine-derived change: LGPL-2.1-or-later.
+
+--- a/dlls/winewayland.drv/wayland_keyboard.c
++++ b/dlls/winewayland.drv/wayland_keyboard.c
+@@ -112,7 +112,12 @@
+ 
+ void activate_keyboard_hkl(HWND hwnd, BOOL ime)
+ {
+-    HKL hkl = ime && !is_ime_hkl(keyboard_hkl) ? get_ime_hkl(LOWORD(keyboard_hkl)) : keyboard_hkl;
++    HKL hkl;
++
++    /* No keymap yet, or no keyboard at all: there is no layout to announce.
++     * set_current_xkb_group activates one, with the IME state, when it comes. */
++    if (!keyboard_hkl) return;
++    hkl = ime && !is_ime_hkl(keyboard_hkl) ? get_ime_hkl(LOWORD(keyboard_hkl)) : keyboard_hkl;
+     TRACE("Changing keyboard layout to %p\n", hkl);
+     NtUserPostMessage(hwnd, WM_INPUTLANGCHANGEREQUEST, 0 /*FIXME*/, (LPARAM)hkl);
+ }
+@@ -804,8 +809,9 @@
+     keyboard->focused_hwnd = hwnd;
+     pthread_mutex_unlock(&keyboard->mutex);
+ 
+-    NtUserPostMessage(keyboard->focused_hwnd, WM_INPUTLANGCHANGEREQUEST, 0 /*FIXME*/,
+-                      (LPARAM)keyboard_hkl);
++    if (keyboard_hkl)
++        NtUserPostMessage(keyboard->focused_hwnd, WM_INPUTLANGCHANGEREQUEST, 0 /*FIXME*/,
++                          (LPARAM)keyboard_hkl);
+ 
+     if (!(data = wayland_win_data_get(hwnd))) return;
+ 

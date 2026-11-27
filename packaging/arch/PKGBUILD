@@ -1,7 +1,8 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Experimental Arch Linux recipe. It packages the source checkout that contains
 # it: there is no published Arch package or AUR entry. Build with
-#   cd packaging/arch && makepkg -si
+#   cd packaging/arch && makepkg -sif
+# The version is fixed, so without -f makepkg reinstalls an earlier build.
 # Like the RPM and DEB, the package holds only the CLI, recipes and desktop
 # integration. The Wine runtime and Microsoft software are obtained per user by
 # `pbi-linux setup`; no hook runs Wine, setup or a download.
@@ -18,6 +19,7 @@ license=('GPL-3.0-or-later' 'LGPL-2.1-or-later' 'Zlib')
 # wpcap.so imports libpcap.so.0.8, and Desktop does not capture packets.
 depends=('python>=3.12' 'systemd' 'samba' 'desktop-file-utils' 'shared-mime-info'
          'hicolor-icon-theme' 'xdg-utils' 'zenity' 'cabextract' 'fontconfig'
+         'noto-fonts'
          'freetype2' 'vulkan-icd-loader' 'libxkbcommon' 'gnutls' 'libunwind'
          'libglvnd' 'unixodbc' 'wayland' 'libpulse' 'alsa-lib' 'gstreamer'
          'gst-plugins-base-libs')

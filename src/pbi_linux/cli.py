@@ -7,7 +7,7 @@ from pathlib import Path
 import shutil
 import subprocess
 import sys
-from . import __version__, assets, launch, provision, desktop, resources, legacy_html, signin, connectors, patches, text_pickers, tooltips, onboarding, platforms
+from . import __version__, assets, autorecovery, dialog_serializers, options_show, launch, provision, desktop, resources, legacy_html, signin, connectors, patches, text_pickers, tooltips, onboarding, platforms
 from .common import Error, Paths, busy, read_json, check_digest, atomic_json, digest
 
 
@@ -54,27 +54,38 @@ def doctor(paths):
             for name, sha in installed['patches'].items():
                 check_digest(Path(installed['prefix'])/provision.BIN/name, sha)
             add('integrity', True, 'Runtime and installed patches verified')
-            source = provision.verified_webview(Path(installed['prefix']),Path(installed['runtime']))
-            components['webview2'] = source.parent.name
-            add('pe-cache', provision.pe_cache.valid(source, paths.cache/'pe'/Path(installed['prefix']).name), 'Run repair if the cache is stale')
+            try:
+                source = provision.verified_webview(Path(installed['prefix']),Path(installed['runtime']))
+                components['webview2'] = source.parent.name
+                add('webview2', True, 'Fixed WebView2 runtime verified')
+                cache = provision.pe_cache.status(source, paths.cache/'pe'/Path(installed['prefix']).name)
+                add('pe-cache', cache != 'stale', {
+                    'current': 'PE cache verified',
+                    'moved': 'PE cache verified; the next open renames it to the moved WebView2 file',
+                    'stale': 'PE cache is stale; close Desktop and run pbi-linux repair'}[cache])
+            except (Error, OSError) as exc:
+                add('webview2', False, str(exc) + '; close Desktop and run pbi-linux repair')
             try:
                 missing = legacy_html.missing_registrations(installed['prefix'])
                 issues = []
                 if missing:
                     issues.append('Missing registry entries: ' + ', '.join(missing))
-                if installed['patches'].get('Microsoft.Mashup.Client.UI.dll') != legacy_html.patched_hash(components['powerbi']):
+                if installed['patches'].get('Microsoft.Mashup.Client.UI.dll') != patches.ui_patched_hash(components['powerbi']):
                     issues.append('Legacy HTML assembly patch is missing or outdated')
                 add('legacy-html', not issues,
                     '; '.join(issues) + '; close Desktop and run pbi-linux repair' if issues else
                     'Wine HTML registrations, credential dialog, source list, permissions serializer and Options layout/selection/native resize patches are present')
             except (Error, OSError, ValueError) as exc:
                 add('legacy-html', False, str(exc))
+            assembly = Path(installed['prefix']) / provision.BIN / 'Microsoft.PowerBI.Client.Windows.dll'
             try:
-                assembly = Path(installed['prefix']) / provision.BIN / 'Microsoft.PowerBI.Client.Windows.dll'
                 patched = signin.resource_hash(assembly.read_bytes()) == signin.RESOURCE_PATCHED_SHA256
                 add('sign-in-dialog', patched,
                     'Email dialog serializer patch is present' if patched else
                     'Email dialog serializer is outdated; close Desktop and run pbi-linux repair')
+            except (Error, OSError, ValueError) as exc:
+                add('sign-in-dialog', False, str(exc))
+            try:
                 cache_patched = patches.CACHE_COMPAT in installed['patches'] and b'PowerBICacheCompatibility' in assembly.read_bytes()
                 add('cache-restore', cache_patched,
                     'Linguistic JSON normalization is present' if cache_patched else
@@ -83,8 +94,42 @@ def doctor(paths):
                 add('window-frame', frame_patched,
                     'Custom client frame and transparent resize zones are present' if frame_patched else
                     'Window frame correction is missing; close Desktop and run repair')
+                manager_configured = patches.DESKTOP_CONFIG in installed['patches']
+                if components['powerbi'] in patches.CONFIG_ORIGINALS:
+                    add('desktop-instances', manager_configured,
+                        'A Desktop started by Desktop loads the compatibility manager' if manager_configured else
+                        'A Desktop started by Desktop (another report, a restart) crashes; close Desktop and run repair')
+                elif manager_configured:
+                    add('desktop-instances', False, 'PBIDesktop.exe.config of ' + components['powerbi'] +
+                        ' was changed without a verified original; close Desktop and run repair')
             except (Error, OSError, ValueError) as exc:
-                add('sign-in-dialog', False, str(exc))
+                add('desktop-patches', False, str(exc))
+            if components['powerbi'] in patches.DIALOG_RECIPES:
+                ui = Path(installed['prefix']) / provision.BIN / 'Microsoft.Mashup.Client.UI.dll'
+                try:
+                    serializers = dialog_serializers.patched(ui.read_bytes())
+                    add('dialog-serializers', serializers,
+                        'Legacy dialogs serialize their view model without the .NET host' if serializers else
+                        'OK does nothing in Options, Export template and other legacy dialogs; '
+                        'close Desktop and run pbi-linux repair')
+                except (Error, OSError) as exc:
+                    add('dialog-serializers', False, str(exc))
+                try:
+                    shown = options_show.patched(ui.read_bytes())
+                    add('options-dialog', shown,
+                        'The Options dialog fades in when its page is ready' if shown else
+                        'Options opens as an empty frame; close Desktop and run pbi-linux repair')
+                except (Error, OSError) as exc:
+                    add('options-dialog', False, str(exc))
+                try:
+                    assembly = Path(installed['prefix']) / provision.BIN / 'Microsoft.PowerBI.Client.Windows.dll'
+                    recovery = autorecovery.resource_hash(assembly.read_bytes()) == autorecovery.RESOURCE_PATCHED_SHA256
+                    add('auto-recovery-dialog', recovery,
+                        'Auto recovery dialog serializer patch is present' if recovery else
+                        'OK in the Auto recovery dialog does nothing, so Desktop cannot close; '
+                        'close Desktop and run pbi-linux repair')
+                except (Error, OSError) as exc:
+                    add('auto-recovery-dialog', False, str(exc))
             try:
                 picker_patched = (installed['patches'].get(text_pickers.DOCUMENT) == tooltips.PATCHED_SHA256
                                   and digest(Path(installed['prefix']) / provision.BIN / text_pickers.DOCUMENT)
@@ -122,8 +167,10 @@ def parser():
     setup.add_argument('--make-default', action='store_true')
     opening = sub.add_parser('open', help='Open a report or an empty Desktop window')
     opening.add_argument('file', nargs='?')
-    opening.add_argument('--diagnostics', action='store_true', help='Opt in to local CDP for a disposable developer test session')
+    opening.add_argument('--diagnostics', action='store_true', help='Opt in to local CDP for a disposable developer test session; any local program can then control Desktop')
     opening.add_argument('--desktop', action='store_true', help=argparse.SUPPRESS)
+    stopping = sub.add_parser('stop', help='Force Power BI to quit when it is stuck; unsaved changes are lost')
+    stopping.add_argument('--desktop', action='store_true', help=argparse.SUPPRESS)
     diagnosis = sub.add_parser('doctor', help='Check prerequisites and installation integrity')
     diagnosis.add_argument('--json', action='store_true')
     sub.add_parser('repair', help='Repair the existing installation in place, without snapshots or rollback')
@@ -149,6 +196,8 @@ def parser():
     update = sub.add_parser('update', help='Update the runtime in place, without snapshots or rollback')
     update.add_argument('--runtime', help='Runtime archive (defaults to the published release)')
     update.add_argument('--runtime-sha256', help='SHA-256 of the runtime archive (required with --runtime)')
+    update.add_argument('--published', action='store_true',
+                        help='Install the published runtime even over a newer or locally built one')
     sub.add_parser('rollback', help='Unavailable: snapshots and rollback are no longer provided')
     uninstall = sub.add_parser('uninstall', help='Remove per-user desktop integration; preserve data by default')
     uninstall.add_argument('--purge', action='store_true', help='Delete managed prefixes, runtime, cache and settings')
@@ -159,12 +208,19 @@ def parser():
 
 def main(argv=None):
     args = parser().parse_args(argv)
-    paths = Paths()
     try:
+        paths = Paths()
         if args.command == 'setup':
             provision.setup(paths, onboarding.prepare(paths, args))
         elif args.command == 'open':
+            if args.diagnostics:
+                print('WARNING: diagnostics open an unauthenticated DevTools port on this computer. '
+                      'Any program running here can control Desktop and read what it shows until the '
+                      'session ends. Use it only for disposable test reports.', file=sys.stderr)
             launch.open_file(paths, args.file, diagnostics=args.diagnostics)
+        elif args.command == 'stop':
+            launch.stop(paths)
+            print('Power BI has quit.')
         elif args.command == 'doctor':
             result = doctor(paths)
             if args.json:
@@ -190,7 +246,13 @@ def main(argv=None):
                 print(json.dumps(provision.settings(paths),indent=2))
                 return 0
             with paths.lock():
-                config=provision.settings(paths)
+                try:
+                    config=provision.settings(paths)
+                except Error:
+                    # A preset replaces a damaged file; a single change needs the rest of it.
+                    if args.name is None:
+                        raise
+                    config=dict(resources.DEFAULTS)
                 if args.name is not None:
                     config.update(resources.preset(args.name))
                 config.update(changes)
@@ -226,6 +288,6 @@ def main(argv=None):
         message = str(exc)
         print('pbi-linux: ' + message, file=sys.stderr)
         if getattr(args, 'desktop', False) and shutil.which('zenity'):
-            subprocess.run(['zenity','--error','--title=Power BI Desktop','--text='+message], capture_output=True)
+            subprocess.run(['zenity','--error','--no-markup','--title=Power BI Desktop','--text='+message], capture_output=True)
         return 1
     return 0

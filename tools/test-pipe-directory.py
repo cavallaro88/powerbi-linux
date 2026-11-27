@@ -8,6 +8,7 @@ import os
 from pathlib import Path
 import re
 import shutil
+import signal
 import subprocess
 import sys
 
@@ -20,6 +21,9 @@ CHECKS = 79
 
 
 def main():
+    # check-product ends an overdue check with SIGTERM: exit through finally so
+    # the own prefix is stopped and removed and result.json is still written.
+    signal.signal(signal.SIGTERM, lambda number, frame: sys.exit(128 + number))
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--runtime', type=Path, help='Verified runtime; defaults to the installed runtime')
     parser.add_argument('--engine', choices=['docker', 'podman'], default='docker')

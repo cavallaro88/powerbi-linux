@@ -1,10 +1,12 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 import os
 import hashlib
+import re
 from pathlib import Path
 import shutil
+import xml.etree.ElementTree as ElementTree
 from .common import Error, check_digest, digest, run, wine_env
-from . import legacy_html, signin, text_pickers, tooltips
+from . import autorecovery, dialog_serializers, legacy_html, options_show, signin, text_pickers, tooltips
 
 ORIGINALS = {
     'Microsoft.PowerBI.Client.Shared.dll': '1dc130d913b92f315b81aa5162e8fa74e8a0279742f988561680111d5189ff78',
@@ -32,8 +34,34 @@ ORIGINALS_2160 = {
     'msmdsrv.exe': '81b10be9ef3245c9f39647b75c92315007bf59726dbab74f7d49f309392a97bf',
     'Microsoft.Mashup.Client.UI.dll': legacy_html.UI_2160_ORIGINAL_SHA256,
 }
+# The exact PBIDesktop.exe.config each build installs. 2.158.1177.0 and
+# 2.159.883.0 can no longer be downloaded to check theirs, so their
+# configuration stays as installed and launch names the manager instead.
+CONFIG_ORIGINALS = {
+    '2.159.1231.0': '1e6ddfd4196e6b8b6accef7fb2d0c21a7bf53daf1199d17059c3856291c60109',
+    '2.160.1151.0': 'd9933f4a2e187e24f6bdad1a99aba54220723c759c0bb458fdf7940577251d3a',
+}
 RECIPES = {'2.158.1177.0': ORIGINALS, '2.159.883.0': CURRENT_ORIGINALS,
            '2.159.1231.0': ORIGINALS_2159_1231, '2.160.1151.0': ORIGINALS_2160}
+# Builds whose assemblies were available to verify the shared dialog
+# serializers, the Options show call and the Auto recovery dialog against.
+DIALOG_RECIPES = ('2.159.1231.0', '2.160.1151.0')
+
+
+def ui_patched_hash(version):
+    """The complete Microsoft.Mashup.Client.UI.dll that setup and repair write."""
+    if version in DIALOG_RECIPES:
+        return options_show.UI_PATCHED_SHA256[version]
+    return legacy_html.patched_hash(version)
+
+
+def config_original(originals):
+    """The verified original PBIDesktop.exe.config checksum for a recipe, or None."""
+    if originals is ORIGINALS_2160:
+        return CONFIG_ORIGINALS['2.160.1151.0']
+    if originals is ORIGINALS_2159_1231:
+        return CONFIG_ORIGINALS['2.159.1231.0']
+    return None
 
 
 def originals_for(desktop_sha256):
@@ -46,6 +74,55 @@ def originals_for(desktop_sha256):
 NATIVE_DIALOG = 'PowerBISaveDialog.dll'
 CACHE_COMPAT = 'PowerBICacheCompatibility.dll'
 WINDOW_FRAME = 'PowerBIWindowFrame.dll'
+DESKTOP_CONFIG = 'PBIDesktop.exe.config'
+MANAGER_ASSEMBLY = 'PowerBICompositionManager'
+MANAGER_TYPE = 'CompositionManager'
+
+
+def patch_config(source):
+    """Name the production AppDomain manager in Desktop's own configuration.
+
+    The CLR removes APPDOMAIN_MANAGER_ASM and APPDOMAIN_MANAGER_TYPE from the
+    process environment once it has read them. A Desktop started by Desktop
+    (opening a report beside an open one, a recent file, a restart) therefore
+    ran without the manager, lost its culture workaround and crashed in
+    AppModule.Run. Every PBIDesktop.exe start reads this file; no other
+    program does, so Desktop's other .NET children stay as they were.
+    """
+    _require_xml(source, 'Incomplete or damaged Desktop configuration; reinstall Power BI Desktop')
+    if b'appDomainManager' in source:
+        raise Error('Unexpected AppDomain manager in the Desktop configuration')
+    match = re.search(rb'<runtime>(\r?\n)', source)
+    if source.count(b'<runtime') != 1 or not match:
+        raise Error('Unexpected runtime section in the Desktop configuration')
+    newline = match.group(1)
+    elements = (b'    <appDomainManagerAssembly value="' + MANAGER_ASSEMBLY.encode() + b'" />' + newline +
+                b'    <appDomainManagerType value="' + MANAGER_TYPE.encode() + b'" />' + newline)
+    patched = source[:match.end()] + elements + source[match.end():]
+    _require_xml(patched, 'Unexpected Desktop configuration patch output')
+    return patched
+
+
+def _require_xml(data, message):
+    # The configuration has no recipe hash, unlike the assemblies. A short copy
+    # (an interrupted backup) still has its <runtime> line but no longer parses.
+    try:
+        ElementTree.fromstring(data)
+    except ElementTree.ParseError as exc:
+        raise Error(message) from exc
+
+
+def _backup(source, backup):
+    """Copy an original under a temporary name first, then rename it.
+
+    Every later repair reads the backup instead of bin. A copy cut short (a full
+    disk, Ctrl-C, a closed terminal) under the final name would be taken for the
+    original and break each repair after it.
+    """
+    backup.parent.mkdir(parents=True, exist_ok=True)
+    partial = backup.with_name(backup.name + '.partial')
+    shutil.copy2(source, partial)
+    os.replace(partial, backup)
 
 
 def build_native_dialog(helpers, wine, env, log, key):
@@ -162,6 +239,9 @@ def install(prefix, runtime, log):
     if not ui_source.exists():
         ui_source = bin_dir / ui_name
     patched_ui = legacy_html.patch_ui(ui_source.read_bytes())
+    dialogs = any(originals is recipe for recipe in (ORIGINALS_2159_1231, ORIGINALS_2160))
+    if dialogs:
+        patched_ui = options_show.patch_ui(dialog_serializers.patch_ui(patched_ui))
     windows_name = 'Microsoft.PowerBI.Client.Windows.dll'
     windows_source = backups / windows_name
     if not windows_source.exists():
@@ -170,16 +250,30 @@ def install(prefix, runtime, log):
     patched_windows = (signin.patch_windows(windows_source.read_bytes())
                        if originals is ORIGINALS else
                        signin.patch_windows(windows_source.read_bytes(), originals[windows_name]))
+    if dialogs:
+        # The other builds' assemblies were not available to check the
+        # resource against, so they stay as they were.
+        patched_windows = autorecovery.patch_windows(patched_windows)
     picker_name = text_pickers.DOCUMENT
     picker_source = backups / picker_name
     if not picker_source.exists():
         picker_source = bin_dir / picker_name
     patched_picker = tooltips.patch_document(text_pickers.patch_document(picker_source.read_bytes()))
-    for name in (*originals, picker_name):
+    config_source = backups / DESKTOP_CONFIG
+    if not config_source.exists():
+        config_source = bin_dir / DESKTOP_CONFIG
+    config_hash = config_original(originals)
+    if config_hash:
+        check_digest(config_source, config_hash)
+        patched_config = patch_config(config_source.read_bytes())
+    else:
+        # Unverified build: the original configuration, as an earlier repair may
+        # have changed it before the checksum was required.
+        patched_config = config_source.read_bytes() if config_source.parent == backups else None
+    for name in (*originals, picker_name, *((DESKTOP_CONFIG,) if config_hash else ())):
         backup = backups / name
         if not backup.exists():
-            backup.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(bin_dir / name, backup)
+            _backup(bin_dir / name, backup)
     helpers = prefix / 'drive_c/powerbi-linux-setup'
     helpers.mkdir(exist_ok=True)
     for source in (runtime / 'helpers').iterdir():
@@ -253,8 +347,14 @@ def install(prefix, runtime, log):
         out = bin_dir / (picker_name + '.new')
         out.write_bytes(patched_picker)
         os.replace(out, bin_dir / picker_name)
+        if patched_config is not None:
+            out = bin_dir / (DESKTOP_CONFIG + '.new')
+            out.write_bytes(patched_config)
+            os.replace(out, bin_dir / DESKTOP_CONFIG)
     finally:
         key.unlink(missing_ok=True)
         windows_input.unlink(missing_ok=True)
+    # Only a configuration that names the manager is recorded: launch names it otherwise.
     return {name: digest(bin_dir/name) for name in (*originals, 'WinRTStubs.dll',
-                                                   'PowerBIDiagnostics.dll', 'PowerBICompositionManager.dll', NATIVE_DIALOG, CACHE_COMPAT, WINDOW_FRAME, picker_name)}
+                                                   'PowerBIDiagnostics.dll', 'PowerBICompositionManager.dll', NATIVE_DIALOG, CACHE_COMPAT, WINDOW_FRAME, picker_name,
+                                                   *((DESKTOP_CONFIG,) if config_hash else ()))}

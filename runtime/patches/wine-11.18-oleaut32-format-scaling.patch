@@ -1,0 +1,139 @@
+oleaut32: divide by 1000 for scaling commas in number formats
+
+VarTokenizeFormatString() treated every ',' in a number format as the
+thousands separator flag. A comma with no digit placeholder after it in the
+whole number part (immediately left of the decimal point, or at the end of
+the digits) scales the number by 1000 instead, so "$#,0,K" formats 4376023
+as "$4,376K". Wine returned "$4,376,023K". Analysis Services uses these
+functions for the DAX FORMAT function, so FORMAT(x, "#,0,K") in Power BI
+Desktop showed unscaled thousands.
+The tokenizer now counts scaling commas in the number header's divisor byte
+and VARIANT_FormatNumber() lowers the exponent by 3 for each. Commas after
+the decimal point keep the old behaviour; their Windows result was not
+measured.
+Rounding a number below one up to the first kept digit wrote the leading 1
+and then cleared it ("0" formatted 0.6 as "0"), which the scaling makes
+common (600 as "#,0,K" gave "0K"); the 1 is now written last.
+The "$4,376K" result is the one Desktop gives on Windows; the other new test
+results follow the documented VBA Format rules and were not measured on
+Windows.
+Wine-derived change: LGPL-2.1-or-later.
+
+--- a/dlls/oleaut32/varformat.c
++++ b/dlls/oleaut32/varformat.c
+@@ -192,7 +192,7 @@
+ {
+   BYTE   flags;      /* PERCENT, EXPONENT, THOUSANDS, BOOL */
+   BYTE   multiplier; /* Multiplier, 100 for percentages */
+-  BYTE   divisor;    /* Divisor, 1000 if '%%' was used */
++  BYTE   divisor;    /* Scaling commas: divide by 1000 for each */
+   BYTE   whole;      /* Number of digits before the decimal point */
+   BYTE   fractional; /* Number of digits after the decimal point */
+ } FMT_NUMBER_HEADER;
+@@ -443,6 +443,29 @@
+ #define FMT_STATE_SEEN_HOURS    0x4 /* See the hh specifier */
+ #define FMT_STATE_WROTE_MINUTES 0x8 /* Wrote minutes */
+ 
++/* Whether a '0' or '#' digit placeholder follows in the whole number part
++ * of this format section. Quoted and escaped literals are skipped. */
++static BOOL VARIANT_WholeDigitFollows(LPCOLESTR pFormat)
++{
++  while (*pFormat && *pFormat != ';' && *pFormat != '.')
++  {
++    if (*pFormat == '0' || *pFormat == '#')
++      return TRUE;
++    if (*pFormat == '"')
++    {
++      pFormat++;
++      while (*pFormat && *pFormat != '"')
++        pFormat++;
++      if (!*pFormat)
++        break;
++    }
++    else if (*pFormat == '\\' && pFormat[1])
++      pFormat++;
++    pFormat++;
++  }
++  return FALSE;
++}
++
+ /**********************************************************************
+  *              VarTokenizeFormatString [OLEAUT32.140]
+  *
+@@ -702,13 +725,24 @@
+     /* FIXME: %% => Divide by 1000 */
+     else if (*pFormat == ',' && header->type == FMT_TYPE_NUMBER)
+     {
+-      /* Number formats: Use the thousands separator
++      /* Number formats: Use the thousands separator. A ',' with no digit
++       * placeholder after it in the whole part (immediately left of the
++       * decimal point, or at the end of the digits) instead divides the
++       * number by 1000, so "#,0," formats 21000 as "21".
+        * Other formats: Literal
+        */
+-      num_header->flags |= FMT_FLAG_THOUSANDS;
++      if (!(fmt_state & FMT_STATE_WROTE_DECIMAL) && !VARIANT_WholeDigitFollows(pFormat + 1))
++      {
++        num_header->divisor++;
++        TRACE("scale by 1000\n");
++      }
++      else
++      {
++        num_header->flags |= FMT_FLAG_THOUSANDS;
++        TRACE("thousands sep\n");
++      }
+       pFormat++;
+       fmt_state &= ~FMT_STATE_OPEN_COPY;
+-      TRACE("thousands sep\n");
+     }
+     /* -----------
+      * Date tokens
+@@ -1220,6 +1254,11 @@
+         !(have_int == 1 && !exponent && rgbDig[0] == 0))
+       exponent += 2;
+ 
++    /* Each scaling comma divides the number by 1000 */
++    if (numHeader->divisor && !(numHeader->flags & FMT_FLAG_EXPONENT) &&
++        !(have_int == 1 && !exponent && rgbDig[0] == 0))
++      exponent -= 3 * numHeader->divisor;
++
+     if (numHeader->flags & FMT_FLAG_EXPONENT)
+     {
+       /* Exponent format: length of the integral number part is fixed and
+@@ -1266,17 +1305,19 @@
+         if (prgbDig < rgbDig)
+         {
+           /* We reached the first digit and that was also a 9 */
+-          rgbDig[0] = 1;
+           if (numHeader->flags & FMT_FLAG_EXPONENT)
+             exponent++;
+           else
+           {
++            /* With no digits kept (0.6 as "0") this is rgbDig[0] itself,
++             * so it is cleared before the leading 1 is written. */
+             rgbDig[have_int + need_frac] = 0;
+             if (exponent < 0)
+               exponent++;
+             else
+               have_int++;
+           }
++          rgbDig[0] = 1;
+         }
+         else
+           (*prgbDig)++;
+--- a/dlls/oleaut32/tests/varformat.c
++++ b/dlls/oleaut32/tests/varformat.c
+@@ -320,6 +320,13 @@
+   VARFMT(VT_I4,V_I4,1,"0,000,000,000",S_OK,"0,000,000,001");
+   VARFMT(VT_I4,V_I4,123456789,"#,#.#",S_OK,"123,456,789.");
+   VARFMT(VT_I4,V_I4,123456789,"###, ###, ###",S_OK,"123, 456, 789");
++  VARFMT(VT_I4,V_I4,21000,"#,0,K",S_OK,"21K");
++  VARFMT(VT_I4,V_I4,4376023,"#,0,K",S_OK,"4,376K");
++  VARFMT(VT_I4,V_I4,1234567,"0,",S_OK,"1235");
++  VARFMT(VT_I4,V_I4,1234567,"#,0,,\"M\"",S_OK,"1M");
++  VARFMT(VT_I4,V_I4,600,"0,",S_OK,"1");
++  VARFMT(VT_I4,V_I4,-4376023,"#,0,;(#,0,)",S_OK,"(4,376)");
++  VARFMT(VT_R8,V_R8,0.6,"0",S_OK,"1");
+   VARFMT(VT_I4,V_I4,1,"#;-#",S_OK,"1");
+   VARFMT(VT_I4,V_I4,-1,"#;-#",S_OK,"-1");
+   VARFMT(VT_R8,V_R8,1.23456789,"0#.0#0#0#0#0",S_OK,"01.234567890");

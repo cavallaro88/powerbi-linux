@@ -34,21 +34,23 @@
     "identical_html_resources": 5,
     "resource_offset_shift": 328,
     "html_intermediate_sha256": "072a113c12b0cfb170e8ab00eb3e05a58237d2581ac9c479e9e4c858667d7749",
-    "ui_patched_sha256": "3b0639cf526493de18e7d088561f0bfcbb7a528917b4c3e1424ec8637ac260c1",
+    "ui_options_stage_sha256": "3b0639cf526493de18e7d088561f0bfcbb7a528917b4c3e1424ec8637ac260c1",
+    "ui_patched_sha256": "426f5e8896f52b358139f7368d7be475bf5bcf0130e87631f029e1b906ef47d2",
+    "ui_patched_note": "Options stage plus the Data source settings scroll bar step added on 2026-11-18",
     "options_native_method_changed_bytes": 2,
     "options_native_method_change": "Low bytes of two ldstr user-string tokens",
     "email_resource_unchanged": true,
     "text_picker_document_unchanged": true,
     "offline_recipe_check": {
       "schema": 1,
-      "date": "2026-11-17T08:43:55.105204+00:00",
+      "date": "2026-11-17T23:27:55.264741+00:00",
       "powerbi_version": "2.159.1231.0",
       "scope": "Offline original-file/resource guards only; not native UI or release certification",
       "status": "passed",
       "files": {
         "Microsoft.Mashup.Client.UI.dll": {
           "original_sha256": "1b90774991b5a1951ec8ac712bf079388d4feef1ed49edeebaf908702400bbb9",
-          "patched_sha256": "3b0639cf526493de18e7d088561f0bfcbb7a528917b4c3e1424ec8637ac260c1",
+          "patched_sha256": "426f5e8896f52b358139f7368d7be475bf5bcf0130e87631f029e1b906ef47d2",
           "length_preserved": true
         },
         "Microsoft.PowerBI.Client.Windows.dll": {

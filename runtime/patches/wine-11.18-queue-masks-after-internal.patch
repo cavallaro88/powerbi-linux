@@ -1,0 +1,62 @@
+win32u: set the queue masks after handling internal hardware messages
+
+process_driver_events() stores the caller's wake and changed masks on the
+server and then handles pending internal hardware messages. A handler can send
+a message to another thread; wait_message_reply() then replaces the masks with
+QS_SMRESULT and nothing restores them. The caller goes on to wait on a queue
+that no posted or sent message can signal, until the next internal message
+happens to arrive.
+Power BI Desktop reaches this through the cursor resource patch. The server
+addresses WM_WINE_SETCURSOR to the top-level window, so Desktop's UI thread
+handles the cursors of the embedded browser. The Wayland driver asks for the
+cursor image, and a cursor owned by the browser process is resolved with a
+blocking send to its owner, 50 ms at most. A cursor that is not a shared
+system cursor (column resize, grab) is never cached and is sent every time.
+When the owner did not answer in time, the UI thread stopped answering: calls
+from the report page to the host stalled and Desktop appeared frozen until the
+pointer shape changed again. Whether a promptly answered lookup can do the
+same was not determined.
+Observed on 2026-11-18 for 6 min 48 s: the UI thread asleep in
+NtUserWaitMessage, server queue masks 0x8000/0x8000, wake bits 0x158, two sent
+and four posted messages pending. Moving the pointer onto a window of that
+thread woke it. tests/e2e/cursor-wake.py stops the owner for 400 ms during a
+lookup: the UI thread stopped answering in every round before this change and
+in none after it.
+Handle the internal messages first, then set the masks. Wine master had the
+same order as 11.18 on that date.
+Wine-derived change: LGPL-2.1-or-later.
+
+--- a/dlls/win32u/message.c
++++ b/dlls/win32u/message.c
+@@ -3349,6 +3349,16 @@
+ 
+     if (check_internal_bits( QS_DRIVER )) drained = user_driver->pProcessEvents( events_mask );
+ 
++    /* Process every pending internal hardware message before setting the queue
++     * masks: a handler can send a message to another thread, and waiting for
++     * that reply replaces the masks the caller is about to sleep on. */
++    if (check_internal_bits( QS_HARDWARE ))
++    {
++        struct peek_message_filter filter = {.internal = TRUE};
++        MSG msg;
++        peek_message( &msg, &filter );
++    }
++
+     if (drained || !check_queue_masks( wake_mask, changed_mask ))
+     {
+         SERVER_START_REQ( set_queue_mask )
+@@ -3361,14 +3371,6 @@
+         SERVER_END_REQ;
+     }
+ 
+-    /* process every pending internal hardware messages */
+-    if (check_internal_bits( QS_HARDWARE ))
+-    {
+-        struct peek_message_filter filter = {.internal = TRUE};
+-        MSG msg;
+-        peek_message( &msg, &filter );
+-    }
+-
+     return is_queue_signaled();
+ }
+ 

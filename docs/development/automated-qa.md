@@ -114,7 +114,10 @@ APPDOMAIN_MANAGER_TYPE=OptionsAuditManager
 PBI_OPTIONS_AUDIT_DIR=<Windows path to private bridge>
 ```
 
-The directory must exist and be private. Prepare only the generated
+A configuration file wins over these variables: if the copy carries a
+`PBIOptionsAudit.exe.config` taken from `PBIDesktop.exe.config`, change its
+`appDomainManagerAssembly` and `appDomainManagerType` values to
+`OptionsAuditManager` as well. The directory must exist and be private. Prepare only the generated
 `Synthetic.pbip` fixture, then open File → Options and settings → Options in that
 QA copy. The manager requires the exact synthetic main window and evaluates
 requests only in its Options WebBrowser. It is absent from production helper
@@ -176,6 +179,17 @@ own Wine-only prefix and pipes, lists `\\.\pipe\` through `FindFirstFile` and
 runtime built with the patch; 14 passed and 27 failed on 0.1.6-beta.1. See
 [named pipes](../reference/named-pipes.md). It is part of the components
 suite and needs no Desktop.
+
+## Modal frame regression, November 22
+
+`python3 tools/test-modal-frames.py --runtime /path/to/runtime` creates its own
+Wine-only prefix and a small disposable window with a browser-like host, runs
+the runtime's frame receiver and checks that a published frame reaches the host
+with the main window enabled, disabled, and disabled under an owned dialog.
+Three checks passed with the corrected receiver; one passed and two failed on
+0.1.7-local.8. See [Options](../reference/options-dialog.md). It is part of the
+components suite, needs no Desktop and, like the other component checks, needs
+a prefix on a Linux file system.
 
 ## Post-publish Store rating regression, October 18
 

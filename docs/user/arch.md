@@ -39,8 +39,12 @@ checkout of this repository:
 
 ```bash
 cd packaging/arch
-makepkg -si
+makepkg -sif
 ```
+
+The package version does not change with the checkout, so `-f` is needed: without
+it, makepkg installs a package it built earlier instead of building the current
+sources.
 
 `makepkg` runs the unit tests, and pacman resolves the Linux dependencies
 (`samba` supplies `ntlm_auth`; no Winbind daemon is needed). Installing the
@@ -96,8 +100,12 @@ Repair and runtime update work **in place**, without copying the complete prefix
 or retaining a rollback snapshot. Back up important files yourself. See the
 [maintenance policy](updates.md).
 
-After pulling new sources, rebuild and reinstall with `makepkg -si` again.
-Updating the Linux package does not reinstall or upgrade Desktop automatically.
+After pulling new sources, rebuild and reinstall with `makepkg -sif` again, then
+close Desktop and run `pbi-linux repair`. Updating the Linux package does not
+reinstall or upgrade Desktop automatically. With a runtime you built yourself,
+use `pbi-linux update --runtime <archive> --runtime-sha256 <sha>` for a new
+build; a plain `pbi-linux update` refuses to replace it with the published
+runtime unless you pass `--published`.
 
 ```bash
 sudo pacman -R powerbi-linux

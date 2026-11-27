@@ -18,7 +18,7 @@ report changes. An already displayed icon can remain until Desktop exits. Check
 the next normal launch for recurrence; registry/application-setting verification
 alone does not certify that a current icon has disappeared.
 
-The RPM updates the community launcher and recipes. `pbi-linux update` activates the published runtime; `--runtime` with `--runtime-sha256` activates a local archive instead. It is not a general Desktop updater. A newly released Microsoft installer must be validated with matching patches before the project can offer that Desktop version. There is currently no automatic validated-release notification or automatic Desktop upgrade channel.
+The RPM updates the community launcher and recipes. `pbi-linux update` activates the published runtime; `--runtime` with `--runtime-sha256` activates a local archive instead. Without an archive, update refuses to replace an installed runtime that is not an older release than the published one (a newer version, or a local build, which can carry corrections the published runtime lacks); `pbi-linux update --published` replaces it anyway, and `pbi-linux repair` keeps it. It is not a general Desktop updater. A newly released Microsoft installer must be validated with matching patches before the project can offer that Desktop version. There is currently no automatic validated-release notification or automatic Desktop upgrade channel.
 
 Current CLI maintenance works **in place**, without a full-prefix copy or retained
 snapshot. It warns before modification and offers no automatic rollback. Back up

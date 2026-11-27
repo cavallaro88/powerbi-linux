@@ -23,6 +23,8 @@ class NativeDialogProvisionTests(unittest.TestCase):
         self.picker = self.bin / patches.text_pickers.DOCUMENT
         self.picker.parent.mkdir(parents=True)
         self.picker.write_bytes(b'synthetic picker document')
+        self.config = b'<configuration>\r\n  <runtime>\r\n  </runtime>\r\n</configuration>\r\n'
+        (self.bin / patches.DESKTOP_CONFIG).write_bytes(self.config)
         self.runtime = self.root / 'runtime'
         (self.runtime / 'helpers').mkdir(parents=True)
         self.helpers = self.prefix / 'drive_c/powerbi-linux-setup'
@@ -55,6 +57,7 @@ class NativeDialogProvisionTests(unittest.TestCase):
         self.assertFalse((self.bin / patches.NATIVE_DIALOG).exists())
         for name, data in self.originals.items():
             self.assertEqual((self.prefix / 'powerbi-linux-originals' / name).read_bytes(), data)
+        self.assertEqual((self.bin / patches.DESKTOP_CONFIG).read_bytes(), self.config)
 
     def test_failed_native_compile_preserves_application_files_and_removes_key(self):
         self.run_until(lambda command: 'PowerBISaveDialog.cs' in command)

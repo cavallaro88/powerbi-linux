@@ -207,8 +207,13 @@ job, and updating checksums alone would not have been a port.
   the low bytes of two user-string (`ldstr`) tokens, because the `#US` heap
   moved. Mapping those two tokens back makes the original
   region hash to the 2.159.883.0 guard, which shows the code is otherwise the
-  same. The final assembly hash is
+  same. The assembly hash after this stage is
   `3b0639cf526493de18e7d088561f0bfcbb7a528917b4c3e1424ec8637ac260c1`.
+- One further step exists for this build only: it stops the body of Data source
+  settings from scrolling (see
+  [legacy HTML](legacy-html.md#scroll-bars-inside-data-source-settings-2026-11-18)).
+  The final assembly hash is
+  `426f5e8896f52b358139f7368d7be475bf5bcf0130e87631f029e1b906ef47d2`.
 - The email resource and the Quill report-view document are byte-identical;
   their existing guarded transformations passed against the new assemblies.
 - The Analysis Services workaround applies unchanged, since `msmdsrv.exe` is

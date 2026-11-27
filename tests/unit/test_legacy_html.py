@@ -87,6 +87,61 @@ class LegacyHtmlTests(unittest.TestCase):
             with self.assertRaisesRegex(common.Error, 'Legacy HTML registration failed'):
                 legacy_html.register(self.prefix, Path('/runtime'), self.prefix / 'log')
 
+    def scroll_fixture(self, padding):
+        """A stand-in assembly: the source list resource at its 2.159.1231.0 location."""
+        import hashlib
+        start = legacy_html._SOURCES_OFFSET + 328
+        resource = (b'function initialize() {\r\n' + legacy_html._SOURCES_SHOW + b'}\r\n').ljust(
+            legacy_html._SOURCES_SIZE - padding, b'x') + b' ' * padding
+        source = b'A' * start + resource + b'Z' * 64
+        expected = resource.rstrip(b' ').replace(
+            legacy_html._SOURCES_SHOW, legacy_html._SOURCES_SCROLL_HOOK + legacy_html._SOURCES_SHOW
+        ).ljust(legacy_html._SOURCES_SIZE, b' ')
+        output = source[:start] + expected + source[start + legacy_html._SOURCES_SIZE:]
+        sha = lambda data: hashlib.sha256(data).hexdigest()
+        guards = patch.multiple(
+            legacy_html, _UI_2159_1231_OPTIONS_SHA256=sha(source), _SOURCES_PATCHED=sha(resource),
+            _SOURCES_SCROLL_PATCHED=sha(expected), UI_2159_1231_PATCHED_SHA256=sha(output))
+        return source, output, start, guards
+
+    def test_scroll_bar_step_changes_only_the_source_list_resource(self):
+        source, output, start, guards = self.scroll_fixture(len(legacy_html._SOURCES_SCROLL_HOOK))
+        with guards:
+            result = legacy_html._patch_sources_scroll(source)
+            self.assertEqual(legacy_html._patch_sources_scroll(result), result)
+        self.assertEqual(result, output)
+        self.assertEqual(len(result), len(source))
+        self.assertEqual(result[:start], source[:start])
+        self.assertEqual(result[start + legacy_html._SOURCES_SIZE:], source[start + legacy_html._SOURCES_SIZE:])
+        resource = result[start:start + legacy_html._SOURCES_SIZE]
+        self.assertLess(resource.index(legacy_html._SOURCES_SCROLL_HOOK), resource.index(legacy_html._SOURCES_SHOW))
+
+    def test_scroll_bar_step_leaves_other_assemblies_unchanged(self):
+        from pbi_linux import options_layout
+        self.assertEqual(legacy_html._patch_sources_scroll(b'another build'), b'another build')
+        # Only 2.159.1231.0 and 2.160.1151.0 have the step; the older builds end at the Options recipe.
+        self.assertEqual(legacy_html.patched_hash('2.158.1177.0'), options_layout.PATCHED['2.158.1177.0'])
+        self.assertEqual(legacy_html.patched_hash('2.159.883.0'), options_layout.PATCHED['2.159.883.0'])
+        self.assertNotEqual(legacy_html.patched_hash('2.159.1231.0'), options_layout.PATCHED['2.159.1231.0'])
+        self.assertNotEqual(legacy_html.patched_hash('2.160.1151.0'), options_layout.PATCHED['2.160.1151.0'])
+
+    def test_scroll_bar_step_refuses_a_resource_without_room(self):
+        source, _, _, guards = self.scroll_fixture(len(legacy_html._SOURCES_SCROLL_HOOK) - 1)
+        with guards, self.assertRaisesRegex(common.Error, 'exceeds its resource'):
+            legacy_html._patch_sources_scroll(source)
+
+    def test_scroll_bar_step_refuses_a_changed_resource(self):
+        source, _, _, guards = self.scroll_fixture(len(legacy_html._SOURCES_SCROLL_HOOK))
+        with guards, patch.object(legacy_html, '_SOURCES_PATCHED', '0' * 64):
+            with self.assertRaisesRegex(common.Error, 'Unexpected data source list resource'):
+                legacy_html._patch_sources_scroll(source)
+
+    def test_scroll_bar_step_refuses_an_unexpected_output(self):
+        source, _, _, guards = self.scroll_fixture(len(legacy_html._SOURCES_SCROLL_HOOK))
+        with guards, patch.object(legacy_html, 'UI_2159_1231_PATCHED_SHA256', '0' * 64):
+            with self.assertRaisesRegex(common.Error, 'Unexpected data source scroll bar assembly output'):
+                legacy_html._patch_sources_scroll(source)
+
 
 if __name__ == '__main__':
     unittest.main()

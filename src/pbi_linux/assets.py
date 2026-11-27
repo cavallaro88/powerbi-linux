@@ -2,6 +2,7 @@
 """Verified downloads and constrained runtime extraction."""
 import os
 import re
+import shutil
 from pathlib import Path, PurePosixPath
 import http.client
 import tarfile
@@ -10,7 +11,7 @@ import sys
 import time
 import urllib.request
 import urllib.error
-from .common import Error, check_digest, read_json, digest
+from .common import Error, check_digest, read_json
 
 
 def download(url, expected, cache):
@@ -21,8 +22,13 @@ def download(url, expected, cache):
     cache.mkdir(parents=True, exist_ok=True, mode=0o700)
     target = cache / expected
     if target.exists():
-        check_digest(target, expected)
-        return target
+        try:
+            check_digest(target, expected)
+            return target
+        except Error:
+            # A damaged cached copy (a copy cut short, a failing disk) would
+            # otherwise fail every later run; fetch the verified file again.
+            target.unlink()
     fd, name = tempfile.mkstemp(dir=cache, prefix='.download-')
     try:
         with os.fdopen(fd, 'wb') as out, urllib.request.urlopen(url, timeout=60) as response:
@@ -47,6 +53,21 @@ def download(url, expected, cache):
         os.replace(name, target)
     except (urllib.error.URLError, TimeoutError, ConnectionError, http.client.HTTPException) as exc:
         raise Error('Download failed; check your connection and rerun setup. Verified downloads are reused') from exc
+    finally:
+        Path(name).unlink(missing_ok=True)
+    return target
+
+
+def cache_copy(source, expected, cache):
+    """Place a verified local file in the download cache under its checksum."""
+    cache.mkdir(parents=True, exist_ok=True, mode=0o700)
+    target = cache / expected
+    fd, name = tempfile.mkstemp(dir=cache, prefix='.copy-')
+    os.close(fd)
+    try:
+        shutil.copyfile(source, name)
+        check_digest(name, expected)
+        os.replace(name, target)
     finally:
         Path(name).unlink(missing_ok=True)
     return target

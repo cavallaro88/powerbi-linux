@@ -55,8 +55,16 @@ def active(paths):
 
 
 def idle(paths):
+    message = ('Close all managed Power BI windows before maintenance. If Power BI is stuck, '
+               'run pbi-linux stop to force it to quit (unsaved changes are lost)')
     if busy(paths):
-        raise Error('Close all managed Power BI windows before maintenance')
+        raise Error(message)
+    # A session that is still closing stops its Wine server last; maintenance
+    # started in those seconds would lose its own Wine processes.
+    from .launch import wait_for_closing_session
+    wait_for_closing_session(paths)
+    if busy(paths):
+        raise Error(message)
 
 
 def install_runtime(paths, archive, checksum):
@@ -94,6 +102,13 @@ def configure(prefix, runtime, paths, log):
     registry(wine, env, r'HKCU\Software\Wine\DllOverrides', 'winemenubuilder.exe', 'REG_SZ', '', log)
     registry(wine, env, r'HKCU\Software\Wine\Drivers', 'Graphics', 'REG_SZ', 'wayland', log)
     registry(wine, env, r'HKCU\Software\Wine\AppDefaults\msedgewebview2.exe', 'Version', 'REG_SZ', 'win7', log)
+    # Links Desktop opens start the browser outside the session; see open-url.
+    # winebrowser splits this list at commas, falls back to the next entry and
+    # parses each one as a Windows command line, so a path with spaces is quoted.
+    opener = Path(__file__).resolve().parent / 'open-url'
+    if not any(c in str(opener) for c in ',"'):
+        registry(wine, env, r'HKCU\Software\Wine\WineBrowser', 'Browsers', 'REG_SZ',
+                 '"' + str(opener) + '",xdg-open', log)
     registry(wine, env, r'HKCU\Software\Microsoft\Avalon.Graphics', 'DisableHWAcceleration', 'REG_DWORD', '1', log)
     # Desktop's documented policy: validated releases are managed by this project.
     registry(wine, env, r'HKLM\Software\Microsoft\Microsoft Power BI Desktop',
@@ -244,7 +259,7 @@ def setup(paths, args):
             downloads.mkdir(parents=True,exist_ok=True)
             cached=downloads/browser['sha256']
             if not cached.exists():
-                run(['cp','--reflink=auto',payload,cached],timeout=120)
+                assets.cache_copy(payload,browser['sha256'],downloads)
             print('Preparing WebView2, fonts and compatibility fixes...', flush=True)
             hashes = configure(prefix, runtime, paths, log)
             stop_server(runtime, env, log)
@@ -278,6 +293,7 @@ def maintain(paths, args):
             require_recipe(old, runtime)
             runtime_sha = args.runtime_sha256
         prefix = Path(old['prefix'])
+        settings(paths)  # A broken settings file fails here, before anything changes.
         print('WARNING: ' + args.command + ' modifies this installation in place; '
               'no snapshot or automatic rollback is available. Back up important files yourself. '
               'An interrupted or failed operation may require repair or reinstallation.', flush=True)

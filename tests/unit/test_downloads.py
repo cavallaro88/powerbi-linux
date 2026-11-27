@@ -38,6 +38,26 @@ class DownloadTests(unittest.TestCase):
         request.assert_called_once()
         self.assertEqual(list(self.cache.iterdir()), [target])
 
+    def test_damaged_cached_copy_is_fetched_again(self):
+        self.cache.mkdir()
+        (self.cache / self.sha).write_bytes(self.payload[:7])
+        with patch.object(assets.urllib.request, 'urlopen', return_value=self.response()) as request:
+            target = assets.download(self.url, self.sha, self.cache)
+        request.assert_called_once()
+        self.assertEqual(target.read_bytes(), self.payload)
+        self.assertEqual(list(self.cache.iterdir()), [target])
+
+    def test_local_copy_enters_the_cache_only_when_verified(self):
+        source = self.cache.parent / 'offline.cab'
+        source.write_bytes(b'wrong')
+        with self.assertRaisesRegex(common.Error, 'Checksum'):
+            assets.cache_copy(source, self.sha, self.cache)
+        self.assertEqual(list(self.cache.iterdir()), [])
+        source.write_bytes(self.payload)
+        target = assets.cache_copy(source, self.sha, self.cache)
+        self.assertEqual(target, self.cache / self.sha)
+        self.assertEqual(list(self.cache.iterdir()), [target])
+
     def test_wrong_payload_removes_partial_file(self):
         with patch.object(assets.urllib.request, 'urlopen', return_value=self.response(b'wrong')):
             with self.assertRaisesRegex(common.Error, 'Checksum'):
@@ -80,7 +100,8 @@ class DownloadTests(unittest.TestCase):
     def test_corrupted_cached_content_is_not_trusted(self):
         self.cache.mkdir()
         (self.cache / self.sha).write_bytes(b'tampered')
-        with patch.object(assets.urllib.request, 'urlopen') as request:
+        # The damaged copy is discarded and only a verified download replaces it.
+        with patch.object(assets.urllib.request, 'urlopen', return_value=self.response(b'still wrong')):
             with self.assertRaisesRegex(common.Error, 'Checksum'):
                 assets.download(self.url, self.sha, self.cache)
-        request.assert_not_called()
+        self.assertEqual(list(self.cache.iterdir()), [])

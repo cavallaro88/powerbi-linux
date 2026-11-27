@@ -1,0 +1,65 @@
+winewayland: ignore a maximized state the compositor gives a fixed-size dialog
+
+Hyprland sets the maximized state on every toplevel when it is mapped, so that
+clients draw no decorations (XDGShell.cpp: "this forces apps to not draw CSD"),
+and adds all four tiled states when the toplevel is created. A floating dialog
+receives both. The driver mirrors the maximized state into WS_MAXIMIZE and
+clips the surface to the configured size.
+Power BI Desktop shows its legacy HTML dialogs (the unexpected error report,
+Data source settings and others of the same family) as a borderless owned form
+that starts at 2 x 2 pixels and is resized once the page has measured itself.
+With WS_MAXIMIZE set, WinForms treats the form as maximized and only records
+the requested size: no SetWindowPos follows. The dialog stayed a 2 x 2 window
+without visible content while its owner was disabled, which looked like a
+frozen application with nothing to dismiss.
+An owned window without a sizing frame is announced to the compositor with
+equal minimum and maximum sizes, so the compositor cannot have maximized it.
+Drop the state for such a window unless the window itself is maximized.
+Windows with a sizing frame and windows without an owner are unchanged.
+The style and owner are read before the window data lock is taken: win32u
+calls the driver with its own lock held, and the reverse order deadlocked
+during startup in a first version of this change.
+Applies after wine-11.18-wayland-normal-resize.patch and
+wine-11.18-wayland-parent.patch. Wine master had the same code on 2026-11-18.
+Wine-derived change: LGPL-2.1-or-later.
+
+--- a/dlls/winewayland.drv/window.c
++++ b/dlls/winewayland.drv/window.c
+@@ -542,6 +542,13 @@
+     BOOL restoring_from_minimize = FALSE;
+     struct wayland_win_data *data;
+     RECT rect, surface_rect;
++    BOOL fixed_dialog;
++
++    /* Read the window before taking the window data lock: win32u calls the
++     * driver with its own lock held, so the order must not be reversed. */
++    style = NtUserGetWindowLongW(hwnd, GWL_STYLE);
++    fixed_dialog = !(style & (WS_THICKFRAME | WS_MAXIMIZE)) &&
++                   NtUserGetWindowRelative(hwnd, GW_OWNER);
+ 
+     if (!(data = wayland_win_data_get(hwnd))) return;
+     if (!(surface = data->wayland_surface))
+@@ -567,6 +574,23 @@
+     surface->processing = surface->requested;
+     memset(&surface->requested, 0, sizeof(surface->requested));
+ 
++    /* A compositor may report the maximized state for a window it did not
++     * maximize: Hyprland sets it on every mapped toplevel so that clients
++     * draw no decorations, a floating dialog of fixed size included. Mirrored
++     * into WS_MAXIMIZE, it makes an application ignore its own later resize
++     * (a WinForms form only records the new size while it is maximized), and
++     * the surface is then clipped to the size it had when it was mapped.
++     * An owned window without a sizing frame is announced to the compositor
++     * with equal minimum and maximum sizes and cannot be maximized by it, so
++     * keep the state only if the window itself is maximized. */
++    if (fixed_dialog &&
++        (surface->processing.state & WAYLAND_SURFACE_CONFIG_STATE_MAXIMIZED) &&
++        !(surface->window.state & WAYLAND_SURFACE_CONFIG_STATE_MAXIMIZED))
++    {
++        TRACE("hwnd=%p ignoring maximized state for a fixed-size dialog\n", hwnd);
++        surface->processing.state &= ~WAYLAND_SURFACE_CONFIG_STATE_MAXIMIZED;
++    }
++
+     state = surface->processing.state;
+     /* A window manager may resize a normal window without marking it tiled
+      * or interactively resizing (e.g. PaperWM move_resize_frame). Once the

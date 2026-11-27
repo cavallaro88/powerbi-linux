@@ -38,6 +38,7 @@ def main():
     try:
         # Test the actual Python startup/compiler path, including native Wayland.
         bridge.start()
+        bridge.ready.wait(30)  # The worker compiles the helper and makes the first write.
         if bridge.thread is None or bridge.current is None:
             raise RuntimeError('GNOME preference or theme helper unavailable; see session.log')
         probe = output / 'ThemeSyncProbe.exe'

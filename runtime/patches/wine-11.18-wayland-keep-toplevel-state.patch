@@ -1,0 +1,105 @@
+winewayland: keep the toplevel state when a configure has no toplevel event
+
+An xdg_surface.configure ends a configure sequence. The sequence need not
+contain an xdg_toplevel.configure: the size and states of the toplevel then
+stay as they were. The driver cleared its pending toplevel state after every
+sequence, so such a sequence was read as "no size, no states", which for a
+maximized window is a request to leave the maximized state.
+Hyprland 0.56.2 sends one whenever a window becomes hidden or visible again:
+it wants to change the suspended state, which exists from xdg_wm_base
+version 6, and for an older client it only schedules the surface configure
+(XDGShell.cpp, setSuspeneded). The driver binds version 2. Every switch away
+from the workspace of a Wine window therefore cleared WS_MAXIMIZE, and a
+WinForms form answered by going back to its restored size inside a tile that
+kept its size. The next toplevel configure, usually sent when the window is
+focused again, put it right; a window shown again without the focus stayed
+at the wrong size.
+Note whether a toplevel event arrived in the sequence. Without one, only the
+serial is new: hand it to a configure that is still to be acknowledged, or
+acknowledge it at once. The last size is deliberately not applied again; a
+window that has resized itself since would be put back. A configure still
+being processed that the window cannot satisfy stays unacknowledged until
+the next toplevel configure, as it did before such a sequence arrived; before
+this change that sequence acknowledged it only by leaving the maximized
+state. The immediate acknowledgement commits from the event thread with the
+window data lock held, the lock under which every attach and commit of the
+toplevel surface happens, so it cannot commit half-prepared state.
+Applies after wine-11.18-wayland-parent.patch. Wine master had the same code
+on 2026-11-18.
+Wine-derived change: LGPL-2.1-or-later.
+
+--- a/dlls/winewayland.drv/waylanddrv.h
++++ b/dlls/winewayland.drv/waylanddrv.h
+@@ -302,6 +302,8 @@
+     struct wp_alpha_modifier_surface_v1 *wp_alpha_modifier_surface_v1;
+ 
+     struct wayland_surface_config pending, requested, processing, current;
++    /* Whether an xdg_toplevel.configure arrived in the current sequence. */
++    BOOL pending_toplevel;
+     BOOL resizing;
+     struct wayland_window_config window;
+     int content_width, content_height;
+--- a/dlls/winewayland.drv/wayland_surface.c
++++ b/dlls/winewayland.drv/wayland_surface.c
+@@ -51,14 +51,37 @@
+     if ((surface = data->wayland_surface) && wayland_surface_is_toplevel(surface) &&
+         surface->xdg_surface == xdg_surface)
+     {
+-        /* If we have a previously requested config, we have already sent a
+-         * WM_WAYLAND_CONFIGURE which hasn't been handled yet. In that case,
+-         * avoid sending another message to reduce message queue traffic. */
+-        should_post = surface->requested.serial == 0;
+-        initial_configure = surface->current.serial == 0;
+-        surface->pending.serial = serial;
+-        surface->requested = surface->pending;
+-        memset(&surface->pending, 0, sizeof(surface->pending));
++        if (!surface->pending_toplevel &&
++            (surface->requested.serial || surface->processing.serial || surface->current.serial))
++        {
++            /* A configure sequence without an xdg_toplevel.configure leaves
++             * the size and states of the toplevel as they were. A compositor
++             * may send one for a state this client does not know, for example
++             * when the window becomes hidden. Reading it as "no size, no
++             * states" would end the maximized state of the window. Only the
++             * serial is new: give it to a configure that is still to be
++             * acknowledged, or acknowledge it. */
++            if (surface->requested.serial) surface->requested.serial = serial;
++            else if (surface->processing.serial) surface->processing.serial = serial;
++            else
++            {
++                surface->current.serial = serial;
++                xdg_surface_ack_configure(surface->xdg_surface, serial);
++                wl_surface_commit(surface->wl_surface);
++            }
++        }
++        else
++        {
++            /* If we have a previously requested config, we have already sent a
++             * WM_WAYLAND_CONFIGURE which hasn't been handled yet. In that case,
++             * avoid sending another message to reduce message queue traffic. */
++            should_post = surface->requested.serial == 0;
++            initial_configure = surface->current.serial == 0;
++            surface->pending.serial = serial;
++            surface->requested = surface->pending;
++            memset(&surface->pending, 0, sizeof(surface->pending));
++        }
++        surface->pending_toplevel = FALSE;
+     }
+ 
+     wayland_win_data_release(data);
+@@ -121,6 +144,7 @@
+     {
+         SetRect(&surface->pending.rect, 0, 0, width, height);
+         surface->pending.state = config_state;
++        surface->pending_toplevel = TRUE;
+     }
+ 
+     wayland_win_data_release(data);
+@@ -469,6 +493,7 @@
+     }
+ 
+     memset(&surface->pending, 0, sizeof(surface->pending));
++    surface->pending_toplevel = FALSE;
+     memset(&surface->requested, 0, sizeof(surface->requested));
+     memset(&surface->processing, 0, sizeof(surface->processing));
+     memset(&surface->current, 0, sizeof(surface->current));

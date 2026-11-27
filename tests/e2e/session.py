@@ -140,6 +140,9 @@ def main():
                         document.querySelectorAll('button.close-btn[data-testid=close-btn],button.glyphicon.pbi-glyph-close.glyph-mini').forEach(e=>{if(e.getBoundingClientRect().height>0)e.click()});
                         const item=document.querySelector('button[data-unique-id=Ribbon-refreshSchemaAndData]');
                         if(item&&item.getBoundingClientRect().height>0&&item.getAttribute('aria-disabled')!=='true'){item.click();return 'requested'}
+                        // A newer ribbon renders the split as two plain buttons; the first one refreshes.
+                        const primary=document.querySelector('button[data-unique-id=Ribbon-refreshQueriesSplit]');
+                        if(primary&&primary.getBoundingClientRect().height>0&&!primary.disabled&&primary.getAttribute('aria-disabled')!=='true'){primary.click();return 'requested'}
                         const b=document.querySelector('[data-unique-id=Ribbon-refreshQueriesSplit][role=button] button.splitMenuButton');
                         if(!b||b.disabled||b.getAttribute('aria-disabled')==='true')return 'waiting';
                         const r=b.getBoundingClientRect(),t=document.elementFromPoint(r.x+r.width/2,r.y+r.height/2);

@@ -23,8 +23,12 @@ UI_2160_ORIGINAL_SHA256 = '8a33233c5c17414210a0a1da096014923c0d46aa48d4ae93a4830
 _UI_2160_BASE_SHA256 = '9196e9d2c56a0ab88ff898d52604558cdc7b468a5407b18652c76dc158932cd6'
 UI_PATCHED_SHA256 = options_layout.PATCHED['2.158.1177.0']
 UI_2159_PATCHED_SHA256 = options_layout.PATCHED['2.159.883.0']
-UI_2159_1231_PATCHED_SHA256 = options_layout.PATCHED['2.159.1231.0']
-UI_2160_PATCHED_SHA256 = options_layout.PATCHED['2.160.1151.0']
+# 2.159.1231.0 and 2.160.1151.0 have one more step after the Options recipe:
+# see _patch_sources_scroll.
+_UI_2159_1231_OPTIONS_SHA256 = options_layout.PATCHED['2.159.1231.0']
+UI_2159_1231_PATCHED_SHA256 = '426f5e8896f52b358139f7368d7be475bf5bcf0130e87631f029e1b906ef47d2'
+_UI_2160_OPTIONS_SHA256 = options_layout.PATCHED['2.160.1151.0']
+UI_2160_PATCHED_SHA256 = 'c7d7c812a97e36b31ed7c262b0c49eae8443a3d19c07002d06af1df46b8811ff'
 # Exact originals: unchanged resources shifted from the 2.158 layout.
 _SHIFTED_UI_BUILDS = {
     UI_2159_ORIGINAL_SHA256: (256, _UI_2159_BASE_SHA256),
@@ -84,6 +88,13 @@ _SOURCES_COMMENTS = (
     b'        // This method allows to exclude _tabbingManager and _selectionEventHandler from the serialization\r\n',
     b'            // Reset the selected count, since view model changes can modify the count without going through knockout \r\n',
 )
+# Data source settings: Wine's HTML engine lays the dialog body out five pixels
+# shorter than its content. The body then shows a vertical scroll bar, which
+# narrows it below its fixed-width children and adds a horizontal one; the
+# sort button is clipped. The source list scrolls by itself and the body is
+# sized to its content, so it never needs to scroll.
+_SOURCES_SCROLL_HOOK = b'        $("#dialogContent").css("overflow","hidden");\r\n'
+_SOURCES_SCROLL_PATCHED = '327b33925c04049b290850bc01d819f1665eff19860d35410187b2b3619caa01'
 _PERMISSIONS_OFFSET, _PERMISSIONS_SIZE = 8973278, 4052
 _PERMISSIONS_ORIGINAL = 'f282a621fec318a19a9a5f3637b79ce5f7d85d1125f58c4eb94bcd3f5b441b8f'
 _PERMISSIONS_PATCHED = '31ddd388983611243e143956c1dd3ff08ddf78a0c408062e33f8e7d720b8360e'
@@ -284,11 +295,49 @@ def _shift_resources(source, shift):
 
 
 
+def _scroll_builds():
+    # The Options recipe's output of each build with this step: (resource shift, complete output).
+    return {_UI_2159_1231_OPTIONS_SHA256: (_SHIFTED_UI_BUILDS[UI_2159_1231_ORIGINAL_SHA256][0],
+                                           UI_2159_1231_PATCHED_SHA256),
+            _UI_2160_OPTIONS_SHA256: (_SHIFTED_UI_BUILDS[UI_2160_ORIGINAL_SHA256][0], UI_2160_PATCHED_SHA256)}
+
+
+def _patch_sources_scroll(source):
+    """Stop the Data source settings body from scrolling, in 2.159.1231.0 and 2.160.1151.0.
+
+    The complete output was verified for those builds. 2.158.1177.0 and
+    2.159.883.0 were not available for it and keep the output of the Options recipe.
+    """
+    builds = _scroll_builds()
+    sha = hashlib.sha256(source).hexdigest()
+    if sha not in builds:
+        return source
+    shift, expected = builds[sha]
+    start = _SOURCES_OFFSET + shift
+    resource = source[start:start + _SOURCES_SIZE]
+    if (hashlib.sha256(resource).hexdigest() != _SOURCES_PATCHED or
+            resource.count(_SOURCES_SHOW) != 1):
+        raise Error('Unexpected data source list resource for the scroll bar patch')
+    # The hook takes the place of padding left by the source list recipe.
+    updated = resource.rstrip(b' ').replace(_SOURCES_SHOW, _SOURCES_SCROLL_HOOK + _SOURCES_SHOW)
+    if len(updated) > _SOURCES_SIZE:
+        raise Error('Data source scroll bar hook exceeds its resource')
+    updated = updated.ljust(_SOURCES_SIZE, b' ')
+    if hashlib.sha256(updated).hexdigest() != _SOURCES_SCROLL_PATCHED:
+        raise Error('Unexpected data source scroll bar resource output')
+    output = source[:start] + updated + source[start + _SOURCES_SIZE:]
+    if len(output) != len(source) or hashlib.sha256(output).hexdigest() != expected:
+        raise Error('Unexpected data source scroll bar assembly output')
+    return output
+
+
 def _complete(source, recipe):
     sha = hashlib.sha256(source).hexdigest()
+    if sha in (UI_2159_1231_PATCHED_SHA256, UI_2160_PATCHED_SHA256):
+        return source
     if sha in options_layout.BASELINES or sha in options_layout.PATCHED.values():
-        return options_layout.patch(source)
-    return options_layout.patch(recipe(source))
+        return _patch_sources_scroll(options_layout.patch(source))
+    return _patch_sources_scroll(options_layout.patch(recipe(source)))
 
 
 def patch_ui(source):
@@ -298,7 +347,8 @@ def patch_ui(source):
 def patch_ui_2159(source):
     if hashlib.sha256(source).hexdigest() not in (
             UI_2159_ORIGINAL_SHA256, _UI_2159_BASE_SHA256, UI_2159_PATCHED_SHA256,
-            UI_2159_1231_ORIGINAL_SHA256, _UI_2159_1231_BASE_SHA256, UI_2159_1231_PATCHED_SHA256):
+            UI_2159_1231_ORIGINAL_SHA256, _UI_2159_1231_BASE_SHA256, _UI_2159_1231_OPTIONS_SHA256,
+            UI_2159_1231_PATCHED_SHA256):
         raise Error('Unsupported 2.159 legacy HTML assembly; no patch produced')
     return _complete(source, _patch_shifted_ui_base)
 

@@ -122,11 +122,17 @@ class VersionedRecipeTests(unittest.TestCase):
             document = app / patches.text_pickers.DOCUMENT
             document.parent.mkdir(parents=True)
             document.write_bytes(b'synthetic editor')
+            (app / patches.DESKTOP_CONFIG).write_bytes(b'synthetic config')
             (runtime / 'helpers').mkdir(parents=True)
             (runtime / 'helpers/WinRTStubs.cs').write_text('obsolete runtime shim')
             with (patch.object(patches, 'ORIGINALS_2160', originals),
+                  patch.object(patches, 'CONFIG_ORIGINALS', {'2.160.1151.0': common.digest(app / patches.DESKTOP_CONFIG)}),
+                  patch.object(patches, 'patch_config', return_value=b'config'),
                   patch.object(patches.legacy_html, 'patch_ui', return_value=b'ui'),
+                  patch.object(patches.dialog_serializers, 'patch_ui', side_effect=lambda data: data),
+                  patch.object(patches.options_show, 'patch_ui', side_effect=lambda data: data),
                   patch.object(patches.signin, 'patch_windows', return_value=b'desktop'),
+                  patch.object(patches.autorecovery, 'patch_windows', side_effect=lambda data: data),
                   patch.object(patches.text_pickers, 'patch_document', return_value=b'editor'),
                   patch.object(patches.tooltips, 'patch_document', return_value=b'tooltips'),
                   patch.object(patches, 'run', side_effect=RuntimeError('stop before invoking Wine'))):

@@ -18,6 +18,8 @@ Requires:       xdg-utils
 Requires:       zenity
 Requires:       cabextract
 Requires:       fontconfig
+# Symbol fallback for Geometric Shapes and the other Segoe UI Symbol blocks.
+Requires:       font(notosanssymbols2)
 Requires:       freetype
 Requires:       vulkan-loader
 Requires:       libxkbcommon
@@ -56,6 +58,7 @@ install -m 0644 packaging/powerbi-linux.svg %{buildroot}%{_datadir}/icons/hicolo
 find %{buildroot} -type d -name __pycache__ -prune -exec rm -rf {} +
 
 %files
+%defattr(-,root,root,0755)
 %license LICENSE LICENSES/
 %doc README.md docs/
 %{_bindir}/pbi-linux

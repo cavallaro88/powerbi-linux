@@ -281,3 +281,77 @@ class GuidedSetupTests(unittest.TestCase):
         with self.assertRaisesRegex(common.Error, 'Checksum'):
             onboarding.update_inputs(self.paths, self.update_args(
                 '--runtime', str(self.payload), '--runtime-sha256', 'a' * 64))
+
+    def install(self, version, sha):
+        runtime = self.root / 'runtimes' / sha
+        runtime.mkdir(parents=True, exist_ok=True)
+        (runtime / 'runtime.json').write_text(json.dumps({'version': version}))
+        self.paths.data.mkdir(parents=True, exist_ok=True)
+        self.paths.active.write_text(json.dumps({'runtime': str(runtime), 'runtime_sha256': sha}))
+
+    def test_update_does_not_replace_a_newer_or_local_runtime_unasked(self):
+        # The published runtime here is 1.0.0. A local build can carry corrections
+        # the published one lacks, and a default local build even reuses its label.
+        # 'local' also sorts below published pre-releases (0.1.7-local.12 < 0.1.7-pr-integration.1),
+        # so a local build is kept whatever its label's precedence.
+        for version in ('1.0.1-local.1', '1.0.0', '1.1.0-beta.1', 'custom', None,
+                        '1.0.0-local.12', '0.9.9-local.1', '0.9.9-rc.1.local.2+build.1'):
+            self.install(version, 'b' * 64)
+            with patch.object(onboarding.assets, 'download') as download:
+                with self.assertRaisesRegex(common.Error, '--published'):
+                    onboarding.update_inputs(self.paths, self.update_args())
+            download.assert_not_called()
+        with patch.object(onboarding.assets, 'download', return_value=self.payload) as download:
+            resolved = onboarding.update_inputs(self.paths, self.update_args('--published'))
+        download.assert_called_once()
+        self.assertEqual(resolved.runtime_sha256, self.sha)
+        with self.assertRaisesRegex(common.Error, 'not both'):
+            onboarding.update_inputs(self.paths, self.update_args(
+                '--published', '--runtime', str(self.payload), '--runtime-sha256', self.sha))
+
+    def test_update_replaces_an_older_release_and_reapplies_the_published_one(self):
+        for version, sha in (('0.9.9', 'b' * 64), ('1.0.0-beta.2', 'b' * 64), ('1.0.0', self.sha)):
+            self.install(version, sha)
+            with patch.object(onboarding.assets, 'download', return_value=self.payload) as download:
+                onboarding.update_inputs(self.paths, self.update_args())
+            download.assert_called_once()
+
+    def test_runtime_labels_follow_semantic_version_precedence(self):
+        labels = ['0.1.5', '0.1.6-beta.1', '0.1.6-beta.2', '0.1.6-beta.10', '0.1.6-rc.1', '0.1.6',
+                  '0.1.7-local.6', '0.1.7', '0.2.0']
+        order = [onboarding.runtime_order(label) for label in labels]
+        self.assertEqual(order, sorted(order))
+        self.assertEqual(len(set(order)), len(order))
+        self.assertEqual(onboarding.runtime_order('0.1.6+build.3'), onboarding.runtime_order('0.1.6'))
+        for label in ('', None, 'latest', '1.0', '1.0.0.0'):
+            self.assertIsNone(onboarding.runtime_order(label))
+
+    def test_local_runtime_labels_are_recognised(self):
+        for label in ('0.1.7-local.12', '0.1.7-local', '0.1.7-rc.1.local.2+build.1'):
+            self.assertTrue(onboarding.locally_built(label), label)
+        for label in ('0.1.7', '0.1.7-pr-integration.1', '0.1.7-locale.1', '0.1.7+local', '', None, 'local'):
+            self.assertFalse(onboarding.locally_built(label), label)
+
+    def test_replaced_microsoft_installer_is_explained(self):
+        # Microsoft serves each new Desktop build from the same address.
+        def download(url, sha, cache):
+            if 'microsoft' in url:
+                raise common.ChecksumError('Checksum verification failed: .download-abc123')
+            return self.payload
+        with patch.object(onboarding.assets, 'download', side_effect=download):
+            with self.assertRaises(common.Error) as raised:
+                onboarding.prepare(self.paths, self.args('--accept-license'))
+        message = str(raised.exception)
+        self.assertIn('2.158.1177.0', message)
+        self.assertIn('--installer', message)
+        self.assertIn(onboarding.DOWNLOAD_PAGE, message)
+        self.assertNotIn('.download-', message)
+
+    def test_interrupted_installer_download_keeps_its_own_message(self):
+        def download(url, sha, cache):
+            if 'microsoft' in url:
+                raise common.Error('Download failed; check your connection and rerun setup')
+            return self.payload
+        with patch.object(onboarding.assets, 'download', side_effect=download):
+            with self.assertRaisesRegex(common.Error, 'check your connection'):
+                onboarding.prepare(self.paths, self.args('--accept-license'))

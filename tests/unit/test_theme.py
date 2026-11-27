@@ -42,8 +42,10 @@ class ThemeTests(unittest.TestCase):
         with patch.dict(os.environ, XDG_CURRENT_DESKTOP='GNOME'), \
                 patch.object(theme, 'preference', return_value=None), patch.object(theme, 'run') as run:
             self.bridge.start()
+            self.bridge.thread.join(5)
         run.assert_not_called()
-        self.assertIsNone(self.bridge.thread)
+        self.assertFalse(self.bridge.thread.is_alive())
+        self.assertTrue(self.bridge.ready.is_set())
 
     def test_hyprland_uses_the_same_preference_key(self):
         for desktop in ('Hyprland', 'omarchy:Hyprland'):
@@ -51,6 +53,7 @@ class ThemeTests(unittest.TestCase):
                     patch.object(theme, 'preference', return_value=None) as preference, \
                     patch.object(theme, 'run') as run:
                 self.bridge.start()
+                self.bridge.thread.join(5)
                 preference.assert_called_once()
                 run.assert_not_called()
 
@@ -60,6 +63,8 @@ class ThemeTests(unittest.TestCase):
                     patch.object(theme, 'preference') as preference:
                 self.bridge.start()
                 preference.assert_not_called()
+                self.assertIsNone(self.bridge.thread)
+                self.assertTrue(self.bridge.ready.is_set())
 
     def test_changes_are_applied_once_and_missing_reads_keep_last_value(self):
         with patch.object(theme, 'run') as run:
@@ -83,6 +88,7 @@ class ThemeTests(unittest.TestCase):
                 patch.object(theme, 'preference', return_value='dark'), \
                 patch.object(theme, 'run') as run:
             self.bridge.start()
+            self.assertTrue(self.bridge.ready.wait(5))
             folder = Path(self.bridge.directory.name)
             self.assertTrue((folder / 'PowerBIThemeSync.cs').is_file())
             self.assertEqual(run.call_args_list[0].args[0][1], theme.COMPILER)
@@ -98,9 +104,43 @@ class ThemeTests(unittest.TestCase):
                 patch.object(theme, 'preference', return_value='dark'), \
                 patch.object(theme, 'run', side_effect=common.Error('compile failed')):
             self.bridge.start()
+            self.bridge.thread.join(5)
         self.assertIsNone(self.bridge.directory)
-        self.assertIsNone(self.bridge.thread)
+        self.assertFalse(self.bridge.thread.is_alive())
+        self.assertTrue(self.bridge.ready.is_set())
         self.assertIn('synchronization unavailable', (self.paths.state / 'session.log').read_text())
+
+    def test_start_returns_before_the_compiler_and_the_first_write_finish(self):
+        # The broker calls start() before it accepts the first open request.
+        release = threading.Event()
+        def slow(*args, **kwargs):
+            self.assertTrue(release.wait(5))
+        with patch.dict(os.environ, XDG_CURRENT_DESKTOP='Hyprland'), \
+                patch.object(theme, 'preference', return_value='dark'), \
+                patch.object(theme, 'run', side_effect=slow) as run:
+            self.bridge.start()
+            self.assertFalse(self.bridge.ready.is_set())
+            self.assertIsNone(self.bridge.current)
+            release.set()
+            self.assertTrue(self.bridge.ready.wait(5))
+            self.assertEqual(self.bridge.current, 'dark')
+            self.assertEqual(run.call_count, 2)
+            self.bridge.close()
+
+    def test_close_during_the_compile_skips_the_first_write(self):
+        release = threading.Event()
+        def slow(*args, **kwargs):
+            self.assertTrue(release.wait(5))
+        with patch.dict(os.environ, XDG_CURRENT_DESKTOP='GNOME'), \
+                patch.object(theme, 'preference', return_value='dark'), \
+                patch.object(theme, 'run', side_effect=slow) as run:
+            self.bridge.start()
+            self.bridge.stop.set()
+            release.set()
+            self.bridge.close()
+        self.assertEqual(run.call_count, 1)
+        self.assertIsNone(self.bridge.current)
+        self.assertIsNone(self.bridge.directory)
 
     def test_worker_retries_after_failure_and_stops_without_an_extra_write(self):
         attempted = threading.Event()

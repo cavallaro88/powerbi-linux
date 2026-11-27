@@ -2,7 +2,11 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 import sys
 from pathlib import Path
-source = Path(__file__).resolve().parents[1] / 'src'
-sys.path.insert(0, str(source) if (source/'pbi_linux').is_dir() else '/usr/share/powerbi-linux/src')
+# A source checkout runs packaging/pbi-linux; an installed /usr/bin/pbi-linux
+# always uses the packaged code, never a pbi_linux that happens to be in /usr/src.
+script = Path(__file__).resolve()
+source = script.parents[1] / 'src'
+checkout = script.parent.name == 'packaging' and (source / 'pbi_linux').is_dir()
+sys.path.insert(0, str(source) if checkout else '/usr/share/powerbi-linux/src')
 from pbi_linux.cli import main
 raise SystemExit(main())

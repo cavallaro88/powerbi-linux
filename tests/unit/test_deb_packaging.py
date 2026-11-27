@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 from pathlib import Path
+import importlib.util
 import os
 import shutil
 import subprocess
@@ -12,6 +13,14 @@ BUILDER = ROOT / 'tools/build-deb.py'
 
 
 class DebianPackaging(unittest.TestCase):
+    def test_stage_uses_the_shared_source_selection(self):
+        # tests/unit/test_source_tree.py covers the selection itself.
+        spec = importlib.util.spec_from_file_location('build_deb', BUILDER)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        self.assertEqual(module.ignored.__module__, 'source_tree')
+        self.assertEqual(module.refuse_symlinks.__module__, 'source_tree')
+
     def test_python_bytecode_is_cleaned_before_package_files_are_removed(self):
         with tempfile.TemporaryDirectory() as directory:
             stage = Path(directory) / 'stage'

@@ -94,3 +94,58 @@ it in `dist/powerbi-linux-source-runtime-0.1.3.tar.gz` and
 `dist/powerbi-linux-qa-runtime-0.1.3.tar.gz`, with adjacent SHA-256 files.
 These are local development artifacts, not a published release; broader release
 gates remain pending.
+
+## Desktop frozen after a cursor change: 2026-11-18
+
+Reported on the [Hyprland host](hyprland.md): resizing a visual, then a table
+column, left Desktop unresponsive, once for about ten seconds and once for
+6 min 48 s. The report page still answered; Desktop's own UI thread did not.
+
+### Diagnosis
+
+- The UI thread slept in `NtUserWaitMessage`. In the Wine server its queue had
+  wake and changed masks `0x8000` (`QS_SMRESULT` only) with two sent and four
+  posted messages pending, so nothing that was pending could wake it.
+- The server addresses `WM_WINE_SETCURSOR` to the top-level window, so the UI
+  thread handles the embedded browser's cursors. The Wayland driver asks for the
+  cursor image and the shared system cursor lookup above sends a blocking
+  message to the cursor's owner, for 50 ms at most. A cursor that is not a
+  shared system cursor (column resize, grab) is not cached and is sent each time.
+- `process_driver_events()` in `win32u/message.c` set the masks for the caller's
+  wait and then handled internal hardware messages. Waiting for the reply
+  replaced the masks and nothing restored them. The thread then waited until the
+  next internal message, which in practice is the next change of pointer shape.
+- Calls from the report page to the host (committing a resize, for example)
+  queue behind that thread, so Desktop looks frozen while the page still paints.
+
+`wine-11.18-queue-masks-after-internal.patch` handles the internal messages
+first and sets the masks afterwards. Wine's development branch had the same
+order as 11.18 on that date.
+
+### Evidence
+
+`tests/e2e/cursor-wake.py` drives a diagnostics session: the page selects a
+`col-resize` or `grab` cursor, Wine's cursor is parked on the caption area and
+moved back over the page while the browser process is stopped for 400 ms, and
+the UI thread is then sent `WM_NULL` with a three second limit.
+
+| Runtime | Rounds | UI thread answered |
+|---|---|---|
+| Local build without the patch | 3 (`col-resize`), plus 3 of 3 with an earlier shell version of the test | 0 |
+| Local build with the patch, SHA-256 `c9555dc7960a5a27d6ae615325b13350738719e5ea1935c3c840b2044a27521e` | 5 (`col-resize`) and 3 (`grab`), six lookups logged in the last three | 8 |
+
+Limits:
+
+- One host. The driver performs the lookup only while the desktop pointer is
+  over the Desktop window; without that the test reports that it was not
+  exercised. A later run on the unpatched build without the pointer in place
+  logged no lookup and proved nothing.
+- The test forces a lookup that times out. Whether a lookup answered within
+  50 ms can leave the thread in the same state was not determined, and the
+  original reports were not replayed by hand on the patched build.
+- A `nwse-resize` cursor, a shared system cursor resolved from the cache, never
+  produced the failure.
+- The patch description was reworded after the build; no code changed. The
+  local build is not published and a rebuild is not claimed byte-identical.
+- Until a runtime contains the patch, a frozen session can be woken by moving
+  the pointer until its shape changes, for example onto the caption buttons.

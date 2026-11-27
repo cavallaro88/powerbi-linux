@@ -64,6 +64,14 @@ def validate(config):
 
 
 def load(paths):
+    try:
+        return _load(paths)
+    except Error as exc:
+        raise Error('Invalid resource settings in ' + str(paths.settings) + ': ' + str(exc) +
+                    '. Run pbi-linux profile unlimited to reset them') from exc
+
+
+def _load(paths):
     saved = read_json(paths.settings) if paths.settings.exists() else {}
     if not isinstance(saved, dict):
         raise Error('Settings must contain a JSON object')

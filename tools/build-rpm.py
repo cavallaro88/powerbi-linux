@@ -4,8 +4,15 @@ import argparse
 import os
 from pathlib import Path
 import subprocess
+import sys
 import tarfile
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from source_tree import archive_filter, refuse_symlinks
 ROOT=Path(__file__).resolve().parent.parent
+SOURCES=('src','runtime','connectors','packaging','docs','tests','tools','.github','.gitignore','LICENSE','LICENSES','README.md','CONTRIBUTING.md','SECURITY.md','SECURITY-RULES.md','CODE_OF_CONDUCT.md','CHANGELOG.md')
+TOP='powerbi-linux-0.1.0'
+# The spec copies packaging/ whole, so makepkg output and local files stop here.
+member=archive_filter(TOP)
 p=argparse.ArgumentParser()
 p.add_argument('--engine',choices=['docker','podman'],default='docker')
 p.add_argument('--local',action='store_true')
@@ -14,10 +21,10 @@ args=p.parse_args()
 work=ROOT/'build/rpm'
 for name in ('SOURCES','SPECS','BUILD','BUILDROOT','RPMS','SRPMS'):
     (work/name).mkdir(parents=True,exist_ok=True)
-with tarfile.open(work/'SOURCES/powerbi-linux-0.1.0.tar.gz','w:gz') as tar:
-    for name in ('src','runtime','connectors','packaging','docs','tests','tools','.github','.gitignore','LICENSE','LICENSES','README.md','CONTRIBUTING.md','SECURITY.md','CODE_OF_CONDUCT.md','CHANGELOG.md'):
-        tar.add(ROOT/name,arcname='powerbi-linux-0.1.0/'+name,
-                filter=lambda info: None if '__pycache__' in info.name or info.name.endswith('.pyc') else info)
+refuse_symlinks(SOURCES)
+with tarfile.open(work/'SOURCES'/(TOP+'.tar.gz'),'w:gz') as tar:
+    for name in SOURCES:
+        tar.add(ROOT/name,arcname=TOP+'/'+name,filter=member)
 command=['rpmbuild','-ba','--define','_topdir '+str(work),str(ROOT/'packaging/powerbi-linux.spec')]
 if args.local:
     if args.check_helpers:

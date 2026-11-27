@@ -1,0 +1,12 @@
+#!/bin/sh
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Wine's winebrowser runs this for links Desktop opens: browser sign-in, Help,
+# a report published to the service. A browser started inside the Power BI
+# session would count against its memory limit and be killed when the last
+# report closes, so it gets a scope of its own and none of the session's
+# Wine, WebView2 or diagnostic settings.
+for name in $(env | sed -n 's/^\(WINE[A-Za-z0-9_]*\|PBI_[A-Za-z0-9_]*\|WEBVIEW2_[A-Za-z0-9_]*\|APPDOMAIN_MANAGER_[A-Za-z0-9_]*\|DXVK_[A-Za-z0-9_]*\|COMPlus_[A-Za-z0-9_]*\)=.*/\1/p'); do
+    unset "$name"
+done
+command -v systemd-run >/dev/null 2>&1 || exec xdg-open "$@"
+exec systemd-run --user --scope --collect --quiet -- xdg-open "$@"

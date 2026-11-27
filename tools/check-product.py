@@ -71,7 +71,8 @@ def execute(name, command, output, env, timeout):
             except subprocess.TimeoutExpired:
                 os.killpg(process.pid, signal.SIGTERM)
                 try:
-                    process.wait(timeout=3)
+                    # Long enough for a check's own teardown (wineserver -k, then -w).
+                    process.wait(timeout=30)
                 except subprocess.TimeoutExpired:
                     os.killpg(process.pid, signal.SIGKILL)
                     process.wait()
@@ -146,7 +147,8 @@ def main():
                 ('qa-doctor', [sys.executable, '-m', 'pbi_linux', 'doctor', '--json'], 60),
                 ('window-frame', [sys.executable, 'tools/test-window-frame.py'], 120),
                 ('cursor-resource', [sys.executable, 'tools/test-cursor-resource.py', '--runtime', metadata['runtime']], 180),
-                ('pipe-directory', [sys.executable, 'tools/test-pipe-directory.py', '--runtime', metadata['runtime']], 180),
+                ('pipe-directory', [sys.executable, 'tools/test-pipe-directory.py', '--runtime', metadata['runtime']], 240),
+                ('modal-frames', [sys.executable, 'tools/test-modal-frames.py', '--runtime', metadata['runtime']], 240),
                 ('store-rating', [sys.executable, 'tools/test-store-rating.py'], 90),
                 ('cache-compatibility', [sys.executable, 'tools/test-cache-compatibility.py'], 90),
                 ('legacy-html', [sys.executable, 'tools/test-legacy-html.py'], 90),

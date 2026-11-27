@@ -8,17 +8,15 @@ import os
 from pathlib import Path
 import shutil
 import subprocess
+import sys
 import tempfile
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from source_tree import ignored, refuse_symlinks
 
 ROOT = Path(__file__).resolve().parents[1]
 PAYLOAD = ('src', 'runtime', 'connectors', 'packaging', 'docs', 'LICENSE', 'LICENSES', 'README.md')
 BUILDER_IMAGE = 'docker.io/library/debian@sha256:4876fdea29cac1a33a3195f1eb1952feb1fca7dd6dd00be3e2f1879cf20d34d2'
-
-
-def ignored(directory, names):
-    return [name for name in names if name in ('__pycache__', '.git', '.pbi', 'results', '.env')
-            or name.startswith('.env.')
-            or name.lower().endswith(('.pyc', '.log', '.dmp', '.pbix', '.exe', '.dll', '.so', '.snk', '.pfx', '.pem'))]
 
 
 def stage(destination):
@@ -26,18 +24,20 @@ def stage(destination):
     if (destination.exists() or ROOT.is_relative_to(destination)
             or any(destination.is_relative_to(ROOT / name) for name in PAYLOAD)):
         raise ValueError('Staging requires a new directory outside packaged input paths')
+    refuse_symlinks(PAYLOAD)
     destination.mkdir(parents=True)
     data = destination / 'usr/share/powerbi-linux'
     data.mkdir(parents=True)
     for name in PAYLOAD:
         source = ROOT / name
-        # Never follow a source symlink into private host data.
-        if source.is_symlink() or (source.is_dir() and any(p.is_symlink() for p in source.rglob('*'))):
-            raise ValueError('Symlinks are not permitted in DEB source inputs: ' + name)
         if source.is_dir():
             shutil.copytree(source, data / name, ignore=ignored)
         else:
             shutil.copy2(source, data / name)
+    # copy2 keeps the checkout's modes, which some mounts report as 0777; the
+    # installed code must not be writable by other local users.
+    for path in [data, *data.rglob('*')]:
+        path.chmod(0o755 if path.is_dir() or path.stat().st_mode & 0o111 else 0o644)
     files = [('packaging/pbi-linux', 'usr/bin/pbi-linux', 0o755),
              ('packaging/powerbi-linux.desktop', 'usr/share/applications/powerbi-linux.desktop', 0o644),
              ('packaging/powerbi-linux.xml', 'usr/share/mime/packages/powerbi-linux.xml', 0o644),

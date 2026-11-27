@@ -9,3 +9,8 @@ Categories=Office;Database;
 MimeType=application/x-powerbi-pbix;application/x-powerbi-pbip;application/x-powerbi-pbir;
 StartupNotify=false
 StartupWMClass=pbidesktop.exe
+Actions=stop;
+
+[Desktop Action stop]
+Name=Force quit Power BI (unsaved changes are lost)
+Exec=pbi-linux stop --desktop

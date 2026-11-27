@@ -154,6 +154,12 @@ Unix modes builds the same package. It needs a Git checkout. `namcap` reports th
 see because the runtime loads them, not the Python sources. See
 [experimental installation and scope](../user/arch.md).
 
+makepkg leaves `pkg/`, `src/` and the built package beside the PKGBUILD. The DEB,
+RPM and source export builders copy directories instead of asking Git (an
+exported tree has no repository), so they share `tools/source_tree.py`: one list
+of what never ships, including that makepkg output, and a refusal of any symlink
+in what remains.
+
 ## Corresponding source
 
 When distributing a runtime, publish the exact corresponding patched source and build recipe, Wine/Neutron notices, DXVK/submodule licenses, dnlib notice, builder image digest and package inventory. The runtime binary alone is not a complete release. Use the source export tooling to create a sanitized project source tree; the full Wine/DXVK source bundle is generated from the prepared sources.

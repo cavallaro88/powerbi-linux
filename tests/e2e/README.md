@@ -53,3 +53,11 @@ later Microsoft browser sign-in correction.
 The repeatable check runner and reusable 22-tab Options audit are described in
 [proactive QA](../../docs/development/automated-qa.md). Native suites require a distinct QA
 installation; missing environments are blocked rather than passed.
+
+`cursor-wake.py --probes /path/to/compiled-probes` checks that Desktop's UI thread still answers after a cursor lookup that times out. It needs a disposable session started with `pbi-linux open --diagnostics`, a report open and the desktop pointer resting over the Desktop window; compile `cursor-wake-probe.cs` with the prefix's .NET compiler first. It stops the WebView2 browser process for 400 ms per round, moves only Wine's own cursor and fails when no lookup was logged. See `docs/reference/cursor.md`.
+
+`dialog-size.py --probes /path/to/compiled-probes` checks that a legacy HTML dialog reaches the size its page asks for and is not marked maximized. It needs a disposable session started with `pbi-linux open --diagnostics` and a report open; compile `dialog-size-probe.cs` first. By default it makes Desktop open its own unexpected error report; `--button "Data source settings" --title "Data source settings"` presses a ribbon button instead. The dialog is closed with `WM_CLOSE`. See `docs/reference/legacy-html.md`.
+
+`window-state.py --probes /path/to/compiled-probes` checks two things a tiling compositor's configure events must not do to a window: map a window that starts maximized as a floating one, and take the maximized style and size from a window whose workspace is hidden. Hyprland only; it shows its own windows (`window-state-probe.cs`) and needs no Desktop session. `--workspace` names a visible workspace to move them to; the second check needs one with no other tiled window and a `--hidden-workspace` on the same monitor.
+
+On Hyprland a headless output keeps test windows off the monitor and still gives them frames: `hyprctl output create headless NAME`, show a workspace on it, move the windows there, and capture it with `grim -o NAME`. A window on a workspace that is not shown gets no frames, so its capture stays at the first one. Remove the output with `hyprctl output remove NAME`.

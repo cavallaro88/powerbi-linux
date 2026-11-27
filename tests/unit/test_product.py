@@ -14,7 +14,7 @@ from unittest.mock import patch
 from types import SimpleNamespace
 import sys
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]/'src'))
-from pbi_linux import assets, common, launch, provision, pe_cache, desktop, webview, cli
+from pbi_linux import assets, common, launch, patches, provision, pe_cache, desktop, webview, cli
 
 
 class ProductTests(unittest.TestCase):
@@ -67,14 +67,107 @@ class ProductTests(unittest.TestCase):
                 with self.paths.lock():
                     self.fail('Acquired an already held maintenance lock')
 
+    def test_lock_waits_a_bounded_time_for_its_holder(self):
+        import threading
+        held, release = threading.Event(), threading.Event()
+        def holder():
+            with self.paths.lock('launch'):
+                held.set()
+                release.wait(5)
+        thread = threading.Thread(target=holder)
+        thread.start()
+        try:
+            self.assertTrue(held.wait(5))
+            with self.assertRaisesRegex(common.Error, 'launch'):
+                with self.paths.lock('launch', wait=.2):
+                    self.fail('Acquired a held lock')
+            threading.Timer(.2, release.set).start()
+            with self.paths.lock('launch', wait=5):
+                pass
+            # A different lock is independent of it.
+            with self.paths.lock('maintenance'):
+                pass
+        finally:
+            release.set()
+            thread.join()
+
+    def test_second_open_waits_for_the_first_but_maintenance_still_refuses_it(self):
+        # Two reports opened together: the second must not be told that
+        # maintenance is running while the first is only starting the session.
+        import threading
+        runtime=self.runtime()
+        prefix=self.paths.data/'profiles/fixture';prefix.mkdir(parents=True)
+        common.atomic_json(self.paths.active,{'prefix':str(prefix),'runtime':str(runtime),'patches':{}})
+        self.paths.socket.touch()
+        entered, release, order = threading.Event(), threading.Event(), []
+        def request(paths, filename, diagnostics):
+            order.append('start')
+            entered.set()
+            if len(order) == 1:
+                release.wait(5)
+            order.append('end')
+            return {'ok': True}
+        with patch.object(launch,'request',side_effect=request), patch('pbi_linux.desktop.refresh_icon'):
+            first = threading.Thread(target=launch.open_file, args=(self.paths, None))
+            first.start()
+            self.assertTrue(entered.wait(5))
+            threading.Timer(.3, release.set).start()
+            launch.open_file(self.paths, None)
+            first.join()
+            self.assertEqual(order, ['start', 'end', 'start', 'end'])
+            with self.paths.lock():
+                with self.assertRaisesRegex(common.Error, 'maintenance'):
+                    launch.open_file(self.paths, None)
+            with self.paths.lock('launch'), patch.object(launch, 'LAUNCH_WAIT', .1):
+                with self.assertRaisesRegex(common.Error, 'launch'):
+                    launch.open_file(self.paths, None)
+
+    def test_desktop_started_by_desktop_counts_as_a_running_desktop(self):
+        prefix = self.paths.data/'profiles/fixture'
+        processes = self.root/'proc'
+        def process(pid, arguments, wineprefix=prefix, environ=True):
+            folder = processes/str(pid)
+            folder.mkdir(parents=True)
+            (folder/'cmdline').write_bytes(b'\0'.join(a.encode() for a in arguments) + b'\0' * 40)
+            if environ:
+                (folder/'environ').write_bytes(b'HOME=/home/user\0WINEPREFIX=' + str(wineprefix).encode() + b'\0')
+        (processes/'self').mkdir(parents=True)
+        process(10, ['C:\\windows\\system32\\services.exe'])
+        process(11, ['Z:\\tmp\\NotPBIDesktop.exe', 'PBIDesktop.exe.config'])
+        process(12, ['C:\\Program Files\\Microsoft Power BI Desktop\\bin\\PBIDesktop.exe',
+                     'Z:\\tmp\\Report.pbip'], wineprefix=str(prefix) + '-other')
+        process(13, ['PBIDesktop.exe'], environ=False)  # Exited between the two reads.
+        process(14, [])  # A zombie has no command line.
+        self.assertFalse(launch.desktop_running(prefix, processes))
+        # The form Wine shows for a Desktop that Desktop started itself.
+        process(20, ['C:\\Program Files\\Microsoft Power BI Desktop\\bin\\PBIDesktop.exe',
+                     'Z:\\tmp\\Report.pbip'])
+        self.assertTrue(launch.desktop_running(prefix, processes))
+        shutil.rmtree(processes/'20')
+        # The broker's own start: wine PBIDesktop.exe, before and after Wine renames it.
+        process(21, ['/opt/runtime/bin/wine', 'PBIDesktop.exe', 'Z:\\tmp\\Report.pbip'])
+        self.assertTrue(launch.desktop_running(prefix, processes))
+        shutil.rmtree(processes/'21')
+        process(22, ['pbidesktop.EXE', 'Z:\\tmp\\Report.pbip'])
+        self.assertTrue(launch.desktop_running(prefix, processes))
+
     def test_source_export_excludes_model_cache_credentials_and_binaries(self):
         project=self.root/'standalone'
         actual=Path(__file__).resolve().parents[2]
         for name in ('src','runtime','connectors','tests','packaging','tools','docs','.github','LICENSES'):
             (project/name).mkdir(parents=True)
-        for name in ('LICENSE','README.md','CONTRIBUTING.md','SECURITY.md','CODE_OF_CONDUCT.md','CHANGELOG.md','.gitignore'):
+        for name in ('LICENSE','README.md','CONTRIBUTING.md','SECURITY.md','SECURITY-RULES.md','CODE_OF_CONDUCT.md','CHANGELOG.md','.gitignore'):
             (project/name).write_text('public')
-        shutil.copy2(actual/'tools/export-source.py',project/'tools/export-source.py')
+        for name in ('export-source.py','source_tree.py'):
+            shutil.copy2(actual/'tools'/name,project/'tools'/name)
+        # What a finished makepkg run leaves beside the PKGBUILD.
+        arch=project/'packaging/arch'
+        (arch/'pkg/usr/share/licenses').mkdir(parents=True)
+        (arch/'pkg/usr/share/licenses/LICENSE').symlink_to('/usr/share/powerbi-linux/LICENSE')
+        (arch/'src').mkdir()
+        (arch/'src/tracked-files').write_text('private test sentinel')
+        (arch/'powerbi-linux-0.1.0-19-x86_64.pkg.tar.zst').write_text('private test sentinel')
+        (arch/'PKGBUILD').write_text('public recipe')
         fixture=project/'tests/synthetic'
         (fixture/'.pbi').mkdir(parents=True)
         for name in ('.pbi/cache.abf','.env','.env.local','customer.pbix','Customer.PBIX','key.snk','built.dll'):
@@ -85,6 +178,15 @@ class ProductTests(unittest.TestCase):
         files=[p for p in export.rglob('*') if p.is_file()]
         self.assertFalse(any('private test sentinel' in p.read_text() for p in files))
         self.assertTrue((export/'tests/synthetic/definition.pbir').is_file())
+        self.assertEqual([p.name for p in (export/'packaging/arch').iterdir()],['PKGBUILD'])
+        # A symlink in an exported directory could copy private host files.
+        (project/'docs/host').symlink_to('/etc')
+        linked=subprocess.run([sys.executable,project/'tools/export-source.py',self.root/'linked-export'],
+                              capture_output=True,text=True)
+        self.assertNotEqual(linked.returncode,0)
+        self.assertIn('docs/host',linked.stderr)
+        self.assertFalse((self.root/'linked-export').exists())
+        (project/'docs/host').unlink()
         # A destination inside an exported directory would recursively copy
         # itself, potentially filling the user's disk before packaging.
         nested=project/'tests/nested-export'
@@ -121,11 +223,14 @@ class ProductTests(unittest.TestCase):
         return archive
 
     def test_archive_rejects_traversal(self):
-        for index, name in enumerate(('../escape','/tmp/escape')):
+        # '../escape' extracted into root/extract0 would land at root/escape.
+        absolute = self.root/'absolute-escape'
+        for index, name in enumerate(('../escape', str(absolute))):
             archive = self.tar_entry(name)
             with self.assertRaises(common.Error):
                 assets.extract_runtime(archive,self.root/('extract'+str(index)))
-        self.assertFalse((self.root.parent/'escape').exists())
+        self.assertFalse((self.root/'escape').exists())
+        self.assertFalse(absolute.exists())
 
     def test_archive_rejects_symlink_escape(self):
         archive = self.tar_entry('link', link='../../outside')
@@ -275,7 +380,7 @@ class ProductTests(unittest.TestCase):
         edge=self.root/'154.0.4258.53/msedge.dll'
         with patch.object(provision,'idle'), patch.object(provision,'check_digest'), \
              patch.object(provision,'webview_config',return_value=provision.webview_config()), \
-             patch.object(assets,'download',return_value=source), \
+             patch.object(assets,'download',return_value=source), patch.object(assets,'cache_copy'), \
              patch.object(provision,'install_runtime',return_value=runtime), \
              patch.object(provision,'run',side_effect=stage), patch.object(provision,'stop_server'), \
              patch.object(provision,'configure',return_value={}), \
@@ -389,7 +494,7 @@ class ProductTests(unittest.TestCase):
         with patch.dict(os.environ, {'PBI_UI_DIAGNOSTICS':'1','PBI_WAYLAND_CAPTURE_DIR':'/tmp/secret',
                  'WINELOADER':'/old/wine','WINESERVER':'/old/wineserver','WINEARCH':'win32',
                  'WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS':'--remote-debugging-port=9229'}), \
-             patch.object(launch,'verified_webview',return_value=prefix/'edge.dll'), patch.object(pe_cache,'valid',return_value=False):
+             patch.object(launch,'verified_webview',return_value=prefix/'edge.dll'), patch.object(pe_cache,'refresh',return_value=False):
             env=launch.environment(self.paths,install)
             setup_env=common.wine_env(prefix)
         self.assertNotIn('PBI_UI_DIAGNOSTICS',env)
@@ -402,6 +507,21 @@ class ProductTests(unittest.TestCase):
         for key in ('WINELOADER','WINESERVER','WINEARCH','PBI_UI_DIAGNOSTICS','PBI_WAYLAND_CAPTURE_DIR'):
             self.assertNotIn(key,env)
             self.assertNotIn(key,setup_env)
+
+    def test_configured_manager_is_not_inherited_by_other_programs(self):
+        runtime=self.runtime()
+        prefix=self.paths.data/'profiles/test'
+        prefix.mkdir(parents=True)
+        config=prefix/provision.BIN/patches.DESKTOP_CONFIG
+        config.parent.mkdir(parents=True)
+        config.write_bytes(b'<configuration />')
+        install={'prefix':str(prefix),'runtime':str(runtime),'patches':{patches.DESKTOP_CONFIG:common.digest(config)}}
+        with patch.dict(os.environ,{'APPDOMAIN_MANAGER_ASM':'Other','APPDOMAIN_MANAGER_TYPE':'Other'}), \
+             patch.object(launch,'verified_webview',return_value=prefix/'edge.dll'), patch.object(pe_cache,'refresh',return_value=False):
+            env=launch.environment(self.paths,install)
+        self.assertNotIn('APPDOMAIN_MANAGER_ASM',env)
+        self.assertNotIn('APPDOMAIN_MANAGER_TYPE',env)
+        self.assertEqual(env['PBI_CULTURE_WORKAROUND'],'1')
 
     def test_unvalidated_webview_is_rejected_before_launch(self):
         prefix=self.paths.data/'profiles/test'
@@ -469,6 +589,10 @@ class ProductTests(unittest.TestCase):
         self.assertIn('MemorySwapMax=infinity',cmd)
         self.assertFalse(any(x.startswith('CPUQuota=') for x in cmd))
         self.assertIn('KillMode=mixed',cmd)
+        # One process killed for memory must not stop every open report.
+        self.assertIn('OOMPolicy=continue',cmd)
+        # The service runs in the home folder; its own modules must load first.
+        self.assertEqual(cmd[-4],'-P')
 
 if __name__=='__main__':
     unittest.main()
